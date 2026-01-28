@@ -1,0 +1,1501 @@
+﻿.版本 2
+
+
+
+.常量 旧窗口过程, "“oldWndProc”", 公开
+.常量 LMEM_ZEROINIT, "64", 公开
+
+.常量 WM_NOTIFY, "78", 公开, 当某个控件的某个事件已经发生或这个控件需要得到一些信息时，发送此消息给它的父窗口
+.常量 NM_CUSTOMDRAW, "-12", 公开
+.常量 CDDS_PREPAINT, "1", 公开
+.常量 CDRF_NOTIFYSUBITEMDRAW, "32", 公开
+.常量 CDDS_ITEMPREPAINT, "65537", 公开
+.常量 CDDS_SUBITEM, "131072", 公开
+.常量 DT_VCENTER, "4", 公开
+.常量 DT_LEFT, "0", 公开
+.常量 DT_SINGLELINE, "32", 公开
+.常量 CDRF_SKIPDEFAULT, "4", 公开
+.常量 WS_POPUP, "-2147483648", 公开
+
+.常量 SMTO_ABORTIFHUNG, "2"
+.常量 IMAGE_BITMAP, "0", 公开
+.常量 IMAGE_ICON, "1", 公开
+.常量 IMAGE_CURSOR, "2", 公开
+
+
+.常量 STIF_DEFAULT, "0", 公开
+.常量 STIF_SUPPORT_HEX, "1", 公开
+.常量 CP_gb2312, "936", 公开, ANSI/OEM Simplified Chinese (PRC, Singapore); Chinese Simplified (GB2312)
+.常量 CP_utf_8, "65001", 公开, Unicode (UTF-8)
+
+
+.常量 ERROR_BUFFER_OVERFLOW, "111", 公开, 111
+.常量 ERROR_SUCCESS, "0", 公开, 0L
+.常量 MIB_IF_TYPE_ETHERNET, "6", 公开, 以太网接口
+.常量 MIB_IF_TYPE_FDDI, "15", 公开, 15
+.常量 MIB_IF_TYPE_LOOPBACK, "24", 公开, 24
+.常量 MIB_IF_TYPE_OTHER, "1", 公开, 其他类型的网络接口
+.常量 MIB_IF_TYPE_PPP, "23", 公开, PPP(点到点协议)网络接口
+.常量 MIB_IF_TYPE_SLIP, "28", 公开
+.常量 MIB_IF_TYPE_TOKENRING, "9", 公开
+.常量 MIB_IF_TYPE_IEEE80211, "71", 公开, IEEE 802.11 wireless network interface
+
+.常量 ERROR_INVALID_PARAMETER, "87", , 为表分配的空间不足。表的大小在pdwSize参数中返回，并且必须用于对此函数的后续调用，才能成功检索表
+.常量 ERROR_INSUFFICIENT_BUFFER, "122", 公开, 一个无效参数传递给函数。如果TableClass参数包含未在TCP_TABLE_CLASS枚举中定义的值， 则返回此错误。
+
+.常量 AF_INET, "2", , IPv4
+.常量 AF_INET6, "23", , IPv6
+
+.常量 TCP_TABLE_OWNER_PID_ALL, "5", , https://msdn.microsoft.com/en-us/library/aa366386.aspx
+.常量 UDP_TABLE_OWNER_PID, "1", , https://msdn.microsoft.com/en-us/library/aa366388.aspx
+.常量 TH32CS_SNAPPROCESS, "2"
+
+
+
+.常量 WM_GETTEXTLENGTH, "14", 公开, 得到与一个窗口有关的文本的长度（不包含空字符）
+.常量 SMTO_NORMAL, "0", 公开
+
+
+
+.常量 服务器消息, "1029", 公开, 服务器消息
+.常量 客户消息, "1030", 公开, 客户消息
+.常量 FD_CLOSE, "32", 公开, 客户退出
+.常量 FD_ACCEPT, "8", 公开, 客户进入
+.常量 FD_READ, "1", 公开, 数据到达
+.常量 PF_INET, "2", 公开, TCP/IP协议族
+.常量 SOCK_STREAM, "1", 公开, 流套接字类型(TCP)
+.常量 SOCK_DGRAM, "2", 公开, 数据报套接字类型(UDP)
+.常量 IPPROTO_TCP, "6", 公开
+.常量 IPPROTO_UDP, "17", 公开
+.常量 SRCCOPY, "13369376", 公开, 直接复制，不做任何修改。
+
+.常量 网页属性_网页标题, "“title”", 公开
+.常量 网页属性_网页地址, "“location”", 公开
+.常量 网页属性_网页源码, "“outerHTML”", 公开, outerHTML
+.常量 网页属性_网页文本, "“innerText”", 公开, innerText
+.常量 网页属性_网站域名, "“domain”", 公开, domain
+.常量 网页属性_访问来源, "“referrer”", 公开, referrer
+.常量 网页属性_创建时间, "“fileCreatedDate”", 公开, fileCreatedDate
+.常量 网页属性_修改时间, "“lastModified”", 公开, lastModified
+.常量 网页属性_Cookies, "“cookie”", 公开, cookie
+.常量 网页属性_编码类型, "“charset”", 公开, charset
+.常量 网页属性_文档大小, "“fileSize”", 公开, fileSize
+
+.常量 脚本类型_JavaScript, "“JavaScript”", 公开
+.常量 脚本类型_VBScript, "“VBScript”", 公开
+
+.常量 网页事件_selectedIndex, "“selectedIndex”", 公开, 组合框被选择
+.常量 网页事件_onabort, "“onabort”", 公开, 当用户中断下载图像时触发。.常量 网页事件_onactivate, "“onactivate”", 公开, 当对象设置为活动元素时触发。
+.常量 网页事件_onafterprint, "“onafterprint”", 公开, 对象所关联的文档打印或打印预览后立即在对象上触发。
+.常量 网页事件_onafterupdate, "“onafterupdate”", 公开, 当成功更新数据源对象中的关联对象后在数据绑定对象上触发。
+.常量 网页事件_onbeforeactivate, "“onbeforeactivate”", 公开, 对象要被设置为当前元素前立即触发。
+.常量 网页事件_onbeforecopy, "“onbeforecopy”", 公开, 当选中区复制到系统剪贴板之前在源对象触发。
+.常量 网页事件_onbeforecut, "“onbeforecut”", 公开, 当选中区从文档中删除之前在源对象触发。
+.常量 网页事件_onbeforedeactivate, "“onbeforedeactivate”", 公开, 在 activeElement 从当前对象变为父文档其它对象之前立即触发。
+.常量 网页事件_onbeforeeditfocus, "“onbeforeeditfocus”", 公开, 在包含于可编辑元素内的对象进入用户界面激活状态前或可编辑容器变成控件选中区前触发。
+.常量 网页事件_onbeforepaste, "“onbeforepaste”", 公开, 在选中区从系统剪贴板粘贴到文档前在目标对象上触发。
+.常量 网页事件_onbeforeprint, "“onbeforeprint”", 公开, 对象的关联文档打印或打印预览前在对象上触发。
+.常量 网页事件_onbeforeunload, "“onbeforeunload”", 公开, 在页面将要被卸载前触发。
+.常量 网页事件_onbeforeupdate, "“onbeforeupdate”", 公开, 当成功更新数据源对象中的关联对象前在数据绑定对象上触发。
+.常量 网页事件_onblur, "“onblur”", 公开, 在对象失去输入焦点时触发。***************
+.常量 网页事件_onbounce, "“onbounce”", 公开, 当 marquee 对象的 behavior 属性设置为“alternate”且字幕的内容到达窗口一边时触发。
+.常量 网页事件_oncellchange, "“oncellchange”", 公开, 在数据供应者中的数据变更时触发。
+.常量 网页事件_onchange, "“onchange”", 公开, 当对象或选中区的内容改变时触发。
+.常量 网页事件_oncontextmenu, "“oncontextmenu”", 公开, 在用户使用鼠标右键单击客户区打开上下文菜单时触发。
+.常量 网页事件_oncontrolselect, "“oncontrolselect”", 公开, 当用户将要对该对象制作一个控件选中区时触发。
+.常量 网页事件_oncopy, "“oncopy”", 公开, 当用户复制对象或选中区，将其添加到系统剪贴板上时在源元素上触发。
+.常量 网页事件_oncut, "“oncut”", 公开, 当对象或选中区从文档中删除并添加到系统剪贴板上时在源元素上触发。
+.常量 网页事件_ondataavailable, "“ondataavailable”", 公开, 每当异步传输数据的数据源对象的数据到达时触发。
+.常量 网页事件_ondatasetchanged, "“ondatasetchanged”", 公开, 当数据源对象对应的数据集发生变更时触发。
+.常量 网页事件_ondatasetcomplete, "“ondatasetcomplete”", 公开, 触发就表明数据源对象所有数据都可用。
+.常量 网页事件_ondeactivate, "“ondeactivate”", 公开, 当 activeElement 从当前对象变为父文档其它对象时触发。
+.常量 网页事件_ondrag, "“ondrag”", 公开, 当进行拖曳操作时在源对象上持续触发。
+.常量 网页事件_ondragend, "“ondragend”", 公开, 当用户在拖曳操作结束后释放鼠标时在源对象上触发。
+.常量 网页事件_ondragenter, "“ondragenter”", 公开, 当用户拖曳对象到一个合法拖曳目标时在目标元素上触发。
+.常量 网页事件_ondragleave, "“ondragleave”", 公开, 当用户在拖曳操作过程中将鼠标移出合法拖曳目标时在目标对象上触发。
+.常量 网页事件_ondragover, "“ondragover”", 公开, 当用户拖曳对象划过合法拖曳目标时持续在目标元素上触发。
+.常量 网页事件_ondragstart, "“ondragstart”", 公开, 当用户开始拖曳文本选中区或选中对象时在源对象上触发。
+.常量 网页事件_ondrop, "“ondrop”", 公开, 当鼠标按钮在拖曳操作过程中释放时在目标对象上触发。
+.常量 网页事件_onerror, "“onerror”", 公开, 当对象装载过程中发生错误时触发。
+.常量 网页事件_onerrorupdate, "“onerrorupdate”", 公开, 更新数据源对象中的关联数据出错时在数据绑定对象上触发。
+.常量 网页事件_onfilterchange, "“onfilterchange”", 公开, 当可视滤镜更改状态或完成转换时触发。
+.常量 网页事件_onfinish, "“onfinish”", 公开, 当字幕循环完成后触发。
+.常量 网页事件_onfocus, "“onfocus”", 公开, 当对象获得焦点时触发。
+.常量 网页事件_onfocusin, "“onfocusin”", 公开, 当元素将要被设置为焦点之前触发。
+.常量 网页事件_onfocusout, "“onfocusout”", 公开, 在移动焦点到其它元素之后立即触发于当前拥有焦点的元素上触发。
+.常量 网页事件_onhelp, "“onhelp”", 公开, 当用户在浏览器为当前窗口时按
+.常量 网页事件_onkeydown, "“onkeydown”", 公开, 当用户按下键盘按键时触发。
+.常量 网页事件_onkeypress, "“onkeypress”", 公开, 当用户按下字面键时触发。
+.常量 网页事件_onkeyup, "“onkeyup”", 公开, 当用户释放键盘按键时触发。
+.常量 网页事件_onlayoutcomplete, "“onlayoutcomplete”", 公开, 当打印或打印预览版面处理完成用来自于源文档的内容填充当前
+.常量 网页事件_onload, "“onload”", 公开, 在浏览器完成对象的装载后立即触发。
+.常量 网页事件_onlosecapture, "“onlosecapture”", 公开, 当对象失去鼠标捕捉时触发。
+.常量 网页事件_onmousedown, "“onmousedown”", 公开, 当用户用任何鼠标按钮单击对象时触发。
+.常量 网页事件_onmouseenter, "“onmouseenter”", 公开, 当用户将鼠标指针移动到对象内时触发。
+.常量 网页事件_onmouseleave, "“onmouseleave”", 公开, 当用户将鼠标指针移出对象边界时触发。
+.常量 网页事件_onmousemove, "“onmousemove”", 公开, 当用户将鼠标划过对象时触发。
+.常量 网页事件_onmouseout, "“onmouseout”", 公开, 当用户将鼠标指针移出对象边界时触发。
+.常量 网页事件_onmouseover, "“onmouseover”", 公开, 当用户将鼠标指针移动到对象内时触发。
+.常量 网页事件_onmouseup, "“onmouseup”", 公开, 当用户在鼠标位于对象之上时释放鼠标按钮时触发。
+.常量 网页事件_onmousewheel, "“onmousewheel”", 公开, 当鼠标滚轮按钮旋转时触发。
+.常量 网页事件_onmove, "“onmove”", 公开, 当对象移动时触发。
+.常量 网页事件_onmoveend, "“onmoveend”", 公开, 当对象停止移动时触发。
+.常量 网页事件_onmovestart, "“onmovestart”", 公开, 当对象开始移动时触发。
+.常量 网页事件_onpaste, "“onpaste”", 公开, 当用户粘贴数据以便从系统剪贴板向文档传送数据时在目标对象上触发。
+.常量 网页事件_onpropertychange, "“onpropertychange”", 公开, 当在对象上发生属性更改时触发。
+.常量 网页事件_onreadystatechange, "“onreadystatechange”", 公开, 当对象状态变更时触发。
+.常量 网页事件_onreset, "“onreset”", 公开, 当用户重置表单时触发。
+.常量 网页事件_onresize, "“onresize”", 公开, 当对象的大小将要改变时触发。
+.常量 网页事件_onresizeend, "“onresizeend”", 公开, 当用户更改完控件选中区中对象的尺寸时触发。
+.常量 网页事件_onresizestart, "“onresizestart”", 公开, 当用户开始更改控件选中区中对象的尺寸时触发。
+.常量 网页事件_onrowenter, "“onrowenter”", 公开, 触发就表明当前行已经在数据源中更改，对象上有可用的新数据值。
+.常量 网页事件_onrowexit, "“onrowexit”", 公开, 当数据源控件更改对象当前行前触发。
+.常量 网页事件_onrowsdelete, "“onrowsdelete”", 公开, 当行将要从记录集中被删除时触发。
+.常量 网页事件_onrowsinserted, "“onrowsinserted”", 公开, 当在当前记录集中插入新行后触发。
+.常量 网页事件_onscroll, "“onscroll”", 公开, 当用户滚动对象的滚动条时触发。
+.常量 网页事件_onselect, "“onselect”", 公开, 当当前选中区改变时触发。
+.常量 网页事件_onselectionchange, "“onselectionchange”", 公开, 当文档的选中状态改变时触发。
+.常量 网页事件_onselectstart, "“onselectstart”", 公开, 对象将要被选中时触发。
+.常量 网页事件_onstart, "“onstart”", 公开, 在 marquee 对象的每次循环开始时触发。
+.常量 网页事件_onstop, "“onstop”", 公开, 当用户单击停止按钮或离开
+.常量 网页事件_onunload, "“onunload”", 公开, 在对象卸载前立即触发。
+.常量 网页事件_onsubmit, "“onsubmit”", 公开, 当表单将要被提交时触发。
+.常量 网页事件_focus, "“focus”", 公开, 控件获得焦点；
+.常量 网页事件_click, "“click”", 公开, 在用户用鼠标左键单击对象时触发。
+.常量 网页事件_onclick, "“onclick”", 公开, 在用户用鼠标左键单击对象时触发。
+.常量 网页事件_ondblclick, "“ondblclick”", 公开, 当用户用鼠标左键双击对象时触发。
+
+.常量 PROCESS_VM_OPERATION, "8", 公开, 内存操作
+.常量 PROCESS_CREATE_THREAD, "2", 公开, 内存操作
+.常量 PROCESS_DUP_HANDLE, "64", 公开, 内存操作
+.常量 INFINITE, "-1", 公开, 内存操作
+.常量 PROCESS_QUERY_INFORMATION, "1024", 公开, 内存操作
+.常量 PROCESS_VM_READ, "16", 公开, 内存操作
+.常量 PROCESS_ALL_ACCESS, "2035711", 公开, 内存操作
+.常量 MEM_PRIVATE, "131072", 公开, 内存操作
+.常量 PROCESS_VM_WRITE, "32", 公开, 内存操作
+.常量 PAGE_READWRITE, "4", 公开, 内存操作
+
+.常量 备份, "“SeBackupPrivilege”", 公开, 系统权限
+.常量 启动, "“SeRestorePrivilege”", 公开, 系统权限
+.常量 关机, "“SeShutdownPrivilege”", 公开, 系统权限
+.常量 调试, "“SeDebugPrivilege”", 公开, 系统权限
+
+.常量 GENERIC_READ, "-2147483648", 公开, 0x80000000
+.常量 FILE_FLAG_SEQUENTIAL_SCAN, "134217728", 公开, 针对连续访问对文件缓冲进行优化
+.常量 GENERIC_WRITE, "1073741824", 公开, 0x40000000
+.常量 OPEN_ALWAYS, "4", 公开, 4
+.常量 FILE_ATTRIBUTE_ARCHIVE, "32", 公开, 0x00000020
+
+.常量 INTERNET_FLAG_RELOAD, "2147483648", 公开
+.常量 INTERNET_OPTION_SECURITY_FLAGS, "31", , 证书错误处理方式
+.常量 INTERNET_COOKIE_THIRD_PARTY, "16", 公开, 运行第三方COOKIE
+.常量 INTERNET_FLAG_NO_COOKIES, "524288", 公开
+.常量 INTERNET_FLAG_NO_CACHE_WRITE, "67108864", 公开, 0x04000000
+.常量 INTERNET_FLAG_NO_AUTO_REDIRECT, "2097152", 公开, HttpSendRequest、InternetOpenUrl 不自动处理重定向
+.常量 INTERNET_FLAG_SECURE, "8388608", 公开, SSL访问
+.常量 INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP, "32768", 公开, 禁用检测这一特殊类型的重新传入。当这个标志使用,WinINet透明允许将从HTTPS to HTTP的网址。这个标志可以使用的,HttpOpenRequest InternetOpenUrl
+.常量 INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS, "16384", 公开, 禁用检测这一特殊类型的重新传入。当这个标志使用,WinINet透明允许将从HTTP到HTTPS网址。这个标志可以使用的,HttpOpenRequest InternetOpenUrl
+.常量 INTERNET_FLAG_PASSIVE, "134217728", 公开, FTP连接被动模式
+.常量 INTERNET_OPTION_HTTP_DECODING, "65", 公开, Enables WinINet to perform decoding for the gzip and deflate encoding schemes. For more information, see Content Encoding
+
+.常量 常量_SC_MANAGER_CREATE_SERVICE, "2", 公开
+.常量 常量_SERVICE_ALL_ACCESS, "983551", 公开
+.常量 常量_SERVICE_WIN32_OWN_PROCESS, "16", 公开
+.常量 常量_SERVICE_STOPPED, "1", 公开
+.常量 常量_SERVICE_ACCEPT_STOP, "1", 公开
+.常量 常量_SERVICE_ACCEPT_SHUTDOWN, "4", 公开
+.常量 常量_SERVICE_WIN32_SHARE_PROCESS, "32", 公开
+.常量 常量_NO_ERROR, "0", 公开
+.常量 常量_SERVICE_CONTROL_SHUTDOWN, "5", 公开, shutdown
+.常量 常量_SERVICE_CONTROL_STOP, "1", 公开
+.常量 常量_SERVICE_CONFIG_DESCRIPTION, "1", 公开
+.常量 常量_SERVICE_ERROR_NORMAL, "1", 公开
+.常量 常量_SERVICE_INTERACTIVE_PROCESS, "256", 公开
+.常量 常量_SERVICE_AUTO_START, "2", 公开, 0x00000002
+
+.常量 GENERIC_EXECUTE, "536870912", 公开, 0x20000000L
+.常量 SERVICE_START, "16", 公开, 0x0010
+.常量 SC_MANAGER_ALL_ACCESS, "983103", 公开, 0x000F003FL
+.常量 SERVICE_QUERY_STATUS, "4", 公开, 0x0004
+.常量 SERVICE_STOP, "32", 公开, 0x0020
+.常量 DELETE, "65536", 公开, 0x00010000L
+.常量 SC_MANAGER_LOCK, "8", 公开, 0x0008
+.常量 SERVICE_CHANGE_CONFIG, "2", 公开, 0x0002
+.常量 SERVICE_QUERY_CONFIG, "1", 公开, 0x0001
+.常量 SERVICE_NO_CHANGE, "-1", 公开, 0xffffffff
+
+.常量 SQL_NULL_HANDLE, "0", 公开
+.常量 SQL_HANDLE_ENV, "1", 公开
+.常量 SQL_HANDLE_DBC, "2", 公开
+.常量 SQL_HANDLE_STMT, "3", 公开
+.常量 SQL_HANDLE_DESC, "4", 公开
+
+.常量 SQL_SUCCESS, "0", 公开
+.常量 SQL_SUCCESS_WITH_INFO, "1", 公开
+.常量 SQL_NO_DATA, "100", 公开
+.常量 SQL_ERROR, "-1", 公开
+.常量 SQL_INVALID_HANDLE, "-2", 公开
+.常量 SQL_STILL_EXECUTING, "2", 公开
+.常量 SQL_NEED_DATA, "99", 公开
+
+.常量 SQL_ATTR_ODBC_VERSION, "200", 公开
+.常量 SQL_ATTR_CONNECTION_POOLING, "201", 公开
+.常量 SQL_ATTR_CP_MATCH, "202", 公开
+
+.常量 SQL_OV_ODBC2, "2", 公开
+.常量 SQL_OV_ODBC3, "3", 公开
+
+.常量 SQL_IS_POINTER, "-4", 公开
+.常量 SQL_IS_UINTEGER, "-5", 公开
+.常量 SQL_IS_INTEGER, "-6", 公开
+.常量 SQL_IS_USMALLINT, "-7", 公开
+.常量 SQL_IS_SMALLINT, "-8", 公开
+
+.常量 SQL_SIGNED_OFFSET, "-20", 公开
+.常量 SQL_UNSIGNED_OFFSET, "-22", 公开
+.常量 SQL_C_SLONG, "-16", 公开
+
+.常量 SQL_DRIVER_NOPROMPT, "0", 公开
+.常量 SQL_DRIVER_COMPLETE, "1", 公开
+.常量 SQL_DRIVER_PROMPT, "2", 公开
+.常量 SQL_DRIVER_COMPLETE_REQUIRED, "3", 公开
+
+.常量 SQL_MAX_MESSAGE_LENGTH, "512"
+
+.常量 SQL_C_CHAR, "1", 公开
+.常量 SQL_C_LONG, "4", 公开
+.常量 SQL_C_SHORT, "5", 公开
+.常量 SQL_C_FLOAT, "7", 公开
+.常量 SQL_C_DOUBLE, "8", 公开
+.常量 SQL_C_NUMERIC, "2", 公开
+.常量 SQL_C_DEFAULT, "99", 公开
+.常量 SQL_C_DATE, "9", 公开
+.常量 SQL_C_TIME, "10", 公开
+.常量 SQL_C_TIMESTAMP, "11", 公开
+.常量 SQL_C_BINARY, "-2", 公开
+.常量 SQL_C_BIT, "-7", 公开
+.常量 SQL_C_SBIGINT, "-22", 公开
+.常量 SQL_C_UBIGINT, "-24", 公开
+.常量 SQL_C_TINYINT, "-6", 公开
+
+.常量 SQL_UNKNOWN_TYPE, "0", 公开
+.常量 SQL_CHAR, "1", 公开
+.常量 SQL_NUMERIC, "2", 公开
+.常量 SQL_DECIMAL, "3", 公开
+.常量 SQL_INTEGER, "4", 公开
+.常量 SQL_SMALLINT, "5", 公开
+.常量 SQL_FLOAT, "6", 公开
+.常量 SQL_REAL, "7", 公开
+.常量 SQL_DOUBLE, "8", 公开
+.常量 SQL_DATE, "9", 公开
+.常量 SQL_TIME, "10", 公开
+.常量 SQL_TIMESTAMP, "11", 公开
+.常量 SQL_VARCHAR, "12", 公开
+.常量 SQL_LONGVARCHAR, "-1", 公开
+.常量 SQL_BINARY, "-2", 公开
+.常量 SQL_VARBINARY, "-3", 公开
+.常量 SQL_LONGVARBINARY, "-4", 公开
+.常量 SQL_BIGINT, "-5", 公开
+.常量 SQL_TINYINT, "-6", 公开
+.常量 SQL_BIT, "-7", 公开
+.常量 SQL_GUID, "-11", 公开
+
+.常量 SQL_ATTR_ACCESS_MODE, "101", 公开
+.常量 SQL_ATTR_AUTOCOMMIT, "102", 公开
+.常量 SQL_ATTR_CONNECTION_TIMEOUT, "113", 公开
+.常量 SQL_ATTR_CURRENT_CATALOG, "109", 公开
+.常量 SQL_ATTR_DISCONNECT_BEHAVIOR, "114", 公开
+.常量 SQL_ATTR_ENLIST_IN_DTC, "1207", 公开
+.常量 SQL_ATTR_ENLIST_IN_XA, "1208", 公开
+.常量 SQL_ATTR_LOGIN_TIMEOUT, "103", 公开
+.常量 SQL_ATTR_ODBC_CURSORS, "110", 公开
+.常量 SQL_ATTR_PACKET_SIZE, "112", 公开
+.常量 SQL_ATTR_QUIET_MODE, "111", 公开
+.常量 SQL_ATTR_TRACE, "104", 公开
+.常量 SQL_ATTR_TRACEFILE, "105", 公开
+.常量 SQL_ATTR_TRANSLATE_LIB, "106", 公开
+.常量 SQL_ATTR_TRANSLATE_OPTION, "107", 公开
+.常量 SQL_ATTR_TXN_ISOLATION, "108", 公开
+.常量 SQL_ATTR_CONNECTION_DEAD, "1209", 公开
+
+.常量 SQL_CD_TRUE, "1", 公开
+.常量 SQL_CD_FALSE, "0", 公开
+
+.常量 SQL_PARAM_TYPE_UNKNOWN, "0", 公开
+.常量 SQL_PARAM_INPUT, "1", 公开
+.常量 SQL_PARAM_INPUT_OUTPUT, "2", 公开
+.常量 SQL_RESULT_COL, "3", 公开
+.常量 SQL_PARAM_OUTPUT, "4", 公开
+.常量 SQL_RETURN_VALUE, "5", 公开
+
+.常量 SQL_NTS, "-3", 公开
+
+.常量 SQL_AUTOCOMMIT_OFF, "0", 公开
+.常量 SQL_AUTOCOMMIT_ON, "1", 公开
+
+.常量 SQL_COMMIT, "0", 公开
+.常量 SQL_ROLLBACK, "1", 公开
+
+.常量 SQL_ATTR_CURSOR_TYPE, "6", 公开
+.常量 SQL_ATTR_ROW_NUMBER, "14", 公开
+.常量 SQL_ATTR_MAX_ROWS, "1", 公开
+
+.常量 光标类型_向前, "0", 公开, SQL_CURSOR_FORWARD_ONLY
+.常量 光标类型_键集, "1", 公开, SQL_CURSOR_KEYSET_DRIVEN
+.常量 光标类型_动态, "2", 公开, SQL_CURSOR_DYNAMIC
+.常量 光标类型_静态, "3", 公开, SQL_CURSOR_STATIC
+
+.常量 SQL_FETCH_NEXT, "1", 公开, 移动_下一行
+.常量 SQL_FETCH_FIRST, "2", 公开, 移动_首行
+.常量 SQL_FETCH_LAST, "3", 公开, 移动_尾行
+.常量 SQL_FETCH_PRIOR, "4", 公开, 移动_上一行
+.常量 SQL_FETCH_ABSOLUTE, "5", 公开, 移动_绝对移动
+.常量 SQL_FETCH_RELATIVE, "6", 公开, 移动_相对移动
+
+.常量 INTERNET_OPTION_PROXY, "38", 公开, Internet常量代理服务器
+.常量 INTERNET_OPTION_SETTINGS_CHANGED, "39", 公开, Internet常量IE设置改变
+.常量 INTERNET_OPTION_CONNECT_TIMEOUT, "2", 公开, 连接超时
+.常量 INTERNET_OPTION_SEND_TIMEOUT, "5", 公开, 发送超时
+.常量 INTERNET_OPTION_RECEIVE_TIMEOUT, "6", 公开, 回复超时
+
+.常量 INTERNET_OPEN_TYPE_DIRECT, "1", 公开, Internet打开类型-直连
+.常量 INTERNET_OPEN_TYPE_PROXY, "3", 公开, Internet打开类型-代理
+
+.常量 SQLITE_成功, "0", 公开, SQLITE_OK
+.常量 SQLITE_错误, "1", 公开, SQLITE_ERROR SQL 错误或没有数据库
+.常量 SQLITE_内部, "2", 公开, SQLITE_INTERNAL 一个SQLite内部的逻辑错误
+.常量 SQLITE_权限, "3", 公开, SQLITE_PERM 访问权限被拒绝
+.常量 SQLITE_终止, "4", 公开, SQLITE_ABORT 需要一个中断的Callback指令
+.常量 SQLITE_繁忙, "5", 公开, SQLITE_BUSY 数据据库文件被锁定
+.常量 SQLITE_锁定, "6", 公开, SQLITE_LOCKED 表被锁定
+.常量 SQLITE_申请内存失败, "7", 公开, SQLITE_NOMEM
+.常量 SQLITE_只读, "8", 公开, SQLITE_READONLY 试图写一个只读的数据库
+.常量 SQLITE_中断, "9", 公开, SQLITE_INTERRUPT 操作被中断结束
+.常量 SQLITE_IO错误, "10", 公开, SQLITE_IOERR 某种磁盘I/O错误发生
+.常量 SQLITE_损坏, "11", 公开, SQLITE_CORRUPT 数据库磁盘镜像异常
+.常量 SQLITE_为找到, "12", 公开, SQLITE_NOTFOUND 未使用。表或记录不存在
+.常量 SQLITE_数据库满, "13", 公开, SQLITE_FULL 数据库满，插入失败
+.常量 SQLITE_不能打开, "14", 公开, SQLITE_CANTOPEN 不能打开数据库文件
+.常量 SQLITE_协议, "15", 公开, SQLITE_PROTOCOL 数据库错定协议错
+.常量 SQLITE_无表, "16", 公开, SQLITE_EMPTY 数据库表为空
+.常量 SQLITE_结构, "17", 公开, SQLITE_SCHEMA 数据库结构被改变
+.常量 SQLITE_表太大, "18", 公开, SQLITE_TOOBIG 一个表的行数据过多
+.常量 SQLITE_约束, "19", 公开, SQLITE_CONSTRAINT 由于约束冲突而中止
+.常量 SQLITE_不匹配, "20", 公开, SQLITE_MISMATCH 数据类型不匹配
+.常量 SQLITE_误用, "21", 公开, SQLITE_MISUSE 库被不正确使用
+.常量 SQLITE_不支持OS, "22", 公开, SQLITE_NOLFS 主机不支持的OS特性
+.常量 SQLITE_认证, "23", 公开, SQLITE_AUTH 授权被否定
+.常量 SQLITE_格式, "24", 公开, SQLITE_FORMAT 辅助数据库格式错误
+.常量 SQLITE_范围, "25", 公开, SQLITE_RANGE 绑定参数时索引超出范围
+.常量 SQLITE_无数据库, "26", 公开, SQLITE_NOTADB 文件已打开但没有数据库
+.常量 SQLITE_行, "100", 公开, SQLITE_ROW 有另一行就绪
+.常量 SQLITE_完成, "101", 公开, SQLITE_DONE 已经完成执行
+
+.常量 SQLITE_UTF8, "1", 公开
+.常量 SQLITE_UTF16, "2", 公开
+.常量 SQLITE_UTF16BE, "3", 公开
+.常量 SQLITE_UTF16LE, "4", 公开
+.常量 SQLITE_ANY, "5", 公开
+
+.常量 SQLITE_OPEN_READONLY, "1", 公开
+.常量 SQLITE_OPEN_READWRITE, "2", 公开
+.常量 SQLITE_OPEN_CREATE, "4", 公开
+
+.常量 S3字段类型_整型, "1", 公开, SQLITE_INTEGER
+.常量 S3字段类型_浮点型, "2", 公开, SQLITE_FLOAT
+.常量 S3字段类型_文本型, "3", 公开, SQLITE_TEXT
+.常量 S3字段类型_字节集型, "4", 公开, SQLITE_BLOB
+.常量 S3字段类型_空, "5", 公开, SQLITE_NULL
+
+.常量 S3析构_静态, "0", 公开, SQLITE_STATIC
+.常量 S3析构_临时, "-1", 公开, SQLITE_TRANSIENT
+
+.常量 S3触发条件_插入, "0", 公开
+.常量 S3触发条件_删除, "1", 公开
+.常量 S3触发条件_更新, "2", 公开
+.常量 S3触发条件_字段更新, "3", 公开
+
+.常量 S3触发时间_普通模式, "0", 公开
+.常量 S3触发时间_之前, "1", 公开
+.常量 S3触发时间_之后, "2", 公开
+
+
+
+
+
+.常量 SW_SHOWMINNOACTIVE, "7", 公开
+.常量 SW_SHOWNOACTIVATE, "4", 公开
+.常量 SW_SHOWMAXIMIZED, "3", 公开
+.常量 SW_SHOWMINIMIZED, "2", 公开
+.常量 SW_SHOWNORMAL, "1", 公开
+.常量 SW_SHOWDEFAULT, "10", 公开, 按默认状态显示
+.常量 SEE_MASK_FLAG_DDEWAIT, "256", 公开, 0x00000100
+
+.常量 ABE_BOTTOM, "3", 公开, 系统_取DOS执行结果
+.常量 SW_HIDE, "0", 公开
+.常量 STARTF_USESHOWWINDOW, "1", 公开
+.常量 STARTF_USESTDHANDLES, "256", 公开
+.常量 STILL_ACTIVE, "259", 公开
+
+.常量 URLMON_OPTION_USERAGENT, "268435457", 公开
+
+.常量 HKEY_DYN_DATA, "-2147483642", 公开
+.常量 HKEY_CURRENT_CONFIG, "-2147483643", 公开, 包含了当前系统配置的信息。 　
+.常量 HKEY_PERFORMANCE_DATA, "-2147483644", 公开, 仅XP/winNT/win2000可用
+.常量 HKEY_USERS, "-2147483645", 公开, 用作默认用户首选设置，也作为单个用户的首选设置。
+.常量 HKEY_LOCAL_MACHINE, "-2147483646", 公开, 包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息。 　
+.常量 HKEY_CURRENT_USER, "-2147483647", 公开, 是用于当前（登录）用户的相关信息。 
+.常量 HKEY_CLASSES_ROOT, "-2147483648", 公开, 是与文档类型和 OLE\COM 相关的信息的支持键。这个键是 HKEY_LOCAL_MACHINE的从属键。 
+
+.常量 REG_OPTION_VOLATILE, "1"
+.常量 KEY_ALL_ACCESS, "983103", 公开, 所有权限:包括读/写KEY_READ/KEY_WRITE
+.常量 KEY_WOW64_64KEY, "256", 公开, 0x0100
+.常量 KEY_WOW64_32KEY, "512", 公开, 0x0200
+.常量 KEY_READ, "131097", 公开
+.常量 KEY_WRITE, "131078", 公开
+
+.常量 REG_NONE, "0", 公开, 未定义值类型
+.常量 REG_BINARY, "3", 公开, 二进制数据
+.常量 REG_DWORD, "4", 公开, REG_DWORD
+.常量 REG_SZ, "1", 公开, 文本型数据
+.常量 REG_DWORD_LITTLE_ENDIAN, "4", 公开, 大计数法格式32位数字，一个字的有效字节是高端字
+.常量 REG_DWORD_BIG_ENDIAN, "5", 公开, 大计数法格式32位数字，一个字的有效字节是低端字
+.常量 REG_LINK, "6", 公开, 单一代码符号链
+.常量 REG_EXPAND_SZ, "2", 公开, 空终止字符串，包括对"&TEMP&"之类环境变量的引用
+.常量 REG_MULTI_SZ, "7", 公开, 定义包括空终止字符串的数组，数组被两个实际的空字符串结束
+
+.常量 ERROR_MORE_DATA, "234", 公开
+.常量 ERROR_NO_MORE_ITEMS, "259", 公开, 259L
+
+.常量 WS_EX_TOPMOST, "8", 公开, 窗口置顶(停留在所有非最高层窗口的上面)
+.常量 WS_DISABLED, "134217728", 公开, 不可用状态
+
+.常量 CDS_FULLSCREEN, "4", 公开, 0x00000004
+.常量 CDS_GLOBAL, "8", 公开, 0x00000008
+.常量 CDS_UPDATEREGISTRY, "1", 公开, 0x00000001
+
+.常量 WS_EX_ACCEPTFILES, "16", 公开
+
+.常量 HEAP_ZERO_MEMORY, "8", 公开
+.常量 INVALID_HANDLE, "-1", 公开
+.常量 REG_OPTION_NON_VOLATILE, "0", 公开
+.常量 REG_QWORD, "11", 公开
+.常量 托盘事件_移动鼠标, "512", 公开, 移动鼠标
+.常量 托盘事件_按下鼠标左键, "513", 公开, 按下鼠标左键
+.常量 托盘事件_释放鼠标左键, "514", 公开, 释放鼠标左键
+.常量 托盘事件_双击鼠标左键, "515", 公开, 双击鼠标左键
+.常量 托盘事件_按下鼠标右键, "516", 公开, 按下鼠标右键
+.常量 托盘事件_释放鼠标右键, "517", 公开, 释放鼠标右键
+.常量 托盘事件_双击鼠标右键, "518", 公开, 双击鼠标右键
+.常量 托盘事件_按下鼠标中键, "519", 公开, 按下鼠标中键
+.常量 托盘事件_释放鼠标中键, "520", 公开, 释放鼠标中键
+.常量 托盘事件_双击鼠标中键, "521", 公开, 双击鼠标中键
+.常量 托盘事件_任务重建, "1120", 公开
+.常量 托盘事件_托盘退出, "1130", 公开
+
+.常量 托盘图标_无图标, "0", 公开
+.常量 托盘图标_信息图标, "1", 公开
+.常量 托盘图标_警告图标, "2", 公开
+.常量 托盘图标_错误图标, "3", 公开
+.常量 WS_CHILD, "1073741824", 公开
+.常量 GW_HWNDLAST, "1", 公开
+.常量 GW_HWNDNEXT, "2"
+.常量 GW_HWNDPREV, "3", 公开
+.常量 GW_CHILD, "5"
+.常量 WINHTTP_ACCESS_TYPE_NO_PROXY, "1", 公开, 直接访问，不使用代理。
+.常量 WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, "2", 公开, 通过静态代理或注册表配置的代理访问。不继承和不共享IE的代理设置，调用WinHttpSetDefaultProxyConfiguration进行设置。
+.常量 WINHTTP_ACCESS_TYPE_NAMED_PROXY, "3", 公开, 通过指定名称的代理访问。
+.常量 INTERNET_SCHEME_HTTPS, "2", 公开
+.常量 INTERNET_SCHEME_HTTP, "1", 公开
+.常量 WINHTTP_NO_REFERER, "0", 公开, 没有来源页面
+.常量 WINHTTP_DEFAULT_ACCEPT_TYPES, "0", 公开, 默认文件类型
+.常量 WINHTTP_FLAG_SECURE, "8388608", 公开, SSL/TLS安全超文本协议。
+.常量 WINHTTP_AUTH_TARGET_SERVER, "0", 公开, 验证目标：网站服务器。
+.常量 WINHTTP_AUTH_TARGET_PROXY, "1", 公开, 验证目标：代理服务器。
+.常量 WINHTTP_AUTH_SCHEME_BASIC, "1", 公开, 基本认证方式(BASE64加密)。
+.常量 WINHTTP_OPTION_DISABLE_FEATURE, "63", 公开, 禁用功能
+.常量 WINHTTP_OPTION_ENABLE_FEATURE, "79", 公开
+.常量 WINHTTP_DISABLE_COOKIES, "1", 公开, 禁用自动设置COOKIES
+.常量 WINHTTP_DISABLE_REDIRECTS, "2", 公开, 禁用重定向
+.常量 WINHTTP_OPTION_SECURITY_FLAGS, "31", 公开, 忽略证书错误 #define WINHTTP_OPTION_SECURITY_FLAGS                31
+
+
+.常量 WINHTTP_ADDREQ_FLAG_ADD, "536870912", 公开, 添加一个协议头，如果协议头已存在则被新值替换，与WINHTTP_ADDREQ_FLAG_REPLACE标志一起使用。
+.常量 WINHTTP_ADDREQ_FLAG_REPLACE, "-2147483648", 公开, 替换或者删除一个协议头，如果值为空则删除，否则被替换。
+.常量 WINHTTP_QUERY_RAW_HEADERS_CRLF, "22", 公开, 协议头以换行符分割
+.常量 WINHTTP_NO_HEADER_INDEX, "0", 公开, 没有协议索引
+.常量 WINHTTP_ADDREQ_FLAG_ADD_IF_NEW, "268435456", 公开, 只有不存在的时候才添加
+.常量 WINHTTP_ADDREQ_FLAG_COALESCE, "1073741824", 公开, 合并相同的名称
+.常量 WINHTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA, "1073741824", 公开, 合并相同的名称使用逗号
+.常量 WINHTTP_ADDREQ_FLAG_COALESCE_WITH_SEMICOLON, "16777216", 公开, 合并相投的名称使用分号
+
+.常量 VER_NT_WORKSTATION, "1", 公开
+.常量 SystemProcessInformation, "5", 公开, 进程_取父ID
+.常量 WH_KEYBOARD, "2", 公开
+.常量 WH_KEYBOARD_LL, "13", 公开
+.常量 WH_MOUSE_LL, "14", 公开
+.常量 WH_MOUSE, "7", 公开
+.常量 HC_ACTION, "0", 公开
+.常量 INVALID_HANDLE_VALUE, "-1", 公开
+.常量 SERVICE_INTERACTIVE_PROCESS, "256", 公开
+.常量 SERVICE_ALL_ACCESS, "983551", 公开
+.常量 SERVICE_ERROR_NORMAL, "1", 公开
+.常量 SC_MANAGER_CONNECT, "1", 公开
+.常量 SERVICE_ENUMERATE_DEPENDENTS, "8", 公开
+.常量 SC_MANAGER_ENUMERATE_SERVICE, "4", 公开
+.常量 NIF_INFO, "16", 公开
+.常量 NIF_ICON, "2", 公开
+.常量 NIF_TIP, "4", 公开
+.常量 NIF_MESSAGE, "1", 公开
+.常量 STD_OUTPUT_HANDLE, "-11", 公开
+.常量 STD_INPUT_HANDLE, "-10", 公开
+.常量 EM_REPLACESEL, "194", 公开
+.常量 FOREGROUND_RED, "4", 公开
+.常量 FOREGROUND_INTENSITY, "8", 公开
+.常量 FOREGROUND_GREEN, "2", 公开
+.常量 FOREGROUND_BLUE, "1", 公开
+.常量 GMEM_MOVEABLE, "2", 公开
+.常量 sizeof_SECURITY_ATTRIBUTES, "12", 公开
+.常量 sizeof_STARTUPINFO, "68", 公开
+
+.常量 LIST_MODULES_32BIT, "1", 公开
+.常量 LIST_MODULES_64BIT, "2", 公开
+.常量 LIST_MODULES_ALL, "3", 公开
+.常量 LIST_MODULES_DEFAULT, "0", 公开
+
+.常量 IP_SUCCESS, "0", 公开
+.常量 TIME_FORCE24HOURFORMAT, "8", 公开, 0x00000008 ----强制使用24小时制。
+
+.常量 GWL_EXSTYLE, "-20", 公开, 设置/获取一个新的扩展风格。
+.常量 GWL_HINSTANCE, "-6", 公开, 设置/获取一个新的应用程序实例句柄。
+.常量 GWL_ID, "-12", 公开, 设置/获取一个新的窗口标识符。
+.常量 GWL_STYLE, "-16", 公开, 设置/获取一个新的窗口风格。
+.常量 GWL_USERDATA, "-21", 公开, 设置/获取与窗口有关的32位值。每个窗口均有一个由创建该窗口的应用程序使用的32位值。
+.常量 GWL_WNDPROC, "-4", 公开, 设置一个新的处理函数。/获得窗口过程的地址，或代表窗口过程的地址的句柄。必须使用CallWindowProc函数调用窗口过程。
+.常量 GWL_HWNDPARENT, "-8", 公开, 设置/获取子窗口的父窗口,应使用SetParent函数。
+
+.常量 显示rar窗口, "2", 公开, 普通激活
+.常量 隐藏rar窗口, "1", 公开, 隐藏窗口
+
+.常量 系统_ALLUSERSPROFILE, "“ALLUSERSPROFILE”", 公开, 局部 返回所有“用户配置文件”的位置。
+.常量 系统_APPDATA, "“APPDATA”", 公开, 局部 返回默认情况下应用程序存储数据的位置。
+.常量 系统_CD, "“CD”", 公开, 局部 返回当前目录字符串。
+.常量 系统_CMDCMDLINE, "“CMDCMDLINE”", 公开, 局部 返回用来启动当前的 Cmd.exe 的准确命令行。
+.常量 系统_CMDEXTVERSION, "“CMDEXTVERSION”", 公开, 系统 返回当前的“命令处理程序扩展”的版本号。
+.常量 系统_COMPUTERNAME, "“COMPUTERNAME”", 公开, 系统 返回计算机的名称。
+.常量 系统_COMSPEC, "“COMSPEC”", 公开, 系统 返回命令行解释器可执行程序的准确路径。
+.常量 系统_DATE, "“DATE”", 公开, 系统 返回当前日期。使用与 date /t 命令相同的格式。由 Cmd.exe 生成。有关 date 命令的详细信息，请参阅 Date。
+.常量 系统_ERRORLEVEL, "“ERRORLEVEL”", 公开, 系统 返回使用过的命令的错误代码。通常用非零值表示错误。
+.常量 系统_HOMEDRIVE, "“HOMEDRIVE”", 公开, 系统 返回连接到用户主目录的本地工作站驱动器号。基于主目录值的设置。用户主目录是在“本地用户和组”中指定的。
+.常量 系统_HOMEPATH, "“HOMEPATH”", 公开, 系统 返回用户主目录的完整路径。基于主目录值的设置。用户主目录是在“本地用户和组”中指定的。
+.常量 系统_HOMESHARE, "“HOMESHARE”", 公开, 系统 返回用户的共享主目录的网络路径。基于主目录值的设置。用户主目录是在“本地用户和组”中指定的。
+.常量 系统_LOGONSEVER, "“LOGONSEVER”", 公开, 局部 返回验证当前登录会话的域控制器的名称。
+.常量 系统_NUMBER_OF_PROCESSORS, "“NUMBER_OF_PROCESSORS”", 公开, 系统 指定安装在计算机上的处理器的数目。
+.常量 系统_OS, "“OS”", 公开, 系统 返回操作系统的名称。Windows 2000 将操作系统显示为 Windows_NT。
+.常量 系统_PATH, "“PATH”", 公开, 系统 指定可执行文件的搜索路径。
+.常量 系统_PATHEXT, "“PATHEXT”", 公开, 系统 返回操作系统认为可执行的文件扩展名的列表。
+.常量 系统_PROCESSOR_ARCHITECTURE, "“PROCESSOR_ARCHITECTURE”", 公开, 系统 返回处理器的芯片体系结构。值: x86，IA64。
+.常量 系统_PROCESSOR_IDENTIFIER, "“PROCESSOR_IDENTIFIER”", 公开, 系统 返回处理器说明。
+.常量 系统_PROCESSOR_LEVEL, "“PROCESSOR_LEVEL”", 公开, 系统 返回计算机上安装的处理器的型号。
+.常量 系统_PROCESSOR_REVISION, "“PROCESSOR_REVISION”", 公开, 系统 返回处理器修订号的系统变量。
+.常量 系统_PROMPT, "“PROMPT”", 公开, 局部 返回当前解释程序的命令提示符设置。由 Cmd.exe 生成。
+.常量 系统_RANDOM, "“RANDOM”", 公开, 系统 返回 0 到 32767 之间的任意十进制数字。由 Cmd.exe 生成。
+.常量 系统_SYSTEMDRIVE, "“SYSTEMDRIVE”", 公开, 系统 返回包含 Windows XP 根目录（即系统根目录）的驱动器。
+.常量 系统_SYSTEMROOT, "“SYSTEMROOT”", 公开, 系统 返回 Windows XP 根目录的位置。
+.常量 系统_TEMP, "“TEMP”", 公开, and %TMP% 系统和用户 返回对当前登录用户可用的应用程序所使用的默认临时目录。有些应用程序需要 TEMP，而其它应用程序则需要 TMP。
+.常量 系统_TIME, "“TIME”", 公开, 系统 返回当前时间。使用与 time /t 命令相同的格式。由 Cmd.exe 生成。有关 time 命令的详细信息，请参阅 Time。
+.常量 系统_USERDOMAIN, "“USERDOMAIN”", 公开, 局部 返回包含用户帐户的域的名称。
+.常量 系统_USERNAME, "“USERNAME”", 公开, 局部 返回当前登录的用户的名称。
+.常量 系统_UserProfile, "“UserProfile”", 公开, 局部 返回当前用户的配置文件的位置。
+.常量 系统_WINDIR, "“WINDIR”", 公开, 系统 返回操作系统目录的位置。
+
+.常量 PKCS5_PADDING, "1", 公开
+.常量 RANDOM_PADDING, "2", 公开
+.常量 ZERO_PADDING, "3", 公开
+
+.常量 KP_IV, "1", 公开
+.常量 KP_SALT, "2", 公开
+.常量 KP_PADDING, "3", 公开
+.常量 KP_MODE, "4", 公开
+.常量 KP_MODE_BITS, "5", 公开
+.常量 KP_PERMISSIONS, "6", 公开
+.常量 KP_ALGID, "7", 公开
+.常量 KP_BLOCKLEN, "8", 公开
+.常量 KP_KEYLEN, "9", 公开
+.常量 KP_SALT_EX, "10", 公开
+.常量 KP_P, "11", 公开
+.常量 KP_G, "12", 公开
+.常量 KP_Q, "13", 公开
+.常量 KP_X, "14", 公开
+.常量 KP_Y, "15", 公开
+.常量 KP_RA, "16", 公开
+.常量 KP_RB, "17", 公开
+.常量 KP_INFO, "18", 公开
+.常量 KP_EFFECTIVE_KEYLEN, "19", 公开
+.常量 KP_SCHANNEL_ALG, "20", 公开
+.常量 KP_CLIENT_RANDOM, "21", 公开
+.常量 KP_SERVER_RANDOM, "22", 公开
+.常量 KP_RP, "23", 公开
+.常量 KP_PRECOMP_MD5, "24", 公开
+.常量 KP_PRECOMP_SHA, "25", 公开
+.常量 KP_CERTIFICATE, "26", 公开
+.常量 KP_CLEAR_KEY, "27", 公开
+.常量 KP_PUB_EX_LEN, "28", 公开
+.常量 KP_PUB_EX_VAL, "29", 公开
+.常量 KP_KEYVAL, "30", 公开
+.常量 KP_ADMIN_PIN, "31", 公开
+.常量 KP_KEYEXCHANGE_PIN, "32", 公开
+.常量 KP_SIGNATURE_PIN, "33", 公开
+.常量 KP_PREHASH, "34"
+.常量 KP_ROUNDS, "35", 公开
+.常量 KP_OAEP_PARAMS, "36", 公开
+.常量 KP_CMS_KEY_INFO, "37", 公开
+.常量 KP_CMS_DH_KEY_INFO, "38", 公开
+.常量 KP_PUB_PARAMS, "39", 公开
+.常量 KP_VERIFY_PARAMS, "40", 公开
+.常量 KP_HIGHEST_VERSION, "41", 公开
+.常量 KP_GET_USE_COUNT, "42", 公开
+
+.常量 SIMPLEBLOB, "1", 公开
+.常量 PUBLICKEYBLOB, "6", 公开
+.常量 PRIVATEKEYBLOB, "7", 公开
+.常量 PLAINTEXTKEYBLOB, "8", 公开
+.常量 OPAQUEKEYBLOB, "9", 公开
+.常量 PUBLICKEYBLOBEX, "10", 公开
+.常量 SYMMETRICWRAPKEYBLOB, "11", 公开
+
+.常量 CUR_BLOB_VERSION, "2", 公开
+
+.常量 HP_HASHVAL, "2", 公开
+.常量 CRYPT_MODE_CBC, "1", 公开
+.常量 CRYPT_MODE_ECB, "2", 公开
+.常量 CRYPT_MODE_OFB, "3", 公开
+.常量 CRYPT_MODE_CFB, "4", 公开
+.常量 CRYPT_MODE_CTS, "5", 公开
+
+
+.常量 对称算法_AES_CBC, "“AES-CBC”", 公开
+.常量 对称算法_AES_ECB, "“AES-ECB”", 公开
+.常量 对称算法_AES_OFB, "“AES-OFB”", 公开, win7 不支持
+.常量 对称算法_AES_CFB, "“AES-CFB”", 公开
+.常量 对称算法_AES_CTS, "“AES-CTS”", 公开, win7 不支持
+.常量 对称算法_AES_192_CBC, "“AES192-CBC”", 公开
+.常量 对称算法_AES_192_ECB, "“AES192-ECB”", 公开
+.常量 对称算法_AES_192_OFB, "“AES192-OFB”", 公开, win7 不支持
+.常量 对称算法_AES_192_CFB, "“AES192-CFB”", 公开
+.常量 对称算法_AES_192_CTS, "“AES192-CTS”", 公开, win7 不支持
+.常量 对称算法_AES_256_CBC, "“AES256-CBC”", 公开
+.常量 对称算法_AES_256_ECB, "“AES256-ECB”", 公开
+.常量 对称算法_AES_256_OFB, "“AES256-OFB”", 公开, win7 不支持
+.常量 对称算法_AES_256_CFB, "“AES256-CFB”", 公开
+.常量 对称算法_AES_256_CTS, "“AES256-CTS”", 公开, win7 不支持
+.常量 对称算法_DES_CBC, "“DES-CBC”", 公开
+.常量 对称算法_DES_ECB, "“DES-ECB”", 公开
+.常量 对称算法_DES_OFB, "“DES-OFB”", 公开, win7 不支持
+.常量 对称算法_DES_CFB, "“DES-CFB”", 公开
+.常量 对称算法_DES_CTS, "“DES-CTS”", 公开, win7 不支持
+.常量 对称算法_3DES_CBC, "“3DES-CBC”", 公开
+.常量 对称算法_3DES_ECB, "“3DES-ECB”", 公开
+.常量 对称算法_3DES_OFB, "“3DES-OFB”", 公开, win7 不支持
+.常量 对称算法_3DES_CFB, "“3DES-CFB”", 公开
+.常量 对称算法_3DES_CTS, "“3DES-CTS”", 公开, win7 不支持
+.常量 对称算法_RC2, "“RC2”", 公开
+.常量 对称算法_RC4, "“RC4”", 公开
+
+
+.常量 NULL, "0", 公开
+.常量 CALG_MD2, "32769", 公开
+.常量 CALG_MD4, "32770", 公开
+.常量 CALG_MD5, "32771", 公开
+.常量 CALG_SHA, "32772", 公开
+.常量 CALG_SHA1, "32772", 公开
+.常量 CALG_MAC, "32773", 公开
+.常量 CALG_RSA_SIGN, "9216", 公开
+.常量 CALG_DSS_SIGN, "8704", 公开
+.常量 CALG_NO_SIGN, "8192", 公开
+.常量 CALG_RSA_KEYX, "41984", 公开
+.常量 CALG_DES, "26113", 公开
+.常量 CALG_3DES_112, "26121", 公开
+.常量 CALG_3DES, "26115", 公开
+.常量 CALG_DESX, "26116", 公开
+.常量 CALG_RC2, "26114", 公开
+.常量 CALG_RC4, "26625", 公开
+.常量 CALG_SEAL, "26626", 公开
+.常量 CALG_DH_SF, "43521", 公开
+.常量 CALG_DH_EPHEM, "43522", 公开
+.常量 CALG_AGREEDKEY_ANY, "43523", 公开
+.常量 CALG_KEA_KEYX, "43524", 公开
+.常量 CALG_HUGHES_MD5, "40963", 公开
+.常量 CALG_SKIPJACK, "26122", 公开
+.常量 CALG_TEK, "26123", 公开
+.常量 CALG_CYLINK_MEK, "26124", 公开
+.常量 CALG_SSL3_SHAMD5, "32776", 公开
+.常量 CALG_SSL3_MASTER, "19457", 公开
+.常量 CALG_SCHANNEL_MASTER_HASH, "19458", 公开
+.常量 CALG_SCHANNEL_MAC_KEY, "19459", 公开
+.常量 CALG_SCHANNEL_ENC_KEY, "19463", 公开
+.常量 CALG_PCT1_MASTER, "19460", 公开
+.常量 CALG_SSL2_MASTER, "19461", 公开
+.常量 CALG_TLS1_MASTER, "19462", 公开
+.常量 CALG_RC5, "26125", 公开
+.常量 CALG_HMAC, "32777", 公开
+.常量 CALG_TLS1PRF, "32778", 公开
+.常量 CALG_HASH_REPLACE_OWF, "32779", 公开
+.常量 CALG_AES_128, "26126", 公开
+.常量 CALG_AES_192, "26127", 公开
+.常量 CALG_AES_256, "26128", 公开
+.常量 CALG_AES, "26129", 公开
+.常量 CALG_SHA_256, "32780", 公开
+.常量 CALG_SHA_384, "32781", 公开
+.常量 CALG_SHA_512, "32782", 公开
+
+.常量 CRYPT_VERIFYCONTEXT, "-268435456", 公开
+.常量 CRYPT_NEWKEYSET, "8", 公开
+.常量 CRYPT_DELETEKEYSET, "16", 公开
+.常量 CRYPT_MACHINE_KEYSET, "32", 公开
+.常量 CRYPT_SILENT, "64", 公开
+.常量 CRYPT_EXPORTABLE, "1", 公开
+.常量 CRYPT_USER_PROTECTED, "2", 公开
+.常量 CRYPT_CREATE_SALT, "4", 公开
+.常量 CRYPT_UPDATE_KEY, "8", 公开
+.常量 CRYPT_NO_SALT, "16", 公开
+.常量 CRYPT_PREGEN, "64", 公开
+.常量 CRYPT_RECIPIENT, "16", 公开
+.常量 CRYPT_INITIATOR, "64", 公开
+.常量 CRYPT_ONLINE, "128", 公开
+.常量 CRYPT_SF, "256", 公开
+.常量 CRYPT_CREATE_IV, "512", 公开
+.常量 CRYPT_KEK, "1024", 公开
+.常量 CRYPT_DATA_KEY, "2048", 公开
+.常量 CRYPT_VOLATILE, "4096", 公开
+.常量 CRYPT_SGCKEY, "8192", 公开
+.常量 CRYPT_ARCHIVABLE, "16384", 公开
+.常量 RSA1024BIT_KEY, "67108864", 公开
+.常量 CRYPT_SERVER, "1024", 公开
+.常量 KEY_LENGTH_MASK, "-65536", 公开
+.常量 CRYPT_Y_ONLY, "1", 公开
+.常量 CRYPT_SSL2_FALLBACK, "2", 公开
+.常量 CRYPT_DESTROYKEY, "4", 公开
+.常量 CRYPT_OAEP, "64", 公开
+.常量 CRYPT_BLOB_VER3, "128", 公开
+.常量 CRYPT_IPSEC_HMAC_KEY, "256", 公开
+.常量 CRYPT_DECRYPT_RSA_NO_PADDING_CHECK, "32", 公开
+.常量 CRYPT_SECRETDIGEST, "1", 公开
+.常量 CRYPT_OWF_REPL_LM_HASH, "1", 公开
+.常量 CRYPT_LITTLE_ENDIAN, "1", 公开
+.常量 CRYPT_NOHASHOID, "1", 公开
+.常量 CRYPT_TYPE2_FORMAT, "2", 公开
+.常量 CRYPT_X931_FORMAT, "4", 公开
+.常量 CRYPT_MACHINE_DEFAULT, "1", 公开
+.常量 CRYPT_USER_DEFAULT, "2", 公开
+.常量 CRYPT_DELETE_DEFAULT, "4", 公开
+
+.常量 PROV_RSA_FULL, "1", 公开
+.常量 PROV_RSA_SIG, "2", 公开
+.常量 PROV_DSS, "3", 公开
+.常量 PROV_FORTEZZA, "4", 公开
+.常量 PROV_MS_EXCHANGE, "5", 公开
+.常量 PROV_SSL, "6", 公开
+.常量 PROV_RSA_SCHANNEL, "12", 公开
+.常量 PROV_DSS_DH, "13", 公开
+.常量 PROV_EC_ECDSA_SIG, "14", 公开
+.常量 PROV_EC_ECNRA_SIG, "15", 公开
+.常量 PROV_EC_ECDSA_FULL, "16", 公开
+.常量 PROV_EC_ECNRA_FULL, "17", 公开
+.常量 PROV_DH_SCHANNEL, "18", 公开
+.常量 PROV_SPYRUS_LYNKS, "20", 公开
+.常量 PROV_RNG, "21", 公开
+.常量 PROV_INTEL_SEC, "22", 公开
+.常量 PROV_REPLACE_OWF, "23", 公开
+.常量 PROV_RSA_AES, "24", 公开
+
+
+.常量 OBJID_WINDOW, "0", 公开
+
+.常量 ROLE_SYSTEM_TITLEBAR, "1", 公开
+.常量 ROLE_SYSTEM_MENUBAR, "2", 公开
+.常量 ROLE_SYSTEM_SCROLLBAR, "3", 公开
+.常量 ROLE_SYSTEM_GRIP, "4", 公开
+.常量 ROLE_SYSTEM_SOUND, "5", 公开
+.常量 ROLE_SYSTEM_CURSOR, "6", 公开
+.常量 ROLE_SYSTEM_CARET, "7", 公开
+.常量 ROLE_SYSTEM_ALERT, "8", 公开
+.常量 ROLE_SYSTEM_WINDOW, "9", 公开
+.常量 ROLE_SYSTEM_CLIENT, "10", 公开
+.常量 ROLE_SYSTEM_MENUPOPUP, "11", 公开
+.常量 ROLE_SYSTEM_MENUITEM, "12", 公开
+.常量 ROLE_SYSTEM_TOOLTIP, "13", 公开
+.常量 ROLE_SYSTEM_APPLICATION, "14", 公开
+.常量 ROLE_SYSTEM_DOCUMENT, "15", 公开
+.常量 ROLE_SYSTEM_PANE, "16", 公开
+.常量 ROLE_SYSTEM_CHART, "17", 公开
+.常量 ROLE_SYSTEM_DIALOG, "18", 公开
+.常量 ROLE_SYSTEM_BORDER, "19", 公开
+.常量 ROLE_SYSTEM_GROUPING, "20", 公开
+.常量 ROLE_SYSTEM_SEPARATOR, "21", 公开
+.常量 ROLE_SYSTEM_TOOLBAR, "22", 公开
+.常量 ROLE_SYSTEM_STATUSBAR, "23", 公开
+.常量 ROLE_SYSTEM_TABLE, "24", 公开
+.常量 ROLE_SYSTEM_COLUMNHEADER, "25", 公开
+.常量 ROLE_SYSTEM_ROWHEADER, "26", 公开
+.常量 ROLE_SYSTEM_COLUMN, "27", 公开
+.常量 ROLE_SYSTEM_ROW, "28", 公开
+.常量 ROLE_SYSTEM_CELL, "29", 公开
+.常量 ROLE_SYSTEM_LINK, "30", 公开
+.常量 ROLE_SYSTEM_HELPBALLOON, "31", 公开
+.常量 ROLE_SYSTEM_CHARACTER, "32", 公开
+.常量 ROLE_SYSTEM_LIST, "33", 公开
+.常量 ROLE_SYSTEM_LISTITEM, "34", 公开
+.常量 ROLE_SYSTEM_OUTLINE, "35", 公开
+.常量 ROLE_SYSTEM_OUTLINEITEM, "36", 公开
+.常量 ROLE_SYSTEM_PAGETAB, "37", 公开
+.常量 ROLE_SYSTEM_PROPERTYPAGE, "38", 公开
+.常量 ROLE_SYSTEM_INDICATOR, "39", 公开
+.常量 ROLE_SYSTEM_GRAPHIC, "40", 公开
+.常量 ROLE_SYSTEM_STATICTEXT, "41", 公开
+.常量 ROLE_SYSTEM_TEXT, "42", 公开
+.常量 ROLE_SYSTEM_PUSHBUTTON, "43", 公开
+.常量 ROLE_SYSTEM_CHECKBUTTON, "44", 公开
+.常量 ROLE_SYSTEM_RADIOBUTTON, "45", 公开
+.常量 ROLE_SYSTEM_COMBOBOX, "46", 公开
+.常量 ROLE_SYSTEM_DROPLIST, "47", 公开
+.常量 ROLE_SYSTEM_PROGRESSBAR, "48", 公开
+.常量 ROLE_SYSTEM_DIAL, "49", 公开
+.常量 ROLE_SYSTEM_HOTKEYFIELD, "50", 公开
+.常量 ROLE_SYSTEM_SLIDER, "51", 公开
+.常量 ROLE_SYSTEM_SPINBUTTON, "52", 公开
+.常量 ROLE_SYSTEM_DIAGRAM, "53", 公开
+.常量 ROLE_SYSTEM_ANIMATION, "54", 公开
+.常量 ROLE_SYSTEM_EQUATION, "55", 公开
+.常量 ROLE_SYSTEM_BUTTONDROPDOWN, "56", 公开
+.常量 ROLE_SYSTEM_BUTTONMENU, "57", 公开
+.常量 ROLE_SYSTEM_BUTTONDROPDOWNGRID, "58", 公开
+.常量 ROLE_SYSTEM_WHITESPACE, "59", 公开
+.常量 ROLE_SYSTEM_PAGETABLIST, "60", 公开
+.常量 ROLE_SYSTEM_CLOCK, "61", 公开
+.常量 ROLE_SYSTEM_SPLITBUTTON, "62", 公开
+.常量 ROLE_SYSTEM_IPADDRESS, "63", 公开
+.常量 ROLE_SYSTEM_OUTLINEBUTTON, "64", 公开
+
+.常量 STATE_SYSTEM_NORMAL, "0", 公开
+.常量 STATE_SYSTEM_UNAVAILABLE, "1", 公开
+.常量 STATE_SYSTEM_SELECTED, "2", 公开
+.常量 STATE_SYSTEM_FOCUSED, "4", 公开
+.常量 STATE_SYSTEM_PRESSED, "8", 公开
+.常量 STATE_SYSTEM_CHECKED, "16", 公开
+.常量 STATE_SYSTEM_MIXED, "32", 公开
+.常量 STATE_SYSTEM_READONLY, "64", 公开
+.常量 STATE_SYSTEM_HOTTRACKED, "128", 公开
+.常量 STATE_SYSTEM_DEFAULT, "256", 公开
+.常量 STATE_SYSTEM_EXPANDED, "512", 公开
+.常量 STATE_SYSTEM_COLLAPSED, "1024", 公开
+.常量 STATE_SYSTEM_BUSY, "2048", 公开
+.常量 STATE_SYSTEM_FLOATING, "4096", 公开
+.常量 STATE_SYSTEM_MARQUEED, "8192", 公开
+.常量 STATE_SYSTEM_ANIMATED, "16384", 公开
+.常量 STATE_SYSTEM_INVISIBLE, "32768", 公开
+.常量 STATE_SYSTEM_OFFSCREEN, "65536", 公开
+.常量 STATE_SYSTEM_SIZEABLE, "131072", 公开
+.常量 STATE_SYSTEM_MOVEABLE, "262144", 公开
+.常量 STATE_SYSTEM_SELFVOICING, "524288", 公开
+.常量 STATE_SYSTEM_FOCUSABLE, "1048576", 公开
+.常量 STATE_SYSTEM_SELECTABLE, "2097152", 公开
+.常量 STATE_SYSTEM_LINKED, "4194304", 公开
+.常量 STATE_SYSTEM_TRAVERSED, "8388608", 公开
+.常量 STATE_SYSTEM_MULTISELECTABLE, "16777216", 公开
+.常量 STATE_SYSTEM_EXTSELECTABLE, "33554432", 公开
+.常量 STATE_SYSTEM_ALERT_LOW, "67108864", 公开
+.常量 STATE_SYSTEM_ALERT_MEDIUM, "134217728", 公开
+.常量 STATE_SYSTEM_ALERT_HIGH, "268435456", 公开
+.常量 STATE_SYSTEM_PROTECTED, "536870912", 公开
+
+.常量 SELFLAG_NONE, "0", 公开
+.常量 SELFLAG_TAKEFOCUS, "1", 公开
+.常量 SELFLAG_TAKESELECTION, "2", 公开
+.常量 SELFLAG_EXTENDSELECTION, "4", 公开
+.常量 SELFLAG_ADDSELECTION, "8", 公开
+.常量 SELFLAG_REMOVESELECTION, "16", 公开
+
+.常量 NAVDIR_MIN, "0"
+.常量 NAVDIR_UP, "1", 公开
+.常量 NAVDIR_DOWN, "2", 公开
+.常量 NAVDIR_LEFT, "3", 公开
+.常量 NAVDIR_RIGHT, "4", 公开
+.常量 NAVDIR_NEXT, "5", 公开
+.常量 NAVDIR_PREVIOUS, "6", 公开
+.常量 NAVDIR_FIRSTCHILD, "7", 公开
+.常量 NAVDIR_LASTCHILD, "8", 公开
+.常量 NAVDIR_MAX, "9"
+
+
+
+.常量 STATUS_INFO_LENGTH_MISMATCH, "-1073741820", 公开
+.常量 STATUS_SUCCESS, "0", 公开
+.常量 STATUS_INVALID_PARAMETER, "-1073741811", 公开
+.常量 OBJ_INHERIT, "2", 公开
+.常量 DUPLICATE_CLOSE_SOURCE, "1", 公开
+.常量 DUPLICATE_SAME_ACCESS, "2", 公开
+.常量 DUPLICATE_SAME_ATTRIBUTES, "4", 公开
+.常量 OB_TYPE_PROCESS, "5", 公开
+.常量 ZwGetCurrentProcess, "-1", 公开
+.常量 JOB_OBJECT_ALL_ACCESS, "2031647", 公开
+
+
+
+.常量 MEM_COMMIT, "4096", 公开, 为指定的空间提交物理内存
+.常量 TB_BUTTONCOUNT, "1048", 公开
+.常量 TB_GETBUTTON, "1047", 公开
+.常量 TB_DELETEBUTTON, "1046", 公开
+.常量 MEM_RELEASE, "32768", 公开
+.常量 CP_ACP, "0", 公开
+.常量 PAGE_EXECUTE_READWRITE, "64", 公开
+
+
+
+
+
+.常量 CLSID_TaskbarList, "“{56FDF344-FD6D-11d0-958A-006097C9A090}”", 公开
+.常量 IID_ITaskbarList, "“{56FDF342-FD6D-11d0-958A-006097C9A090}”", 公开
+.常量 IID_ITaskbarList2, "“{602D4995-B13A-429b-A66E-1935E44F4317}”", 公开
+.常量 IID_ITaskbarList3, "“{EA1AFB91-9E28-4B86-90E9-9E9F8A5EEFAF}”", 公开
+.常量 CLSCTX_INPROC_SERVER, "1", 公开
+
+.常量 任务栏进度_无, "0", 公开, TBPF_NOPROGRESS
+.常量 任务栏进度_不确定, "1", 公开, TBPF_INDETERMINATE
+.常量 任务栏进度_正常, "2", 公开, TBPF_NORMAL
+.常量 任务栏进度_错误, "4", 公开, TBPF_ERROR
+.常量 任务栏进度_暂停, "8", 公开, TBPF_PAUSED
+.常量 WM_NULL, "0", 公开
+.常量 WM_DROPFILES, "563"
+.常量 WM_COPYDATA, "74"
+.常量 WM_DESTROY, "2", 公开
+.常量 MSGFLT_ADD, "1", 公开
+.常量 WM_KEYDOWN, "256", , 当一个非系统按键被按下时(<ALT>键没有被按下),会发送本消息给拥有键盘焦点的窗口
+.常量 WM_KEYUP, "257", , 当一个非系统按键被释放弹起时(<ALT>键没有被按下),会发送本消息给拥有键盘焦点的窗口
+.常量 WM_CHAR, "258", , 按下某按键,并已发出WM_KEYDOWN、WM_KEYUP消息,本消息包含被按下的按键的字符码
+.常量 WM_COMMAND, "273", 公开
+.常量 WM_COPY, "769", 公开, 程序发送此消息给一个编辑框或combobox来复制当前选择的文本到剪贴板
+.常量 WM_SETICON, "128", 公开, 程序发送此消息让一个新的大图标或小图标与某个窗口关联
+.常量 WM_DRAWCLIPBOARD, "776", 公开, 当剪贴板的内容变化时发送此消息给剪贴板观察链的第一个窗口;它允许用剪贴板观察窗口来显示剪贴板的新内容
+.常量 WM_CHANGECBCHAIN, "781", 公开, 当一个窗口从剪贴板观察链中移去时发送此消息给剪贴板观察链的第一个窗口
+.常量 THBN_CLICKED, "6144", 公开
+
+.常量 缩略图按钮掩码_图片索引, "1", 公开, THB_BITMAP “图片索引”成员有效
+.常量 缩略图按钮掩码_图标句柄, "2", 公开, THB_ICON
+.常量 缩略图按钮掩码_提示文本, "4", 公开, THB_TOOLTIP
+.常量 缩略图按钮掩码_按钮风格, "8", 公开, THB_FLAGS
+
+.常量 缩略图按钮_可用, "0", 公开, THBF_ENABLED
+.常量 缩略图按钮_禁止, "1", 公开, THBF_DISABLED
+.常量 缩略图按钮_点击关闭, "2", 公开, THBF_DISMISSONCLICK
+.常量 缩略图按钮_无背景, "4", 公开, THBF_NOBACKGROUND
+.常量 缩略图按钮_隐藏, "8", 公开, THBF_HIDDEN
+.常量 缩略图按钮_无交互按钮, "16", 公开, THBF_NONINTERACTIVE
+
+.常量 GMEM_ZEROINIT, "64", 公开
+
+.常量 MN_GETHMENU, "481", 公开
+.常量 WM_ENTERIDLE, "289", 公开
+.常量 MSGF_MENU, "2", 公开
+.常量 MF_SEPARATOR, "2048", 公开
+.常量 MF_STRING, "0", 公开
+.常量 WM_CONTEXTMENU, "123", 公开
+.常量 WM_NCHITTEST, "132", 公开, 移动鼠标，按住或释放鼠标时发生
+.常量 MF_BYPOSITION, "1024", 公开
+.常量 MF_POPUP, "16", 公开
+.常量 HTVSCROLL, "7", 公开, 7
+
+
+.常量 FILE_SUPPORTS_SPARSE_FILES, "64", 公开
+.常量 FSCTL_SET_SPARSE, "590020", 公开
+.常量 FILE_ATTRIBUTE_SPARSE_FILE, "512", 公开
+.常量 GENERIC_READ_, "2147483648", 公开
+.常量 FILE_SHARE_READ, "1", 公开
+.常量 FILE_SHARE_WRITE, "2", 公开
+.常量 OPEN_EXISTING, "3", 公开
+
+
+.常量 FEATURE_DISABLE_NAVIGATION_SOUNDS, "21", 公开, , 禁止跳转声音
+.常量 SET_FEATURE_ON_PROCESS, "2", 公开, , 仅对当前进程有效
+
+.常量 FORMAT_MESSAGE_FROM_SYSTEM, "4096", 公开
+.常量 FORMAT_MESSAGE_IGNORE_INSERTS, "512", 公开
+
+.常量 TCM_FIRST, "4864", 公开
+.常量 CCM_FIRST, "8192", 公开
+.常量 CCM_GETUNICODEFORMAT, "8198", 公开
+.常量 CCM_SETUNICODEFORMAT, "8197", 公开
+
+.常量 TCM_ADJUSTRECT, "4904", 公开, 调整矩形
+.常量 TCM_DELETEALLITEMS, "4873", 公开, 删除全部子夹
+.常量 TCM_DELETEITEM, "4872", 公开, 删除子夹
+.常量 TCM_DESELECTALL, "4914", 公开, 全部取消选择
+.常量 TCM_GETCURFOCUS, "4911", 公开, 获取光标焦点
+.常量 TCM_GETCURSEL, "4875", 公开, 获取光标XXX？
+.常量 TCM_GETEXTENDEDSTYLE, "4917", 公开, 取扩展风格
+.常量 TCM_GETIMAGELIST, "4866", 公开, 取项目图片列表
+.常量 TCM_GETITEMA, "4869", 公开, 取项目
+.常量 TCM_GETITEMCOUNT, "4868", 公开, 取项目数
+.常量 TCM_GETITEMRECT, "4874", 公开, 取项目矩形
+.常量 TCM_GETROWCOUNT, "4908", 公开, 取行数
+.常量 TCM_GETTOOLTIPS, "4909", 公开, 取工具条提示
+.常量 TCM_GETUNICODEFORMAT, "8198", 公开, 取UNICODE格式
+.常量 TCM_HIGHLIGHTITEM, "4915", 公开
+.常量 TCM_HITTEST, "4877", 公开, 点击测试
+.常量 TCM_INSERTITEMA, "4871", 公开, 插入子夹
+.常量 TCM_REMOVEIMAGE, "4906", 公开, 移动图片
+.常量 TCM_SETCURFOCUS, "4912", 公开, 置光标焦点
+.常量 TCM_SETCURSEL, "4876", 公开, 置光标XXX？
+.常量 TCM_SETEXTENDEDSTYLE, "4916", 公开, 置扩展风格
+.常量 TCM_SETIMAGELIST, "4867", 公开, 置图片列表
+.常量 TCM_SETITEMA, "4870", 公开, 置项目
+.常量 TCM_SETITEMEXTRA, "4878", 公开, 置额外项目
+.常量 TCM_SETITEMSIZE, "4905", 公开, 置项目尺寸
+.常量 TCM_SETMINTABWIDTH, "4913", 公开, 置子夹栏最小宽度值
+.常量 TCM_SETPADDING, "4907", 公开, 置子夹栏尺寸
+.常量 TCM_SETTOOLTIPS, "4910", 公开, 置工具提示
+.常量 TCM_SETUNICODEFORMAT, "8197", 公开, 置UNICODE格式
+
+.常量 TCIF_IMAGE, "2", 公开, 项目图片
+.常量 TCIF_PARAM, "8", 公开, 项目数值
+.常量 TCIF_RTLREADING, "4", 公开, 项目右对齐
+.常量 TCIF_STATE, "16", 公开, 状态
+.常量 TCIF_TEXT, "1", 公开, 项目文本
+
+.常量 WM_MEASUREITEM, "44", 公开
+.常量 WM_WINDOWPOSCHANGED, "71", 公开
+.常量 LVS_OWNERDRAWFIXED, "1024", 公开
+.常量 CF_LIMITSIZE, "8192", 公开
+
+
+.常量 HWND_TOP, "0", 公开, 将窗口置于Z序的顶部
+.常量 SWP_NOMOVE, "2", 公开, 维持当前位置（忽略X和Y参数）
+.常量 SWP_NOSIZE, "1", 公开, 维持当前尺寸（忽略cx和Cy参数）
+.常量 SWP_SHOWWINDOW, "64"
+.常量 SWP_NOACTIVATE, "16", 公开, 不激活窗口
+.常量 HWND_TOPMOST, "-1", 公开, 窗口置顶，将窗口置于所有顶层窗口之上
+.常量 HWND_NOTOPMOST, "-2", 公开
+.常量 WS_EX_LAYERED, "524288", 公开, 分层或透明窗口,该样式可使用混合特效
+.常量 WS_EX_TRANSPARENT, "32", 公开, 透明样式,在同属窗口已重画时该窗口才可重画
+.常量 WS_EX_NOACTIVATE, "134217728", 公开, 处于顶层但不激活
+
+.常量 WM_MBUTTONDBLCLK, "521", 公开, 双击鼠标中键
+.常量 WM_RBUTTONUP, "517", 公开, 释放鼠标右键
+.常量 WM_MBUTTONUP, "520", 公开, 释放鼠标中键
+.常量 WM_MBUTTONDOWN, "519", 公开, 按下鼠标中键
+.常量 WM_RBUTTONDBLCLK, "518", 公开, 双击鼠标右键
+.常量 WM_RBUTTONDOWN, "516", 公开, 按下鼠标右键
+.常量 WM_LBUTTONDBLCLK, "515", 公开, 双击鼠标左键
+.常量 WM_LBUTTONUP, "514", 公开, 释放鼠标左键
+.常量 WM_LBUTTONDOWN, "513", 公开, 按下鼠标左键
+.常量 WM_MOUSEWHEEL, "522", 公开, 当鼠标轮子转动时发送此消息个当前有焦点的控件
+
+.常量 DWM_BB_ENABLE, "1", 公开
+.常量 DWM_BB_BLURREGION, "2", 公开
+.常量 DWM_BB_TRANSITIONONMAXIMIZED, "4", 公开
+
+
+.常量 DWMWA_NCRENDERING_ENABLED, "1", 公开
+.常量 DWMWA_NCRENDERING_POLICY, "2", 公开
+.常量 DWMWA_TRANSITIONS_FORCEDISABLED, "3", 公开
+.常量 DWMWA_ALLOW_NCPAINT, "4", 公开
+.常量 DWMWA_CAPTION_BUTTON_BOUNDS, "5", 公开
+.常量 DWMWA_NONCLIENT_RTL_LAYOUT, "6", 公开
+.常量 DWMWA_FORCE_ICONIC_REPRESENTATION, "7", 公开
+.常量 DWMWA_FLIP3D_POLICY, "8", 公开
+.常量 DWMWA_EXTENDED_FRAME_BOUNDS, "9", 公开
+.常量 DWMWA_LAST, "10", 公开
+
+.常量 DWMNCRP_USEWINDOWSTYLE, "0", 公开
+.常量 DWMNCRP_DISABLED, "1", 公开
+.常量 DWMNCRP_ENABLED, "2", 公开
+.常量 DWMNCRP_LAST, "3", 公开
+
+.常量 DWMFLIP3D_DEFAULT, "0", 公开
+.常量 DWMFLIP3D_EXCLUDEBELOW, "1", 公开
+.常量 DWMFLIP3D_EXCLUDEABOVE, "2", 公开
+.常量 DWMFLIP3D_LAST, "3", 公开
+
+.常量 DWM_TNP_RECTDESTINATION, "1", 公开
+.常量 DWM_TNP_RECTSOURCE, "2", 公开
+.常量 DWM_TNP_OPACITY, "4", 公开
+.常量 DWM_TNP_VISIBLE, "8", 公开
+.常量 DWM_TNP_SOURCECLIENTAREAONLY, "16", 公开
+
+.常量 DWM_SOURCE_FRAME_SAMPLING_POINT, "0", 公开
+.常量 DWM_SOURCE_FRAME_SAMPLING_COVERAGE, "1", 公开
+.常量 DWM_SOURCE_FRAME_SAMPLING_LAST, "2", 公开
+
+.常量 DWM_EC_DISABLECOMPOSITION, "0", 公开
+.常量 DWM_EC_ENABLECOMPOSITION, "1", 公开
+
+.常量 单位_世界坐标, "0", 公开, // 0 -- World coordinate (non-physical unit)
+.常量 单位_Display, "1", 公开, // 1 -- Variable -- for PageTransform only
+.常量 单位_像素, "2", 公开, // 2 -- Each unit is one device pixel.像素
+.常量 单位_点, "3", 公开, // 3 -- Each unit is a printer's point 点
+.常量 单位_英寸, "4", 公开, // 4 -- Each unit is 1 inch.英寸
+.常量 单位_Document, "5", 公开, // 5 -- Each unit is 1/300 inch.
+.常量 单位_毫米, "6", 公开, // 6 -- Each unit is 1 millimeter.毫米
+
+
+.常量 像素格式_Indexed, "65536", 公开, Indexed 该像素数据包含颜色索引值，这意味着这些值是系统颜色表中颜色的索引，而不是单个颜色值。
+.常量 像素格式_GDI, "131072", 公开, Gdi 像素数据包含 GDI 颜色。
+.常量 像素格式_Alpha, "262144", 公开, Alpha 像素数据包含没有进行过自左乘的 alpha 值。
+.常量 像素格式_PAlpha, "524288", 公开, PAlpha 像素格式包含自左乘的 alpha 值。
+.常量 像素格式_Extended, "1048576", 公开, Extended 保留。
+.常量 像素格式_Canonical, "2097152", 公开, Canonical 保留。
+.常量 像素格式_Undefined, "0", 公开, Undefined 未定义像素格式。
+.常量 像素格式_DontCare, "0", 公开, DontCare 没有指定像素格式。
+.常量 像素格式_1bppIndexed, "196865", 公开, Format1bppIndexed 指定像素格式为每像素 1 位，并指定它使用索引颜色。因此颜色表中有两种颜色。
+.常量 像素格式_4bppIndexed, "197634", 公开, Format4bppIndexed 指定格式为每像素 4 位而且已创建索引。
+.常量 像素格式_8bppIndexed, "198659", 公开, Format8bppIndexed 指定格式为每像素 8 位而且已创建索引。因此颜色表中有 256 种颜色。
+.常量 像素格式_16bppGrayScale, "1052676", 公开, Format16bppGrayScale 像素格式为每像素 16 位。该颜色信息指定 65536 种灰色调。
+.常量 像素格式_16bppRGB555, "135173", 公开, Format16bppRgb555 指定格式为每像素 16 位；红色、绿色和蓝色分量各使用 5 位。剩余的 1 位未使用。
+.常量 像素格式_16bppRGB565, "135174", 公开, Format16bppRgb565 指定格式为每像素 16 位；红色分量使用 5 位，绿色分量使用 6 位，蓝色分量使用 5 位。
+.常量 像素格式_16bppARGB1555, "397319", 公开, Format16bppArgb1555 像素格式为每像素 16 位。该颜色信息指定 32
+.常量 像素格式_24bppRGB, "137224", 公开, Format24bppRgb 指定格式为每像素 24 位；红色、绿色和蓝色分量各使用 8 位。
+.常量 像素格式_32bppRGB, "139273", 公开, Format32bppRgb 指定格式为每像素 32 位；红色、绿色和蓝色分量各使用 8 位。剩余的 8 位未使用。
+.常量 像素格式_32bppARGB, "2498570", 公开, Format32bppArgb 指定格式为每像素 32 位；alpha、红色、绿色和蓝色分量各使用 8 位。
+.常量 像素格式_32bppPARGB, "925707", 公开, Format32bppPArgb 指定格式为每像素 32 位；alpha、红色、绿色和蓝色分量各使用 8 位。根据 alpha 分量，对红色、绿色和蓝色分量进行自左乘。
+.常量 像素格式_48bppRGB, "1060876", 公开, Format48bppRgb 指定格式为每像素 48 位；红色、绿色和蓝色分量各使用 16 位。
+.常量 像素格式_64bppARGB, "3424269", 公开, Format64bppArgb 指定格式为每像素 64 位；alpha、红色、绿色和蓝色分量各使用 16 位。
+.常量 像素格式_64bppPARGB, "1851406", 公开, Format64bppPArgb 指定格式为每像素 64 位；alpha、红色、绿色和蓝色分量各使用 16 位。根据 alpha 分量，对红色、绿色和蓝色分量进行自左乘。
+.常量 像素格式_Max, "15", 公开, Max 此枚举的最大值。
+
+
+
+.常量 SB_CTL, "2", 公开
+.常量 SB_HORZ, "0", 公开
+.常量 SB_VERT, "1", 公开
+.常量 SIF_DISABLENOSCROLL, "8", 公开
+.常量 SIF_PAGE, "2", 公开
+.常量 SIF_POS, "4", 公开
+.常量 SIF_TRACKPOS, "16", 公开
+.常量 SIF_RANGE, "1", 公开
+.常量 SIF_ALL, "23", 公开
+.常量 OBJID_VSCROLL, "-5", 公开
+
+.常量 WM_SETREDRAW, "11", , 设置窗口是否能重画
+.常量 TVM_GETNEXTITEM, "4362"
+.常量 TVM_GETITEMA, "4364"
+.常量 TVGN_ROOT, "0"
+.常量 TVGN_CHILD, "4"
+.常量 TVGN_NEXT, "1"
+.常量 TVIF_TEXT, "1"
+.常量 TVI_ROOT, "4294901760", , 在根部插入
+.常量 TVIF_PARAM, "4", , 项目数值
+.常量 TVI_FIRST, "4294901761", , 在列表首部加入
+.常量 TVI_LAST, "4294901762", , 在列表尾部插入
+.常量 TVI_SORT, "4294901763", , 插入项目时按字母顺序排列
+.常量 TVIF_ALL, "39", , 全部,文本+图象+选择图象+项目数值 1+2+4+32=39
+.常量 TVM_INSERTITEMA, "4352", , 插入项目A
+.常量 TVM_SETITEMA, "4365", , 设置项目A
+.常量 TVIS_BOLD, "16", , 加粗
+.常量 TVIF_STATE, "8", , 状态
+.常量 TVIF_CHILDREN, "64", , 是否有子
+
+.常量 LR_LOADMAP3DCOLORS, "4096"
+.常量 LR_LOADFROMFILE, "16"
+.常量 WM_CTLCOLOREDIT, "307"
+.常量 TRANSPARENT, "1"
+.常量 NULL_BRUSH, "5"
+.常量 EN_VSCROLL, "1538"
+.常量 EN_HSCROLL, "1537"
+.常量 EN_CHANGE, "768"
+.常量 WM_ERASEBKGND, "20"
+.常量 WM_VSCROLL, "277"
+.常量 WM_HSCROLL, "276"
+.常量 CBM_INIT, "4"
+
+.常量 HDI_FORMAT, "4"
+.常量 HDF_OWNERDRAW, "32768"
+.常量 HDM_GETITEMCOUNT, "4608"
+.常量 WM_DRAWITEM, "43", , 当button，combobox，listbox，menu的可视外观改变时发送
+.常量 HDM_SETITEM, "4612"
+.常量 HDI_TEXT, "2"
+.常量 HDM_GETITEM, "4611"
+.常量 DT_CENTER, "1"
+.常量 HDM_LAYOUT, "4613"
+.常量 WM_NCCALCSIZE, "131"
+
+.常量 LVM_APPROXIMATEVIEWRECT, "4160", 公开, 超列表_计算显示一个项目所需的宽度和高度
+.常量 LVM_ARRANGE, "4118", 公开, 超列表_在图象显示时自动排列
+.常量 LVM_CREATEDRAGIMAGE, "4129", 公开, 超列表_为指定的项目产生一个拖曳图像列表
+.常量 LVM_DELETEALLITEMS, "4105", 公开, 超列表_清空
+.常量 LVM_DELETECOLUMN, "4124", 公开, 超列表_删除列
+.常量 LVM_DELETEITEM, "4104", 公开, 超列表_删除行
+.常量 LVM_EDITLABELW, "4214", 公开, 超列表_编辑指定位置
+.常量 LVM_ENABLEGROUPVIEW, "4253", 公开, 超列表_显示或禁止项目
+.常量 LVM_ENSUREVISIBLE, "4115", 公开, 超列表_保证显示
+.常量 LVM_FINDITEMW, "4179", 公开, 超列表_查找
+.常量 LVM_GETBKCOLOR, "4096", 公开, 取背景颜色
+.常量 LVM_GETBKIMAGEW, "4235", 公开, 取背景图片
+.常量 LVM_GETCALLBACKMASK, "4106", 公开, 取回调掩码
+.常量 LVM_GETCOLUMNW, "4191", 公开, 超列表_取列信息
+.常量 LVM_GETCOLUMNORDERARRAY, "4155", 公开, 超列表_取对齐方式
+.常量 LVM_GETCOLUMNWIDTH, "4125", 公开, 超列表_取列宽
+.常量 LVM_GETCOUNTPERPAGE, "4136", 公开, 取可视的项目数量
+.常量 LVM_GETEDITCONTROL, "4120", 公开, 当列表框在进行编辑时，返回这引编辑框的句柄
+.常量 LVM_GETEXTENDEDLISTVIEWSTYLE, "4151", 公开, 取当前扩展风格
+.常量 LVM_GETGROUPINFO, "4245", 公开, 取块的信息
+.常量 LVM_GETGROUPCOUNT, "4248", 公开
+.常量 LVM_GETGROUPINFOBYINDEX, "4249", 公开
+.常量 LVM_GETGROUPMETRICS, "4252", 公开, 取块的规格
+.常量 LVM_GETHEADER, "4127", 公开, 超列表_取表头句柄
+.常量 LVM_GETHOTCURSOR, "4159", 公开, 如果激活了热点跟随踪，当鼠标在某个项目上时，返回其句柄
+.常量 LVM_GETHOTITEM, "4157", 公开, 取鼠标指针指向项目的索引
+.常量 LVM_GETHOVERTIME, "4168", 公开, ？？？取鼠标在项目上停留的时间？
+.常量 LVM_GETIMAGELIST, "4098", 公开, 取图片组
+.常量 LVM_GETINSERTMARK, "4263", 公开, 取插入掩码
+.常量 LVM_GETINSERTMARKCOLOR, "4267", 公开, 取插入掩码颜色
+.常量 LVM_GETINSERTMARKRECT, "4265", 公开, 取插入掩码的矩形范围
+.常量 LVM_GETITEMW, "4171", 公开, 超列表_取项目
+.常量 LVM_GETITEMCOUNT, "4100", 公开, 超列表_取表项总数
+.常量 LVM_GETITEMPOSITION, "4112", 公开, 超列表_取图标位置
+.常量 LVM_GETITEMRECT, "4110", 公开, 取指定项目的矩形范围
+.常量 LVM_GETITEMSPACING, "4147", 公开, 取项目之间的间隔距离
+.常量 LVM_GETITEMSTATE, "4140", 公开, 超列表_取项目状态
+.常量 LVM_GETITEMTEXTW, "4211", 公开, 取项目正文
+.常量 LVM_GETNEXTITEM, "4108", 公开, 取下一项目
+.常量 LVM_GETNUMBEROFWORKAREAS, "4169", 公开, 取当前列表框工作区中的项目数量
+.常量 LVM_GETOUTLINECOLOR, "4272", 公开, 取列表框边框颜色
+.常量 LVM_GETSELECTEDCOLUMN, "4270", 公开, 取选择列
+.常量 LVM_GETSELECTEDCOUNT, "4146", 公开, 超列表_取被选择项目数
+.常量 LVM_GETSELECTIONMARK, "4162", 公开, 超列表_取现行选中项
+.常量 LVM_GETSTRINGWIDTHA, "4113", 公开, 取显示一个文本所需要的列宽度
+.常量 LVM_GETSUBITEMRECT, "4152", 公开, 取子项目的矩形范围
+.常量 LVM_GETTEXTBKCOLOR, "4133", 公开, 取正文背景色
+.常量 LVM_GETTEXTCOLOR, "4131", 公开, 取正文颜色
+.常量 LVM_GETTOOLTIPS, "4174", 公开, 取工具提示
+.常量 LVM_GETTOPINDEX, "4135", 公开, 取在可视范围中第一个项目的索引
+.常量 LVM_GETVIEW, "4239", 公开, 取超级列表框当前的类型
+.常量 LVM_GETVIEWRECT, "4130", 公开, 取当前所有项目所占用的矩形范围
+.常量 LVM_GETWORKAREAS, "4166", 公开, 取工作区的矩形范围
+.常量 LVM_INSERTCOLUMNW, "4193", 公开, 超列框_插入列
+.常量 LVM_INSERTGROUP, "4241", 公开, 插入块
+.常量 LVM_INSERTGROUPSORTED, "4255", 公开, 插入块种类
+.常量 LVM_INSERTITEMW, "4173", 公开, 超列框_插入项目
+.常量 LVM_ISGROUPVIEWENABLED, "4271", 公开, 块检视是否激活
+.常量 LVM_MOVEITEMTOGROUP, "4250", 公开, 移动项目到块
+.常量 LVM_REDRAWITEMS, "4117", 公开, 重画项目
+.常量 LVM_REMOVEALLGROUPS, "4256", 公开, 移动全部块
+.常量 LVM_SCROLL, "4116", 公开, 移动滚动条
+.常量 LVM_SETBKCOLOR, "4097", 公开, 设置背景色
+.常量 LVM_SETBKIMAGEW, "4234", 公开, 设置背景图片
+.常量 LVM_SETCALLBACKMASK, "4107", 公开, 设置回调掩码
+.常量 LVM_SETCOLUMNW, "4192", 公开, 超列表_置列信息
+.常量 LVM_SETCOLUMNORDERARRAY, "4154", 公开, 设置列显示的排序
+.常量 LVM_SETCOLUMNWIDTH, "4126", 公开, 设置列宽
+.常量 LVM_SETEXTENDEDLISTVIEWSTYLE, "4150", 公开, 设置扩展风格
+.常量 LVM_SETGROUPINFO, "4243", 公开, 设置块信息
+.常量 LVM_SETHOTITEM, "4156", 公开, 置鼠标指针指向项目的索引？？？
+.常量 LVM_SETICONSPACING, "4149", 公开, 置图标间隔
+.常量 LVM_SETIMAGELIST, "4099", 公开, 置图片组
+.常量 LVM_SETINFOTIP, "4269", 公开, 置信息提示
+.常量 LVM_SETINSERTMARK, "4262", 公开, 置插入掩码
+.常量 LVM_SETINSERTMARKCOLOR, "4266", 公开, 置插入掩码颜色
+.常量 LVM_SETITEMW, "4172", 公开, 超列表_置项目
+.常量 LVM_SETITEMCOUNT, "4143", 公开, 虚拟一个列表项目总数
+.常量 LVM_SETITEMPOSITION, "4111", 公开, 超列表_置表项坐标
+.常量 LVM_SETITEMSTATE, "4139", 公开, 超列表_置项目状态
+.常量 LVM_SETITEMTEXTA, "4142", 公开, 置项目正文
+.常量 LVM_SETOUTLINECOLOR, "4273", 公开, 置列表框边框颜色
+.常量 LVM_SETSELECTEDCOLUMN, "4236", 公开, 置现行选择列
+.常量 LVM_SETSELECTIONMARK, "4163", 公开, 置选择标志
+.常量 LVM_SETTEXTBKCOLOR, "4134", 公开, 置正文背景色
+.常量 LVM_SETTEXTCOLOR, "4132", 公开, 置文本颜色
+.常量 LVM_SETTOOLTIPS, "4170", 公开, 置工具条
+.常量 LVM_SETVIEW, "4238", 公开, 置列表框类型
+.常量 LVM_SETWORKAREAS, "4161", 公开, 置工作区
+.常量 LVM_SORTGROUPS, "4254", 公开, 群（块）分类
+.常量 LVM_SORTITEMS, "4144", 公开, 排序分类
+.常量 LVM_SORTITEMSEX, "4177", 公开, 项目分类扩展
+.常量 LVM_UPDATE, "4138", 公开, 刷新列表框
+.常量 LVM_SUBITEMHITTEST, "4153", 公开, 取坐标表项索引
+.常量 LVM_CANCELEDITLABEL, "4275", 公开
+.常量 LVM_INSERTMARKHITTEST, "4264", 公开
+.常量 LVM_SETITEMPOSITION32, "4145", 公开
+
+.常量 窗口风格_单边框, "8388608", 公开, WS_BORDER
+.常量 窗口风格_标题栏, "12582912", 公开, WS_CAPTION 有标题和边框（包括WS_BODER风格）。
+.常量 窗口风格_子窗口, "1073741824", 公开, WS_CHILD 不能与“窗口风格_弹出式窗口”合用。
+.常量 窗口风格_排除子窗口重画, "33554432", 公开, WS_CLIPCHILDREN 在创建父窗口时使用这个风格。
+.常量 窗口风格_排除重叠窗口重画, "67108864", 公开, WS_CLIPSIBLINGS 使窗口排除子窗口之间的相对区域。
+.常量 窗口风格_禁止, "134217728", 公开, WS_DISABLED
+.常量 窗口风格_对话框边框, "4194304", 公开, WS_DLGFRAME
+.常量 窗口风格_组样式, "131072", 公开, WS_GROUP
+.常量 窗口风格_水平滚动条, "1048576", 公开, WS_HSCROLL
+.常量 窗口风格_最大化状态, "16777216", 公开, WS_MAXIMIZE
+.常量 窗口风格_最大化按钮, "65536", 公开, WS_MAXIMIZEBOX
+.常量 窗口风格_最小化状态, "536870912", 公开, WS_MINIMIZE
+.常量 窗口风格_最小化按钮, "131072", 公开, WS_MINIMIZEBOX
+.常量 窗口风格_默认, "13565952", 公开, WS_OVERLAPPEDWINDOW具有层叠，标题框，系统菜单，可调边框，系统按钮。
+.常量 窗口风格_弹出式窗口, "2147483648", 公开, WS_POPUP 不能与“窗口风格_子窗口”合用。
+.常量 WS_POPUPWINDOW, "2156396544", , 具有单边框，弹出式，系统菜单样式。
+.常量 窗口风格_可调边框, "262144", 公开, WS_SIZEBOX
+.常量 窗口风格_系统菜单, "524288", 公开, WS_SYSMENU 必须同时设定“窗口风格_标题栏”风格。
+.常量 窗口风格_可停留焦点, "65536", 公开, WS_TABSTOP
+.常量 WS_TILED, "0", , 产生一个层叠的窗口。一个层叠的窗口有一个标题和一个边框。
+.常量 窗口风格_层叠窗口, "13565952", 公开, WS_TILEDWINDOW 创建一个具有WS_OVERLAPPED，WS_CAPTION，WS_SYSMENU MS_THICKFRAME
+.常量 窗口风格_可视, "268435456", 公开, WS_VISIBLE
+.常量 窗口风格_垂直滚动条, "2097152", 公开, WS_VSCROLL
+.常量 窗口风格_无边框, "2147483648", 公开, WS_POPUP 不能与“窗口风格_子窗口”合用。
+
+.常量 窗口扩展_阴影边缘, "512", 公开, WS_EX_CLIENTEDGE
+.常量 窗口扩展_双层边框, "1", 公开, WS_EX_DLGMODALFRAME
+.常量 窗口扩展_凸起阴影, "768", 公开, WS_EX_OVERLAPPEDWINDOW
+.常量 窗口扩展_三维边缘, "131072", 公开, WS_EX_STATICEDGE
+.常量 窗口扩展_凸起边框, "256", 公开, WS_EX_WINDOWEDGE
+.常量 窗口扩展_容器窗口, "65536", 公开, WS_EX_CONTROLPARENT 允许用户使用Tab键在窗口的子窗口间搜索
+.常量 窗口扩展_分层, "524288", 公开, WS_EX_LAYERED 透明窗口或分层，该样式可使用混合特效
+.常量 窗口扩展_总在最前, "8", 公开, WS_EX_TOPMOST
+.常量 窗口扩展_工具条窗口, "128", 公开, WS_EX_TOOLWINDOW
+.常量 WS_EX_NOPARENTNOTIFY, "4", , 创建/销毁时不向父窗口发送WM_PARENTNOTFY消息
+.常量 窗口扩展_可接受拖放, "16", 公开, WS_EX_ACCEPTFILES 可接受拖放文件
+.常量 窗口扩展_在任务栏显示, "262144", 公开, WS_EX_APPWINDOW 当窗口可见时，将一个顶层窗口放置到任务条上
+.常量 窗口扩展_帮助按钮, "1024", 公开, WS_EX_CONTEXTHELP。在窗口的标题条包含一个问号标志，
+.常量 窗口扩展_垂直滚动条居左, "16384", 公开, WS_EX_LEFTSCROLLBAR 垂直滚动条在窗口左边界
+.常量 窗口扩展_MDI子窗口, "64", 公开, WS_EX_MDICHILD。MDI子窗口
+.常量 窗口扩展_右对齐, "4096", 公开, WS_EX_RIGHT
+.常量 窗口扩展_文本从右到左, "8192", 公开, WS_EX_RTLREADING 窗口文本从右到左显示
+.常量 窗口扩展_透明, "32", 公开, WS_EX_TRANSPARENT。透明样式，在同属窗口已重画时，该窗口才可以重画
+
+.常量 CB_ADDSTRING, "323", 公开, 组合框_添加项目
+.常量 CB_DELETESTRING, "324", 公开, 组合框_删除项目
+.常量 CB_ERR, "-1", 公开, 组合框_错误
+.常量 CB_FINDSTRING, "332", 公开, 组合框_前缀查找
+.常量 CB_FINDSTRINGEXACT, "344", 公开, 组合框_精确查找
+.常量 CB_GETCOUNT, "326", 公开, 组合框_取项目总数
+.常量 CB_GETCURSEL, "327", 公开, 组合框_取现行选中项
+.常量 CB_GETDROPPEDCONTROLRECT, "338", 公开, 组合框_列表框的屏幕位置
+.常量 CB_GETDROPPEDSTATE, "343", 公开, 组合框_列表框是否可见
+.常量 CB_GETDROPPEDWIDTH, "351", 公开, 组合框_列表框的宽度。
+.常量 CB_GETEDITSEL, "320", 公开, 组合框_编辑控件中选定内容的范围
+.常量 CB_GETEXTENDEDUI, "342", 公开, 组合框_是否存在扩展界面
+.常量 CB_GETITEMDATA, "336", 公开, 组合框_取项目数值
+.常量 CB_GETITEMHEIGHT, "340", 公开, 组合框_取列表框项目高度
+.常量 CB_GETLBTEXT, "328", 公开, 组合框_取项目文本
+.常量 CB_GETLBTEXTLEN, "329", 公开, 组合框_取项目文本长度
+.常量 CB_GETTOPINDEX, "347", 公开, 组合框_取组合框中列表框中第一个可见项的索引
+.常量 CB_INSERTSTRING, "330", 公开, 组合框_指定位置插入字符串。
+.常量 CB_LIMITTEXT, "321", 公开, 组合框_限制编辑控件文本的最大长度
+.常量 CB_RESETCONTENT, "331", 公开, 组合框_清空
+.常量 CB_SELECTSTRING, "333", 公开, 组合框_设定与指定字符串相匹配的列表项为选中项。
+.常量 CB_SETCURSEL, "334", 公开, 组合框_置现行选中项
+.常量 CB_SETDROPPEDWIDTH, "352", 公开, 组合框_列表框最大允许宽度
+.常量 CB_SETEDITSEL, "322", 公开, 组合框_编辑控件中文本选定内容范围
+.常量 CB_SETEXTENDEDUI, "341", 公开, 组合框_是使用默认界面或扩展界面
+.常量 CB_SETHORIZONTALEXTENT, "350", 公开, 组合框_置列表宽度
+.常量 CB_SETITEMDATA, "337", 公开, 组合框_置项目数值
+.常量 CB_SETITEMHEIGHT, "339", 公开, 组合框_列表项显示高度
+.常量 CB_SETTOPINDEX, "348", 公开, 组合框_置为列表框的第一个可见项
+.常量 CB_SHOWDROPDOWN, "335", 公开, 组合框_显示列表。
+.常量 CB_GETCOMBOBOXINFO, "356", 公开
+
+.常量 en_US, "1033"
+.常量 FILE_ATTRIBUTE_NORMAL, "128"
+
+.常量 PBS_MARQUEE, "8", , 6.0或更高版本。进度指示器的大小不会增加，而是沿着条的长度重复移动，指示活动而不指定进度的完成比例。
+.常量 PBM_SETMARQUEE, "1034", , 将进度条设置为选取框模式。这会导致进度条像选取框一样移动。
+
+
+.常量 SHGFP_TYPE_CURRENT, "1"
+.常量 SW_NORMAL, "1"
+.常量 CBN_SELCHANGE, "1", , 通知父窗(通过WM_COMMAND获知),选择了组合框中的一项
+
+.常量 S_OK, "0"
+.常量 S_FALSE, "1"
+
+.常量 CSIDL_WINDOWS, "36", , 5.0版。Windows目录或SYSROOT。这对应于％windir％或％SYSTEMROOT％环境变量。典型的路径是C：\ Windows。
+
+.常量 ERROR_FILE_NOT_FOUND, "2", , 系统找不到指定的文件。 
+
+.常量 GA_ROOT, "2"
+
+.常量 MOD_ALT, "1", 公开, 功能键_Alt
+.常量 MOD_CONTROL, "2", 公开, 功能键_Ctrl
+.常量 MOD_SHIFT, "4", 公开, 功能键_Shift
+
+.常量 VK_SHIFT, "16"
+.常量 VK_CONTROL, "17"
+.常量 VK_MENU, "18"
+
+.常量 LB_FINDSTRING, "399", , 在列表框中查找匹配字符串(忽略大小写)
+.常量 LB_FINDSTRINGEXACT, "418", , 用于列表框中查找字符串(忽略大小写),与LB_FINDSTRING不同,本消息必须整个字符串相同
+
+.常量 SB_SETTEXTA, "1025"
+.常量 SB_GETTEXTA, "1026"
+.常量 SB_GETTEXTLENGTHA, "1027"
+.常量 SB_GETTEXT, "1037"
+.常量 SB_SETBKCOLOR, "8193"
+
+.常量 EDD_GET_DEVICE_INTERFACE_NAME, "1"
+
+.常量 WM_SETTEXT, "12", , 应用程序发送此消息来设置一个窗口的文本
+.常量 WM_CLOSE, "16", , 当一个窗口或应用程序要关闭时发送一个信号
+.常量 WM_QUIT, "18", , 用来结束程序运行或当程序调用postquitmessage函数
+
+.常量 鼠标指针_标准型, "32512", 公开, 标准的箭头IDC_ARROW
+.常量 鼠标指针_文本编辑型, "32513", 公开, 文本编辑IDC_IBEAM
+.常量 鼠标指针_沙漏型, "32514", 公开, 沙漏IDC_WAIT
+.常量 鼠标指针_十字型, "32515", 公开, 十字光标IDC_CROSS
+.常量 鼠标指针_UPARROW, "32516", 公开, 向上垂直箭头IDC_UPARROW
+.常量 鼠标指针_SIZENWSE, "32642", 公开, 双箭头指向西北和东南IDC_SIZENWSE
+.常量 鼠标指针_SIZENESW, "32643", 公开, 双箭头指向东北和西南IDC_SIZENESW
+.常量 鼠标指针_SIZEWE, "32644", 公开, 双箭头指向西和东IDC_SIZEWE
+.常量 鼠标指针_SIZENS, "32645", 公开, 双箭头指向南北IDC_SIZENS
+.常量 鼠标指针_四向箭头, "32646", 公开, 四向箭头指向东、西、南、北IDC_SIZEALL
+.常量 鼠标指针_禁止型, "32648", 公开, 禁止圈IDC_NO
+.常量 鼠标指针_手型, "32649", 公开, 手型IDC_HAND
+.常量 鼠标指针_APPSTARTING, "32650", 公开, 标准的箭头和小沙漏IDC_APPSTARTING
+.常量 鼠标指针_帮助, "32651", 公开, 箭头和问号IDC_HELP
+
+.常量 HOOK状态_成功, "0", 公开
+.常量 HOOK状态_修改内存保护失败, "1", 公开
+.常量 HOOK状态_已HOOK, "2", 公开, 如果需要继续HOOK请先卸载
+.常量 HOOK状态_欲HOOK地址为0, "3", 公开, 欲HOOK地址不能为0
+.常量 HOOK状态_读取内存失败, "4", 公开, 请检查打开进程权限
+.常量 HOOK状态_写入内存失败, "5", 公开, 请检查打开进程权限
+.常量 HOOK状态_申请远程内存失败, "6", 公开
+
+.常量 CF_TEXT, "1", 公开, 文字格式。每行以回车/换行（CR-LF）组合结束。空字符表示数据的结尾。对ANSI文本使用此格式。
+.常量 CF_BITMAP, "2", 公开, 位图的句柄（HBITMAP）
+.常量 CF_METAFILEPICT, "3", 公开, 处理由METAFILEPICT结构定义的图元文件图片格式。通过动态数据交换（DDE）传递CF_METAFILEPICT句柄时，负责删除【HMEM】的应用程序也应该释放CF_METAFILEPICT句柄引用的元文件。
+.常量 CF_SYLK, "4", 公开, Microsoft符号链接（SYLK）格式。
+.常量 CF_DIF, "5", 公开, 软件艺术数据交换格式。
+.常量 CF_TIFF, "6", 公开, 标记图像文件格式。
+.常量 CF_OEMTEXT, "7", 公开, 文字格式包含OEM字符集中的字符。每行以回车/换行（CR-LF）组合结束。空字符表示数据的结尾。
+.常量 CF_DIB, "8", 公开, 一个包含BITMAPINFO结构的内存对象，后跟位图位。
+.常量 CF_PALETTE, "9", 公开, 处理调色板。每当应用程序将数据放置在依赖于或假定调色板的剪贴板中时，它也应将调色板放在剪贴板上。如果剪贴板包含CF_PALETTE（逻辑调色板）格式的数据，则应用程序应使用SelectPalette和RealizePalette函数来实现（比较）剪贴板中与该逻辑调色板的任何其他数据。当显示剪贴板数据时，Windows剪贴板始终将剪贴板上的任何对象用作CF_PALETTE格式的当前调色板。
+.常量 CF_PENDATA, "10", 公开, 用于Pen Computing的Microsoft Windows笔的扩展数据。
+.常量 CF_RIFF, "11", 公开, 表示音频数据比CF_WAVE标准波形格式更复杂。
+.常量 CF_WAVE, "12", 公开, 以诸如11 kHz或22 kHz脉冲编码调制（PCM）的标准波形格式之一表示音频数据。
+.常量 CF_UNICODETEXT, "13", 公开, 仅Windows NT： Unicode文字格式。每行以回车/换行（CR-LF）组合结束。空字符表示数据的结尾。
+.常量 CF_ENHMETAFILE, "14", 公开, 增强图元文件的句柄（HENHMETAFILE）。
+.常量 CF_HDROP, "15", 公开, 类型为HDROP的句柄，用于标识文件列表。应用程序可以通过将句柄传递给DragQueryFile函数来检索有关文件的信息。
+
+.常量 CREATE_SUSPENDED, "4"
+
+
+
+
+.常量 数据填充_NO_PADDING, "1", 公开
+.常量 数据填充_ZERO_PADDING, "2", 公开
+.常量 数据填充_ANSIX923_PADDING, "3", 公开
+.常量 数据填充_ISO10126_PADDING, "4", 公开
+.常量 数据填充_PKCS5_PADDING, "5", 公开
+.常量 数据填充_PKCS7_PADDING, "7", 公开
+
+
+
+
+
+.常量 常量_0, "0"
+.常量 常量_1, "1"
+.常量 M_ERROR_MESSAGE_ON, "4194304", , SevenZipOpenArchive 
+.常量 M_ERROR_MESSAGE_OFF, "8388608", , SevenZipOpenArchive  
+.常量 M_CHECK_ALL_PATH, "256", , SevenZipOpenArchive 搜索搜索文件名时使用的完整路径
+.常量 M_CHECK_FILENAME_ONLY, "512", , SevenZipOpenArchive 我将在搜索时仅处理文件名。可与M_CHECK_ALL_PATH同时使用
+.常量 常量_2, "2"
+

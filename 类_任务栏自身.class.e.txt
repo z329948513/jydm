@@ -1,0 +1,268 @@
+﻿.版本 2
+
+.程序集 类_任务栏自身, , 公开, 对自身程序任务栏有效
+.程序集变量 m_obj, 对象
+.程序集变量 m_taskbarBtnCreatedMsg, 整数型
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    m_taskbarBtnCreatedMsg ＝ RegisterWindowMessage (“TaskbarButtonCreated”)
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    
+
+.子程序 _Create, 整数型
+    .参数 ClassId, 字节集
+    .参数 iid, 字节集
+
+    m_obj.清除 ()
+    返回 (CoCreateInstance_字节集 (ClassId, 0, #CLSCTX_INPROC_SERVER, iid, m_obj))
+
+.子程序 取指针, 整数型, 公开
+    返回 (_取指针对象 (m_obj))
+
+.子程序 显示, 逻辑型, 公开, AddTab 将窗口添加到任务栏列表
+    .参数 参数_窗口句柄, 整数型, , 建议至少包含 WS_CAPTION 风格
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_AddTab (_取指针对象 (m_obj), 参数_窗口句柄)
+    返回 (hr ＝ 0)
+    
+
+.子程序 隐藏, 逻辑型, 公开, DeleteTab 将窗口从任务栏列表删除
+    .参数 参数_窗口句柄, 整数型
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_DeleteTab (_取指针对象 (m_obj), 参数_窗口句柄)
+    返回 (hr ＝ 0)
+
+.子程序 销毁, , 公开
+    m_obj.清除 ()
+
+.子程序 激活, 逻辑型, 公开, ActivateTab 激活任务栏列表项
+    .参数 参数_窗口句柄, 整数型
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_ActivateTab (_取指针对象 (m_obj), 参数_窗口句柄)
+    返回 (hr ＝ 0)
+
+.子程序 标记激活, 逻辑型, 公开, SetActiveAlt 将任务栏列表项标记为激活，但没有视觉效果
+    .参数 参数_窗口句柄, 整数型
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_SetActiveAlt (_取指针对象 (m_obj), 参数_窗口句柄)
+    返回 (hr ＝ 0)
+    
+
+.子程序 创建, 逻辑型, 公开
+    .局部变量 hr, 整数型
+
+    hr ＝ _Create (文本到CLSID (#CLSID_TaskbarList), 文本到CLSID (#IID_ITaskbarList3))
+    返回 (hr ＝ 0)
+    
+
+.子程序 置进度条值, 逻辑型, 公开, SetProgressValue
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_当前位置, 整数型
+    .参数 参数_总大小, 整数型
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_SetProgressValue (取指针 (), 参数_窗口句柄, 参数_当前位置, 参数_总大小)
+    返回 (hr ＝ 0)
+
+.子程序 置进度条状态, 逻辑型, 公开, SetProgressState
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_进度条状态, 整数型, , “任务栏进度_”开头常量
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_SetProgressState (取指针 (), 参数_窗口句柄, 参数_进度条状态)
+    返回 (hr ＝ 0)
+    
+
+.子程序 注册选项卡, 逻辑型, 公开, RegisterTab
+    .参数 参数_选项卡窗口, 整数型, , 必须已注册
+    .参数 参数_主窗口, 整数型, , 应用程序主窗口
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_RegisterTab (取指针 (), 参数_选项卡窗口, 参数_主窗口)
+    返回 (hr ＝ 0)
+    
+
+.子程序 卸载选项卡, 逻辑型, 公开, UnregisterTab
+    .参数 参数_选项卡窗口, 整数型, , 必须已注册
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_UnregisterTab (取指针 (), 参数_选项卡窗口)
+    返回 (hr ＝ 0)
+
+.子程序 置选项卡顺序, 逻辑型, 公开, SetTabOrder
+    .参数 参数_选项卡窗口, 整数型, , 必须已注册
+    .参数 参数_此窗口句柄之前, 整数型, , 可以为0
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_SetTabOrder (取指针 (), 参数_选项卡窗口, 参数_此窗口句柄之前)
+    返回 (hr ＝ 0)
+    
+
+.子程序 激活选项卡, 逻辑型, 公开, SetTabActive
+    .参数 参数_选项卡窗口, 整数型, , 必须已注册
+    .参数 参数_主窗口, 整数型
+    .局部变量 hr, 整数型
+
+    hr ＝ ITaskbarList_SetTabActive (取指针 (), 参数_选项卡窗口, 参数_主窗口, 0)
+    返回 (hr ＝ 0)
+
+.子程序 添加按钮, 逻辑型, 公开, ThumbBarAddButtons
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_缩略图按钮组, 精易_任务栏缩略图按钮, 数组
+    .局部变量 thumbBtn, THUMBBUTTON
+    .局部变量 wstr, 字节集
+    .局部变量 pButton, 整数型
+    .局部变量 hr, 整数型
+    .局部变量 count, 整数型
+    .局部变量 i, 整数型
+
+    count ＝ 取数组成员数 (参数_缩略图按钮组)
+    pButton ＝ _Alloc (540 × count)
+    .计次循环首 (count, i)
+        thumbBtn.dwMask ＝ 参数_缩略图按钮组 [i].掩码
+        thumbBtn.iId ＝ 参数_缩略图按钮组 [i].ID
+        thumbBtn.hIcon ＝ 参数_缩略图按钮组 [i].图标
+        thumbBtn.iBitmap ＝ 参数_缩略图按钮组 [i].图片索引
+        wstr ＝ A2W (参数_缩略图按钮组 [i].提示文本)
+        RtlMoveMemory_bytes (thumbBtn.szTip, wstr, 取字节集长度 (wstr))
+        thumbBtn.dwFlags ＝ 参数_缩略图按钮组 [i].按钮风格
+        RtlMoveMemory_THUMBBUTTON2ptr (pButton ＋ (i － 1) × 540, thumbBtn, 540)
+    .计次循环尾 ()
+    hr ＝ ITaskbarList_ThumbBarAddButtons (取指针 (), 参数_窗口句柄, count, pButton)
+    _Free (pButton)
+    返回 (hr ＝ 0)
+
+.子程序 修改按钮, 逻辑型, 公开, ThumbBarUpdateButtons
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_缩略图按钮, 精易_任务栏缩略图按钮
+    .局部变量 thumbBtn, THUMBBUTTON
+    .局部变量 wstr, 字节集
+    .局部变量 pButton, 整数型
+    .局部变量 hr, 整数型
+
+    pButton ＝ _Alloc (540)
+    thumbBtn.dwMask ＝ 参数_缩略图按钮.掩码
+    thumbBtn.iId ＝ 参数_缩略图按钮.ID
+    thumbBtn.hIcon ＝ 参数_缩略图按钮.图标
+    thumbBtn.iBitmap ＝ 参数_缩略图按钮.图片索引
+    wstr ＝ A2W (参数_缩略图按钮.提示文本)
+    RtlMoveMemory_bytes (thumbBtn.szTip, wstr, 取字节集长度 (wstr))
+    thumbBtn.dwFlags ＝ 参数_缩略图按钮.按钮风格
+    RtlMoveMemory_THUMBBUTTON2ptr (pButton, thumbBtn, 540)
+    hr ＝ ITaskbarList_ThumbBarUpdateButtons (取指针 (), 参数_窗口句柄, 1, pButton)
+    _Free (pButton)
+    返回 (hr ＝ 0)
+    
+
+.子程序 置按钮图片组, 逻辑型, 公开, ThumbBarSetImageList 设置 添加按钮 时的图片组
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_图片组, 字节集, , 图片组必须是32位，宽度高度分别为 GetSystemMetrics(SM_CXICON)  GetSystemMetrics(SM_CYICON)
+    .局部变量 hr, 整数型
+    .局部变量 istream, 整数型
+    .局部变量 bin, 字节集
+    .局部变量 len, 整数型
+    .局部变量 himg, 整数型
+    .局部变量 oldhimg, 整数型
+
+    len ＝ 取字节集长度 (参数_图片组)
+    bin ＝ 取字节集中间 (参数_图片组, 9, len － 8)
+    istream ＝ _CreateIStream (bin)
+    .如果真 (istream ＝ 0)
+        返回 (假)
+    .如果真结束
+    himg ＝ ImageList_Read (istream)
+    .如果真 (himg ＝ 0)
+        ITaskbarList_Release (istream)
+        返回 (假)
+    .如果真结束
+    oldhimg ＝ GetPropA (参数_窗口句柄, “hImageList”)
+    .如果真 (oldhimg ≠ 0)
+        ImageList_Destroy (oldhimg)
+    .如果真结束
+    SetPropA (参数_窗口句柄, “hImageList”, himg)
+    hr ＝ ITaskbarList_ThumbBarSetImageList (取指针 (), 参数_窗口句柄, himg)
+    ITaskbarList_Release (istream)
+    返回 (hr ＝ 0)
+    
+
+.子程序 置覆盖图标, 逻辑型, 公开, SetOverlayIcon 任务栏必须是大图标模式
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_图标句柄, 整数型, , 应该是一个小图标,16 x16 像素 96 dpi
+    .参数 参数_描述文本, 文本型
+    .局部变量 hIcon, 整数型
+    .局部变量 wStr, 字节集
+    .局部变量 hr, 整数型
+
+    hIcon ＝ GetPropA (参数_窗口句柄, “OverlayIcon”)
+    .如果真 (hIcon ≠ 0)
+        DestroyIcon (hIcon)
+    .如果真结束
+    hIcon ＝ 参数_图标句柄
+    SetPropA (参数_窗口句柄, “OverlayIcon”, hIcon)
+    wStr ＝ A2W (参数_描述文本)
+    hr ＝ ITaskbarList_SetOverlayIcon (取指针 (), 参数_窗口句柄, hIcon, _取指针字节集 (wStr))
+    返回 (hr ＝ 0)
+
+.子程序 置缩略图提示文本, 逻辑型, 公开, SetThumbnailTooltip
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_提示文本, 文本型
+    .局部变量 wStr, 字节集
+    .局部变量 hr, 整数型
+
+    wStr ＝ A2W (参数_提示文本)
+    hr ＝ ITaskbarList_SetThumbnailTooltip (取指针 (), 参数_窗口句柄, _取指针字节集 (wStr))
+    返回 (hr ＝ 0)
+
+.子程序 置缩略图区域, 逻辑型, 公开, SetThumbnailClip 将窗口的一部分作为缩略图显示
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_左边, 整数型
+    .参数 参数_顶边, 整数型
+    .参数 参数_宽度, 整数型
+    .参数 参数_高度, 整数型
+    .局部变量 pRect, 整数型
+    .局部变量 hr, 整数型
+
+    pRect ＝ _Alloc (16)
+    SetRect (pRect, 参数_左边, 参数_顶边, 参数_左边 ＋ 参数_宽度, 参数_顶边 ＋ 参数_高度)
+    hr ＝ ITaskbarList_SetThumbnailClip (取指针 (), 参数_窗口句柄, pRect)
+    _Free (pRect)
+    返回 (hr ＝ 0)
+    
+
+.子程序 事件_任务栏按钮被创建, , 公开, TaskbarButtonCreated
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_事件指针, 子程序指针, , 返回值：无 （整数型 窗口句柄）
+    .局部变量 oldProc, 整数型
+    .局部变量 hLib, 整数型
+    .局部变量 ChangeWindowMessageFilter, 整数型
+
+    oldProc ＝ GetWindowLongA (参数_窗口句柄, #GWL_WNDPROC)
+    .如果真 (oldProc ≠ 到整数 (&WndProc))
+        SetWindowLongA (参数_窗口句柄, #GWL_WNDPROC, 到整数 (&WndProc))
+        SetPropA (参数_窗口句柄, “oldProc”, oldProc)
+    .如果真结束
+    hLib ＝ GetModuleHandleA (“User32.dll”)
+    .如果真 (hLib ≠ 0)
+        ChangeWindowMessageFilter ＝ GetProcAddress (hLib, “ChangeWindowMessageFilter”)
+        .如果真 (ChangeWindowMessageFilter ≠ 0)
+            call2 (ChangeWindowMessageFilter, m_taskbarBtnCreatedMsg, #MSGFLT_ADD)
+            call2 (ChangeWindowMessageFilter, #WM_COMMAND, #MSGFLT_ADD)
+        .如果真结束
+        
+    .如果真结束
+    SetPropA (参数_窗口句柄, “taskbarBtnCreatedMsg”, m_taskbarBtnCreatedMsg)
+    SetPropA (参数_窗口句柄, “onTaskbarBtnCreated”, 到整数 (参数_事件指针))
+    
+
+.子程序 事件_任务栏按钮被单击, , 公开, OnTaskbarButtonClick
+    .参数 参数_窗口句柄, 整数型
+    .参数 参数_事件指针, 子程序指针, , 返回值：无 （整数型 窗口句柄，整数型 按钮ID）
+
+    SetPropA (参数_窗口句柄, “onTaskbarBtnClick”, 到整数 (参数_事件指针))
+    
+

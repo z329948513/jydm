@@ -1,0 +1,199 @@
+﻿.版本 2
+
+.程序集 类_Cookie, , 公开, Cookie操作类   感谢【@bj2757 】提供源码
+.程序集变量 cookie_s, Cookie, , "0", cookie数组
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    
+
+.子程序 加入Cookie, , 公开, 加入单个cookie
+    .参数 cookie, Cookie, , 需要加入的cookie
+
+    加入成员 (cookie_s, cookie)
+
+.子程序 加入Cookie2, , 公开, 加入单个cookie
+    .参数 健, 文本型, , Cookie的名字
+    .参数 值, 文本型, , Cookie的值
+    .局部变量 co, Cookie
+
+    co.健 ＝ 健
+    co.值 ＝ 值
+    加入成员 (cookie_s, co)
+    
+
+.子程序 加入Cookie文本, 逻辑型, 公开, 自动解析cookie文本并加入当前cookie对象
+    .参数 cookie字串, 文本型, , 需要加入的文本字串
+    .局部变量 局_cookie数组, Cookie, , "0"
+
+    Cookie解析 (cookie字串, 局_cookie数组)
+    .如果真 (取数组成员数 (局_cookie数组) ＞ 0)
+        加入Cookie数组 (局_cookie数组)
+    .如果真结束
+    返回 (假)
+
+.子程序 加入Cookie数组, , 公开
+    .参数 Cookie_数组, Cookie, 数组
+
+    加入成员 (cookie_s, Cookie_数组)
+    
+
+.子程序 Cookie解析, , 公开, 根据cookie文本解析cookie并加入返回数组中
+    .参数 Cookie文本, 文本型, , 需要解析的cookie文本字符串
+    .参数 Cookie集合, Cookie, 参考 数组, 返回cookie集合
+    .参数 删收尾引号, 逻辑型, 可空, 默认为真
+    .局部变量 局_数组1, 文本型, , "0"
+    .局部变量 局_index, 整数型
+    .局部变量 i, 整数型
+    .局部变量 cookie_i, Cookie
+
+    局_数组1 ＝ 分割文本 (Cookie文本, “;”, )
+    .如果真 (是否为空 (删收尾引号))
+        删收尾引号 ＝ 真
+    .如果真结束
+    .计次循环首 (取数组成员数 (局_数组1), i)
+        局_index ＝ 寻找文本 (局_数组1 [i], “=”, , 假)
+        .如果真 (局_index ≠ -1)
+            cookie_i.健 ＝ 删首尾空 (取文本左边 (局_数组1 [i], 局_index － 1))
+            cookie_i.值 ＝ 删首尾空 (取文本右边 (局_数组1 [i], 取文本长度 (局_数组1 [i]) － 局_index))
+            .如果真 (删收尾引号)
+                .如果真 (取文本左边 (cookie_i.健, 1) ＝ #引号)
+                    cookie_i.健 ＝ 取文本右边 (cookie_i.健, 取文本长度 (cookie_i.健) － 1)
+                .如果真结束
+                .如果真 (取文本右边 (cookie_i.健, 1) ＝ #引号)
+                    cookie_i.健 ＝ 取文本左边 (cookie_i.健, 取文本长度 (cookie_i.健) － 1)
+                .如果真结束
+                .如果真 (取文本左边 (cookie_i.值, 1) ＝ #引号)
+                    cookie_i.值 ＝ 取文本右边 (cookie_i.值, 取文本长度 (cookie_i.值) － 1)
+                .如果真结束
+                .如果真 (取文本右边 (cookie_i.值, 1) ＝ #引号)
+                    cookie_i.值 ＝ 取文本左边 (cookie_i.值, 取文本长度 (cookie_i.值) － 1)
+                .如果真结束
+                
+            .如果真结束
+            
+            加入成员 (Cookie集合, cookie_i)
+        .如果真结束
+        
+    .计次循环尾 ()
+
+.子程序 删除Cookie, 逻辑型, 公开, 根据cookie的健删除cookie
+    .参数 cookieKey, 文本型, , 需要删除cookie的健
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (cookie_s), i)
+        .如果真 (cookie_s [i].健 ＝ cookieKey)
+            删除成员 (cookie_s, i, )
+            返回 (真)
+            
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (假)
+
+.子程序 删除全部, , 公开, 删除当前对象中所有的cookie
+    清除数组 (cookie_s)
+    
+
+.子程序 取Cookie文本, 文本型, 公开, 返回当前集合中所有的cookie组成的字符串
+    .局部变量 i, 整数型
+    .局部变量 返回, 文本型
+
+    返回 ＝ “”
+    .计次循环首 (取数组成员数 (cookie_s), i)
+        返回 ＝ 返回 ＋ cookie_s [i].健 ＋ “=” ＋ cookie_s [i].值 ＋ “; ”
+    .计次循环尾 ()
+    返回 ＝ 取文本左边 (返回, 取文本长度 (返回) － 2)
+    返回 (返回)
+
+.子程序 取全部Cookie, 逻辑型, 公开, 如果当前对象没有Cookie则返回假
+    .参数 Cookie数组, Cookie, 参考 数组, 返回的cookie所存放的数组
+
+    .如果真 (取数组成员数 (cookie_s) ≤ 0)
+        返回 (假)
+        
+    .如果真结束
+    加入成员 (Cookie数组, cookie_s)
+    返回 (真)
+
+.子程序 取Cookie值, 文本型, 公开, 根据健取值 成功返回对应的值 失败返回空
+    .参数 CookieKey, 文本型, , cookie健
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (cookie_s), i)
+        .如果真 (cookie_s [i].健 ＝ CookieKey)
+            返回 (cookie_s [i].值)
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (“”)
+
+.子程序 取Cookie组, 文本型, 公开, 返回一组cookie
+    .参数 CookieKey, 文本型, , cookie健
+
+    .如果真 (取Cookie值 (CookieKey) ＝ “”)
+        返回 (“”)
+    .如果真结束
+    返回 (CookieKey ＋ “=” ＋ 取Cookie值 (CookieKey))
+
+.子程序 取Cookie组对象, Cookie, 公开, 返回一组cookie对象
+    .参数 CookieKey, 文本型, , cookie健，也就是cookie名称
+    .局部变量 i, 整数型
+    .局部变量 f, Cookie
+
+    .计次循环首 (取数组成员数 (cookie_s), i)
+        .如果真 (cookie_s [i].健 ＝ CookieKey)
+            f ＝ cookie_s [i]
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (f)
+
+.子程序 Cookie是否存在, 逻辑型, 公开, 根据key判断cookie中是否存在
+    .参数 cookieKey, 文本型, , 需要判断的cookie的key
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (cookie_s), i)
+        .如果真 (cookie_s [i].健 ＝ cookieKey)
+            返回 (真)
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (假)
+    
+
+.子程序 Cookie是否存在数组中, 逻辑型, 公开, 根据key判断指定的cookie数组中是否存在
+    .参数 CookieKey, 文本型, , 需要判断的cookie的key
+    .参数 Cookie数组, Cookie, 数组, Cookie数组
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (Cookie数组), i)
+        .如果真 (Cookie数组 [i].健 ＝ CookieKey)
+            返回 (真)
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (假)
+    
+
+.子程序 Cookie是否存在文本中, 逻辑型, 公开, 根据key判断指定的cookie字符串文本中是否存在
+    .参数 CookieKey, 文本型, , 需要判断的cookie的key
+    .参数 Cookie文本, 文本型, , Cookie文本
+    .局部变量 Cookie数组, Cookie, , "0", Cookie数组
+    .局部变量 i, 整数型
+
+    Cookie解析 (Cookie文本, Cookie数组)
+    .如果真 (取数组成员数 (Cookie数组) ＞ 0)
+        .计次循环首 (取数组成员数 (Cookie数组), i)
+            .如果真 (Cookie数组 [i].健 ＝ CookieKey)
+                返回 (真)
+            .如果真结束
+            
+        .计次循环尾 ()
+        
+    .如果真结束
+    返回 (假)
+    
+

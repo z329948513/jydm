@@ -1,0 +1,232 @@
+﻿.版本 2
+
+.程序集 类_任务栏, , 公开, http://msdn.microsoft.com/en-us/library/windows/desktop/bb774652(v=vs.85).aspx
+.程序集变量 ppv
+.程序集变量 objShell
+.程序集变量 HotKeyStatus, 逻辑型
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    .局部变量 CLSID_TaskbarList, GUID
+    .局部变量 IID_ITaskbarList, GUID
+    .局部变量 CLSID_Shell, GUID
+    .局部变量 IID_IShellDispatch5, GUID
+
+    CLSID_TaskbarList ＝ COM_StringToCLSID (“{56FDF344-FD6D-11d0-958A-006097C9A090}”)
+    IID_ITaskbarList ＝ COM_StringtoIID (“{56FDF342-FD6D-11d0-958A-006097C9A090}”)
+    .如果真 (CoCreateInstance (CLSID_TaskbarList, 0, 1, IID_ITaskbarList, ppv) ＝ 0)
+        COM_调用COM方法 (ppv, 3) ' HrInit
+    .如果真结束
+    CLSID_Shell ＝ COM_StringToCLSID (“{13709620-C279-11CE-A49E-444553540000}”)
+    IID_IShellDispatch5 ＝ COM_StringtoIID (“{866738b9-6cf2-4de8-8767-f794ebe74f4e}”)
+    CoCreateInstance (CLSID_Shell, 0, 1, IID_IShellDispatch5, objShell)
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    .如果真 (ppv ≠ 0)
+        COM_Release (ppv)
+    .如果真结束
+    .如果真 (objShell ≠ 0)
+        COM_Release (objShell)
+    .如果真结束
+    
+
+.子程序 显示图标, 逻辑型, 公开
+    .参数 窗口句柄
+
+    返回 (COM_调用COM方法 (ppv, 4, 窗口句柄) ＝ 0) ' AddTab
+
+.子程序 隐藏图标, 逻辑型, 公开
+    .参数 窗口句柄
+
+    返回 (COM_调用COM方法 (ppv, 5, 窗口句柄) ＝ 0) ' DeleteTab
+
+.子程序 激活图标, 逻辑型, 公开, 激活任务栏指定图标，并非激活窗口。
+    .参数 窗口句柄
+
+    返回 (COM_调用COM方法 (ppv, 6, 窗口句柄) ＝ 0) ' ActivateTab
+
+.子程序 取消激活, 逻辑型, 公开, 取消指定激活指定图标。
+    .参数 窗口句柄
+
+    返回 (COM_调用COM方法 (ppv, 7, 窗口句柄) ＝ 0) ' SetActiveAlt
+
+.子程序 注册热键, , 公开
+    .参数 功能键, 整数型, , 1=Alt键；2=Ctrl键；4=Shift键；8=Win键，组合则相加。
+    .参数 主热键, , , 键代码，可以使用易语言中的键代码常量。
+    .参数 执行事件, 子程序指针
+    .局部变量 bool, 逻辑型
+    .局部变量 msg, MSG
+
+    HotKeyStatus ＝ 假
+    .如果真 (RegisterHotKey (0, 1268, 功能键, 主热键))
+        .判断循环首 (GetMessageA (msg, 0, 0, 0))
+            .判断开始 (msg.message ＝ 786) ' #WM_HOTKEY
+                程序_Call (到整数 (执行事件))
+            .判断 (HotKeyStatus)
+                跳出循环 ()
+            .默认
+                
+            .判断结束
+            TranslateMessage (msg)
+            DispatchMessage (msg)
+        .判断循环尾 ()
+    .如果真结束
+    
+
+.子程序 取消热键, 逻辑型, 公开
+    .如果真 (UnregisterHotKey (0, 1268))
+        HotKeyStatus ＝ 真
+        返回 (真)
+    .如果真结束
+    返回 (假)
+
+.子程序 取句柄, 整数型, 公开
+    返回 (FindWindowA (“Shell_TrayWnd”, 字符 (0)))
+
+.子程序 隐藏, 逻辑型, 公开
+    返回 (ShowWindow (取句柄 (), 0))
+
+.子程序 显示, 逻辑型, 公开
+    返回 (ShowWindow (取句柄 (), 1))
+
+.子程序 取高度, 整数型, 公开
+    .局部变量 ABD, 精易_任务相关
+    .局部变量 Ret, 整数型
+    .局部变量 屏幕高度, 整数型
+
+    SHAppBarMessage (5, ABD)
+    Ret ＝ SHAppBarMessage (4, ABD)
+    系统_取屏幕分辨率 (, , , 屏幕高度, )
+    返回 (屏幕高度 － ABD.rc.顶边)
+
+.子程序 监视全屏, , 公开
+    .参数 窗口句柄, , , 第三方窗口无效，易中用 取窗口句柄()
+    .参数 处理程序, 子程序指针, , 参数1；事件类型【整数型】输出值：1全屏；0退出全屏
+    .局部变量 abd, 精易_任务相关
+    .局部变量 Subclass
+
+    abd.cbSize ＝ 36
+    abd.hwnd ＝ 窗口句柄
+    abd.uCallbackMessage ＝ 11286
+    SetPropA (abd.hwnd, “Callback AppBar”, 到整数 (处理程序))
+    SHAppBarMessage (0, abd) ' #ABM_NEW
+    Subclass ＝ 类回调_取类地址 (15, 4)
+    SetPropA (abd.hwnd, “Callback Proc”, SetWindowLongA (abd.hwnd, -4, Subclass))
+
+.子程序 WindowProc, 整数型
+    .参数 hwnd
+    .参数 wMsg
+    .参数 wParam
+    .参数 lParam
+    .局部变量 SubAddress
+    .局部变量 SubProc
+
+    .判断开始 (wMsg ＝ 11286)
+        .如果真 (wParam ＝ 2) ' #ABN_FULLSCREENAPP
+            SubAddress ＝ GetPropA (hwnd, “Callback AppBar”)
+            程序_Call (SubAddress, lParam)
+        .如果真结束
+        
+    .默认
+        
+    .判断结束
+    SubProc ＝ GetPropA (hwnd, “Callback Proc”)
+    返回 (CallWindowProcA (SubProc, hwnd, wMsg, wParam, lParam))
+
+.子程序 是否隐藏, 逻辑型, 公开, 判断任务栏是否隐藏状态。
+    .局部变量 ABD, 精易_任务相关
+    .局部变量 uState
+
+    uState ＝ SHAppBarMessage (4, ABD) ' ABM_GETSTATE
+    返回 (选择 (uState ＝ 0 或 uState ＝ 2, 假, 真))
+
+.子程序 自动隐藏, 逻辑型, 公开, 设置任务栏自动隐藏，成功返回真，失败返回假。
+    .参数 启用, 逻辑型
+    .局部变量 ABD, 精易_任务相关
+    .局部变量 code
+
+    ABD.lParam ＝ 选择 (启用, 1, 0) ' #ABS_AUTOHIDE
+    code ＝ SHAppBarMessage (10, ABD) ' ABM_SETSTATE
+    返回 (code ＝ 1)
+
+.子程序 取矩形, 整数型, 公开, 成功返回1，失败返回错误代码。
+    .参数 矩形, 精易_矩形J, , 变量储存返回值。
+    .局部变量 ABD, 精易_任务相关
+    .局部变量 code
+
+    code ＝ SHAppBarMessage (5, ABD) ' ABM_GETTASKBARPOS
+    矩形 ＝ ABD.rc
+    返回 (code)
+
+.子程序 取位置, 整数型, 公开, 返回任务栏位置，返回值：0=左部；1=顶部；2=右部；3=底部
+    .局部变量 pabd, 精易_任务相关
+
+    SHAppBarMessage (5, pabd) ' ABM_GETTASKBARPOS
+    返回 (pabd.uEdge)
+
+.子程序 全部最小化, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 14) ＝ 0) ' MinimizeAll
+    .如果真结束
+    返回 (假)
+
+.子程序 撤销全部最小化, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 15) ＝ 0) ' UndoMinimizeALL
+    .如果真结束
+    返回 (假)
+
+.子程序 层叠窗口, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 17) ＝ 0) ' CascadeWindows
+    .如果真结束
+    返回 (假)
+
+.子程序 堆叠显示窗口, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 19) ＝ 0) ' TileHorizontally
+    .如果真结束
+    返回 (假)
+
+.子程序 并排显示窗口, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 18) ＝ 0) ' TileVertically
+    .如果真结束
+    返回 (假)
+
+.子程序 显示桌面, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 41) ＝ 0) ' ToggleDesktop
+    .如果真结束
+    返回 (假)
+
+.子程序 属性, 逻辑型, 公开
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 24) ＝ 0) ' TrayProperties
+    .如果真结束
+    返回 (假)
+
+.子程序 切换窗口, 逻辑型, 公开, 最底平台Vista，类似于按下键盘alt+Tab
+    .如果真 (objShell ≠ 0)
+        返回 (COM_调用COM方法 (objShell, 44) ＝ 0) ' WindowSwitcher
+    .如果真结束
+    返回 (假)
+    
+
+.子程序 锁定, 逻辑型, 公开, 锁定任务栏禁止更改任务大小与移动。重启explorer或重启后生效。
+    .参数 开启, 逻辑型
+    .局部变量 hKey
+    .局部变量 Status
+    .局部变量 bool, 逻辑型
+    .局部变量 flag, 整数型
+
+    IsWow64Process (GetCurrentProcess (), bool)
+    flag ＝ 选择 (bool, #KEY_WOW64_64KEY, #KEY_WOW64_32KEY)
+    Status ＝ RegOpenKeyExA (2147483649, “Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced”, 0, 位或 (flag, #KEY_ALL_ACCESS), hKey)
+    .如果真 (Status ＝ 0)
+        Status ＝ RegSetValueExA (hKey, “TaskbarSizeMove”, 0, 4, 到字节集 (选择 (开启, 1, 0)), 4) ' #REG_DWORD
+        RegFlushKey (hKey)
+        RegCloseKey (hKey)
+        返回 (Status ＝ 0)
+    .如果真结束
+    返回 (假)
+

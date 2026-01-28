@@ -1,0 +1,290 @@
+﻿.版本 2
+
+.程序集 类_图像格式转换类, , 公开, 作者：凌晨孤星；修改：邓学彬(泪闯天涯)
+.程序集变量 m_hMem, 整数型
+.程序集变量 m_Stream, 对象
+.程序集变量 m_pBitmap, 整数型
+.程序集变量 m_nWidth, 整数型, , , 图片宽度
+.程序集变量 m_nHeight, 整数型, , , 图片高度
+.程序集变量 m_pBrush, 整数型, , , 背景画刷
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    .局部变量 GpInput, GdiplusStartupInput
+
+    GpInput.GdiplusVersion ＝ 1
+    GdiplusStartup (全_Token, GpInput, 0) ' 启动 GDI+
+    
+    ' 模块命令收录自：http://bbs.eyuyan.com/read.php?tid=405365
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    销毁 ()
+    .如果真 (m_pBrush ≠ 0)
+        GdipDeleteBrush (m_pBrush)
+        m_pBrush ＝ 0
+    .如果真结束
+    
+
+.子程序 销毁, , 公开, 销毁载入的图像,释放内存
+    .如果真 (m_pBitmap ≠ 0)
+        GdipDisposeImage (m_pBitmap)
+        m_pBitmap ＝ 0
+    .如果真结束
+    .如果真 (m_Stream.是否为空 () ＝ 假)
+        m_Stream.清除 ()
+    .如果真结束
+    .如果真 (m_hMem ≠ 0)
+        GlobalFree (m_hMem)
+        m_hMem ＝ 0
+    .如果真结束
+    m_nWidth ＝ 0
+    m_nHeight ＝ 0
+
+.子程序 载入图像, 逻辑型, 公开
+    .参数 图像数据, 字节集
+    .局部变量 nLength, 整数型
+    .局部变量 lpvoid, 整数型
+    .局部变量 pStream1, 整数型
+    .局部变量 pStream2, 整数型
+
+    销毁 ()
+    nLength ＝ 取字节集长度 (图像数据)
+    .如果真 (nLength ＜ 5)
+        返回 (假)
+    .如果真结束
+    m_hMem ＝ GlobalAlloc (#GMEM_MOVEABLE, nLength)
+    .如果真 (m_hMem ＝ 0)
+        返回 (假)
+    .如果真结束
+    
+    CreateStreamOnHGlobal_Object (m_hMem, 假, m_Stream) ' 创建流对象。注意第2个参数！！！！！！！！！如果后面调用了 GlobalFree 进行释放的话，这里第2个参数设置为“假”
+    .如果真 (m_Stream.是否为空 ())
+        返回 (假)
+    .如果真结束
+    lpvoid ＝ GlobalLock (m_hMem) ' 锁定该区域，获得存放数据的地址
+    .如果真 (lpvoid ＝ 0)
+        返回 (假)
+    .如果真结束
+    RtlMoveMemory_字节集 (lpvoid, 图像数据, nLength) ' 把数据写到流里面
+    GlobalUnlock (m_hMem) ' 取消锁定
+    pStream1 ＝ GetObjectPtr (m_Stream, m_Stream, 0) ' 获得流对象指针
+    .如果真 (pStream1 ＝ 0)
+        返回 (假)
+    .如果真结束
+    RtlMoveMemory_整数传址1 (pStream2, pStream1, 4)
+    .如果真 (pStream2 ＝ 0)
+        返回 (假)
+    .如果真结束
+    GDIpCreateBitmapFromStream (pStream2, m_pBitmap) ' 创建位图对象
+    .如果真 (m_pBitmap ＝ 0)
+        返回 (假)
+    .如果真结束
+    
+    返回 (m_pBitmap ≠ 0)
+
+.子程序 载入文件, 逻辑型, 公开
+    .参数 文件名, 文本型, , 完整文件路径。
+    .局部变量 FileName, 字节集
+
+    销毁 ()
+    .如果真 (文件名 ＝ “”)
+        返回 (假)
+    .如果真结束
+    FileName ＝ A2W (文件名)
+    GdipLoadImageFromFile (FileName, m_pBitmap)
+    返回 (m_pBitmap ≠ 0)
+
+.子程序 转换到字节集, 字节集, 公开, 转换图片为新格式,操作成功返回新图片的字节集,失败返回空字节集.参数1为转换格式(1、bmp；2、jpg；3、gif；4、tiff；5、png),参数2为JPG图片质量(0-100)
+    .参数 转换格式, 整数型, , 转换后的图片格式。1、bmp；2、jpg；3、gif；4、tiff；5、png
+    .参数 JPG图片质量, 整数型, 可空, 只对JPG格式有效,0最差效果,100最好效果,留空默认为100
+    .局部变量 Clsid, 字节集
+    .局部变量 DataStream, 对象
+    .局部变量 hMemDataStream, 整数型
+    .局部变量 pDataStream, 整数型
+    .局部变量 nStreamSize, 整数型
+    .局部变量 bRet, 逻辑型
+    .局部变量 eps, EncoderParameters
+    .局部变量 quality, 整数型
+    .局部变量 新图像, 字节集
+    .局部变量 pStream2, 整数型
+    .局部变量 pStream1, 整数型
+
+    .如果真 (m_pBitmap ＝ 0)
+        返回 (新图像)
+    .如果真结束
+    填充背景 ()
+    ' //-----------------------------------------
+    .如果真 (是否为空 (JPG图片质量))
+        JPG图片质量 ＝ 100
+    .如果真结束
+    .如果真 (JPG图片质量 ＜ 0)
+        JPG图片质量 ＝ 0
+    .如果真结束
+    .如果真 (JPG图片质量 ＞ 100)
+        JPG图片质量 ＝ 100
+    .如果真结束
+    ' //-----------------------------------------
+    GetCLSID (转换格式, Clsid)
+    eps.Count ＝ 1
+    eps.Parameter [1].Type ＝ 4
+    eps.Parameter [1].NumberOfValues ＝ 1
+    .如果真 (转换格式 ＝ 2) ' jpg
+        quality ＝ JPG图片质量 ' 图片质量，0最差效果，100最好效果
+        eps.Parameter [1].Value ＝ lstrcpynA_整数传址 (quality, quality, 0)
+        CLSIDFromString_字节 (A2W (“{1d5be4b5-fa4a-452d-9cdd-5db35105e7eb}”, ), eps.Parameter [1].Guid)
+    .如果真结束
+    ' //-----------------------------------------
+    hMemDataStream ＝ GlobalAlloc (#GMEM_MOVEABLE, 0)
+    CreateStreamOnHGlobal_Object (hMemDataStream, 假, DataStream)
+    pStream1 ＝ GetObjectPtr (DataStream, DataStream, 0) ' 获得流对象指针
+    .如果真 (pStream1 ≠ 0)
+        RtlMoveMemory_整数传址1 (pStream2, pStream1, 4)
+        .如果真 (pStream2 ≠ 0)
+            GdipSaveImageToStream (m_pBitmap, pStream2, Clsid, eps)
+            pDataStream ＝ GlobalLock (hMemDataStream)
+            nStreamSize ＝ GlobalSize (hMemDataStream)
+            .如果真 (pDataStream ≠ 0)
+                新图像 ＝ 取空白字节集 (nStreamSize)
+                RtlMoveMemory_int2Bytes (新图像, pDataStream, nStreamSize)
+                bRet ＝ 真
+            .如果真结束
+            GlobalUnlock (hMemDataStream)
+        .如果真结束
+        
+    .如果真结束
+    GlobalFree (hMemDataStream)
+    返回 (新图像)
+
+.子程序 转换到文件, 逻辑型, 公开, 转换图片为新格式,操作成功返回真,失败返回假.参数1为转换格式(1、bmp；2、jpg；3、gif；4、tiff；5、png),参数2为JPG图片质量(0-100)
+    .参数 文件名, 文本型, , 完整文件路径,存放转换后的图片。
+    .参数 转换格式, 整数型, , 转换后的图片格式。1、bmp；2、jpg；3、gif；4、tiff；5、png
+    .参数 JPG图片质量, 整数型, 可空, 只对JPG格式有效,0最差效果,100最好效果,留空默认为100
+    .局部变量 Clsid, 字节集
+    .局部变量 FileName, 字节集
+    .局部变量 eps, EncoderParameters
+    .局部变量 quality, 整数型
+    .局部变量 r, 整数型
+
+    .如果真 (m_pBitmap ＝ 0)
+        返回 (假)
+    .如果真结束
+    .如果真 (文件名 ＝ “”)
+        返回 (假)
+    .如果真结束
+    填充背景 ()
+    ' //-----------------------------------------
+    .如果真 (是否为空 (JPG图片质量))
+        JPG图片质量 ＝ 100
+    .如果真结束
+    .如果真 (JPG图片质量 ＜ 0)
+        JPG图片质量 ＝ 0
+    .如果真结束
+    .如果真 (JPG图片质量 ＞ 100)
+        JPG图片质量 ＝ 100
+    .如果真结束
+    ' //-----------------------------------------
+    GetCLSID (转换格式, Clsid)
+    eps.Count ＝ 1
+    eps.Parameter [1].Type ＝ 4
+    eps.Parameter [1].NumberOfValues ＝ 1
+    .如果真 (转换格式 ＝ 2) ' jpg
+        quality ＝ JPG图片质量 ' 图片质量，0最差效果，100最好效果
+        eps.Parameter [1].Value ＝ lstrcpynA_整数传址 (quality, quality, 0)
+        CLSIDFromString_字节 (A2W (“{1d5be4b5-fa4a-452d-9cdd-5db35105e7eb}”, ), eps.Parameter [1].Guid)
+    .如果真结束
+    ' //-----------------------------------------
+    FileName ＝ A2W (文件名)
+    r ＝ GdipSaveImageToFile_EncoderParameters (m_pBitmap, FileName, Clsid, eps)
+    返回 (r ＝ 0)
+
+.子程序 填充背景, , 公开
+    .局部变量 pNewBitmap, 整数型
+    .局部变量 pGraphics, 整数型
+
+    .如果真 (m_pBitmap ＝ 0)
+        返回 ()
+    .如果真结束
+    .如果真 (m_pBrush ＝ 0)
+        返回 ()
+    .如果真结束
+    ' //-----------------------------------------------
+    .如果真 (m_nWidth ＝ 0 或 m_nHeight ＝ 0)
+        GdipGetImageWidth (m_pBitmap, m_nWidth)
+        GdipGetImageHeight (m_pBitmap, m_nHeight)
+    .如果真结束
+    GdipCreateBitmapFromScan0 (m_nWidth, m_nHeight, 0, #像素格式_32bppARGB, 0, pNewBitmap)
+    .如果真 (pNewBitmap ＝ 0)
+        返回 ()
+    .如果真结束
+    GdipGetImageGraphicsContext (pNewBitmap, pGraphics)
+    GdipFillRectangle (pGraphics, m_pBrush, 0, 0, m_nWidth, m_nHeight)
+    GdipDrawImageRectRect_NULL (pGraphics, m_pBitmap, 0, 0, m_nWidth, m_nHeight, 0, 0, m_nWidth, m_nHeight, #单位_像素, 0, 0, 0)
+    GdipDeleteGraphics (pGraphics)
+    ' //-----------------------------------------------
+    销毁 ()
+    m_pBitmap ＝ pNewBitmap
+
+.子程序 取图片宽度, 整数型, 公开
+    .如果真 (m_pBitmap ≠ 0 且 m_nWidth ＝ 0)
+        取图片尺寸 (0, 0)
+    .如果真结束
+    返回 (m_nWidth)
+
+.子程序 取图片高度, 整数型, 公开
+    .如果真 (m_pBitmap ≠ 0 且 m_nHeight ＝ 0)
+        取图片尺寸 (0, 0)
+    .如果真结束
+    返回 (m_nHeight)
+
+.子程序 取图片尺寸, , 公开
+    .参数 图片宽度, 整数型, 参考
+    .参数 图片高度, 整数型, 参考
+
+    .如果真 (m_pBitmap ≠ 0 且 m_nWidth ＝ 0)
+        GdipGetImageWidth (m_pBitmap, m_nWidth)
+        GdipGetImageHeight (m_pBitmap, m_nHeight)
+        .如果真 (m_nWidth ＝ 0 或 m_nHeight ＝ 0)
+            销毁 ()
+        .如果真结束
+        
+    .如果真结束
+    图片宽度 ＝ m_nWidth
+    图片宽度 ＝ m_nHeight
+    
+
+.子程序 取图片句柄, 整数型, 公开
+    返回 (m_pBitmap)
+
+.子程序 置背景颜色, , 公开, 设置转换后图片的背景颜色
+    .参数 背景颜色, 整数型, , RGB颜色值，-1为透明(不填充背景)
+
+    .如果真 (m_pBrush ≠ 0)
+        GdipDeleteBrush (m_pBrush)
+        m_pBrush ＝ 0
+    .如果真结束
+    .如果真 (背景颜色 ≥ 0)
+        GdipCreateSolidFill (RGB2ARGB (背景颜色), m_pBrush)
+    .如果真结束
+    
+
+.子程序 GetCLSID
+    .参数 转换格式, 整数型, , 转换后的图片格式。1、bmp；2、jpg；3、gif；4、tiff；5、png
+    .参数 Clsid, 字节集, 参考
+    .局部变量 pStr, 文本型
+
+    .判断开始 (转换格式 ＝ 1) ' bmp
+        pStr ＝ “{557CF400-1A04-11D3-9A73-0000F81EF32E}”
+    .判断 (转换格式 ＝ 2) ' jpg
+        pStr ＝ “{557CF401-1A04-11D3-9A73-0000F81EF32E}”
+    .判断 (转换格式 ＝ 3) ' gif
+        pStr ＝ “{557CF402-1A04-11D3-9A73-0000F81EF32E}”
+    .判断 (转换格式 ＝ 4) ' tiff
+        pStr ＝ “{557CF405-1A04-11D3-9A73-0000F81EF32E}”
+    .判断 (转换格式 ＝ 5) ' png
+        pStr ＝ “{557CF406-1A04-11D3-9A73-0000F81EF32E}”
+    .默认
+        pStr ＝ “{557CF400-1A04-11D3-9A73-0000F81EF32E}”
+    .判断结束
+    Clsid ＝ 取空白字节集 (16)
+    CLSIDFromString_字节集传址2 (A2W (pStr, ), Clsid) ' 获取图像格式对应的Clsid
+    
+

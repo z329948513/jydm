@@ -1,0 +1,200 @@
+﻿.版本 2
+.支持库 spec
+
+.程序集 程_7Z解压_新
+.程序集变量 dllhwnd, 整数型
+.程序集变量 回调函数指针, 子程序指针
+
+.子程序 解压_7z_加载, 逻辑型, 公开
+    .局部变量 dlldata, 字节集
+
+    dlldata ＝ #dll_7z
+    dllhwnd ＝ LoadMemLibrary (取变量数据地址_字节集 (dlldata))
+    .如果真 (dllhwnd ≠ 0)
+        返回 (真)
+    .如果真结束
+    返回 (假)
+
+.子程序 解压_7z_卸载, , 公开
+    FreeMemLibrary (dllhwnd)
+
+.子程序 解压_7z_解压, 整数型, 公开, 返回 0 = 成功  1 = 错误  2 = 取消
+    .参数 句柄, 整数型, , 有就填窗口句柄，没有就填0
+    .参数 压缩包全路径, 文本型, , 压缩包文件全路径     C:\Users\蓝天\Desktop\新建文件夹\RapidOCR.7z
+    .参数 解压目录, 文本型, , 解压目录         C:\Users\蓝天\Desktop\新建文件夹\
+    .参数 解压文件数组, 文本型, 可空 数组, 为空为解压全部，传入文件名数组可以解压指定文件
+    .参数 解压密码, 文本型, 可空
+    .参数 回调函数, 子程序指针, , 三个参数，句柄，标识（2位解压完毕，1,0解压中），进度
+    .局部变量 解压文件名数组, SevenZipFileInfo, , "0"
+    .局部变量 数组成员数, 整数型
+    .局部变量 i, 整数型
+
+    回调函数指针 ＝ 回调函数
+    .判断开始 (是否为空 (解压文件数组) ＝ 假)
+        数组成员数 ＝ 取数组成员数 (解压文件数组)
+        重定义数组 (解压文件名数组, 假, 数组成员数)
+        .计次循环首 (数组成员数, i)
+            解压文件名数组 [i].文件名 ＝ 解压文件数组 [i]
+        .计次循环尾 ()
+        返回 (SevenZip解压文件 (句柄, 压缩包全路径, 解压密码, 解压文件名数组, 真, 真, 解压目录, 假, &ArchiverProc, 1))
+    .默认
+        返回 (SevenZip解压文件 (句柄, 压缩包全路径, 解压密码, , 真, 真, 解压目录, 假, &ArchiverProc, 1))
+    .判断结束
+    
+    
+    
+
+.子程序 回调
+    .参数 句柄, 整数型
+    .参数 标识, 整数型
+    .参数 进度, 整数型
+
+    调试输出 (句柄, 标识, 进度)
+
+.子程序 SevenZip
+    .参数 hWnd, 整数型, , 调用7zip32.dll的应用程序窗口句柄 7 zip32.dll此窗口在运行时 运行EnableWindow()可以禁止窗口的行为
+    .参数 szCmdLine, 文本型, , 命令行参数
+    .参数 szOutPut, 字节集, , 返回一个结果的缓冲参数 可以用来判断 操作结果
+    .参数 dwsize, 整数型
+    .局部变量 ModuleHwnd, 整数型
+
+    ' 调试输出 (取变量数据地址 (szCmdLine), 取变量数据地址_文本 (szCmdLine))
+    ModuleHwnd ＝ GetMemProcAddress (dllhwnd, “SevenZip”)
+    动态调用子程序 (ModuleHwnd, , , hWnd, 取变量数据地址_文本 (szCmdLine), 取变量数据地址_字节集 (szOutPut), dwsize)
+    
+
+.子程序 SevenZipSetOwnerWindowEx
+    .参数 hWnd, 整数型
+    .参数 lpArcProc, 整数型
+    .局部变量 ModuleHwnd, 整数型
+
+    ModuleHwnd ＝ GetMemProcAddress (dllhwnd, “SevenZipSetOwnerWindowEx”)
+    动态调用子程序 (ModuleHwnd, , , hWnd, lpArcProc)
+    
+
+.子程序 SevenZipClearOwnerWindow
+    .局部变量 ModuleHwnd, 整数型
+
+    ModuleHwnd ＝ GetMemProcAddress (dllhwnd, “SevenZipClearOwnerWindow”)
+    动态调用子程序 (ModuleHwnd, , , )
+
+.子程序 SevenZip解压文件, 整数型, , 解压文件,返回 0 = 成功  1 = 错误  2 = 取消 感谢原作者
+    .参数 压缩包句柄, 整数型, , parent window handle
+    .参数 压缩包地址, 文本型, , file name
+    .参数 解压密码, 文本型, 可空
+    .参数 文件列表, SevenZipFileInfo, 可空 数组, 为空则解压全部
+    .参数 递归目录, 逻辑型, , 是否递归所有子目录
+    .参数 文件夹路径保存, 逻辑型, , 是否按照压缩之前文件夹路径保存
+    .参数 解压位置, 文本型, , 解压位置（根目录）
+    .参数 自带解压进度, 逻辑型, 可空
+    .参数 自定义回调函数, 子程序指针, 可空, optional callback (ShowProgress must be false)
+    .参数 覆盖处理方式, 整数型, 可空, 7-Zip 在覆盖现有文件时会提示用户如何进行下一步操作。设置这些值可以自动处理： 1,Yes(是) 2,No(否) 3,Always(总是，将所有的询问以 YES 来对待) 4,Skip(跳过，将所有的询问以 NO 来对待) 5,Quit(退出程序) 值为空将弹出提示让用户选择如何操作。
+    .局部变量 命令行参数, 文本型
+    .局部变量 szOutPut, 字节集
+    .局部变量 i, 整数型
+    .局部变量 返回状态值, 整数型
+    .局部变量 局部_7z文件信息类, SevenZipFileInfo
+
+    .如果真 (是否为空 (自定义回调函数))
+        自带解压进度 ＝ 真
+    .如果真结束
+    
+    .如果真 (取数组成员数 (文件列表) ＝ 0)
+        局部_7z文件信息类.文件名 ＝ “*.*”
+        加入成员 (文件列表, 局部_7z文件信息类)
+    .如果真结束
+    
+    .如果 (文件夹路径保存)
+        命令行参数 ＝ “x”
+    .否则
+        命令行参数 ＝ “e”
+    .如果结束
+    
+    命令行参数 ＝ 命令行参数 ＋ “ ” ＋ #引号 ＋ 压缩包地址 ＋ #引号 ＋ “ -o” ＋ #引号 ＋ 解压位置 ＋ #引号
+    命令行参数 ＝ 命令行参数 ＋ “ ” ＋ #引号 ＋ 文件列表 [1].文件名 ＋ #引号
+    
+    .计次循环首 (取数组成员数 (文件列表) － 1, i)
+        命令行参数 ＝ 命令行参数 ＋ “ -i”
+        .如果真 (递归目录)
+            命令行参数 ＝ 命令行参数 ＋ “r”
+        .如果真结束
+        命令行参数 ＝ 命令行参数 ＋ “!” ＋ #引号 ＋ 文件列表 [i ＋ 1].文件名 ＋ #引号
+    .计次循环尾 ()
+    
+    .如果真 (递归目录)
+        命令行参数 ＝ 命令行参数 ＋ “ -r”
+    .如果真结束
+    
+    .如果真 (自带解压进度 ＝ 假)
+        命令行参数 ＝ 命令行参数 ＋ “ -hide”
+    .如果真结束
+    
+    .如果真 (是否为空 (覆盖处理方式) ＝ 假) ' 如果为空 则没有不提供参数，此时不提供询问参数，会弹出提示框让用户选择如何操作
+        .如果真 (覆盖处理方式 ＝ 1)
+            命令行参数 ＝ 命令行参数 ＋ “ -y”
+        .如果真结束
+        .如果真 (覆盖处理方式 ＝ 2)
+            命令行参数 ＝ 命令行参数 ＋ “ -n”
+        .如果真结束
+        .如果真 (覆盖处理方式 ＝ 3)
+            命令行参数 ＝ 命令行参数 ＋ “ -a”
+        .如果真结束
+        .如果真 (覆盖处理方式 ＝ 4)
+            命令行参数 ＝ 命令行参数 ＋ “ -s”
+        .如果真结束
+        .如果真 (覆盖处理方式 ＝ 5)
+            命令行参数 ＝ 命令行参数 ＋ “ -q”
+        .如果真结束
+        
+    .如果真结束
+    
+    
+    .如果真 (解压密码 ≠ “”)
+        命令行参数 ＝ 命令行参数 ＋ “ -p” ＋ 解压密码
+    .如果真结束
+    
+    SevenZipSetOwnerWindowEx (压缩包句柄, 到整数 (自定义回调函数))
+    szOutPut ＝ 取空白字节集 (32768)
+    SevenZip (压缩包句柄, 命令行参数, szOutPut, 32768) ' SevenZip (压缩包句柄, 命令行参数, szOutPut, 32768)
+    
+    SevenZipClearOwnerWindow ()
+    
+    .判断开始 (寻找文本 (到小写 (到文本 (szOutPut)), “operation aborted”, , 假) ≠ -1)
+        返回状态值 ＝ #常量_2
+    .判断 (寻找文本 (到小写 (到文本 (szOutPut)), “error:”, , 假) ≠ -1)
+        返回状态值 ＝ #常量_1
+    .默认
+        返回状态值 ＝ #常量_0
+    .判断结束
+    
+    返回 (返回状态值)
+
+.子程序 ArchiverProc, 逻辑型, , 进度回调函数
+    .参数 hWnd, 整数型
+    .参数 uMsg, 整数型
+    .参数 nState, 整数型
+    .参数 lpEis, 整数型, , tagExtractingInfoEx
+    .局部变量 tagExtractingInfoEx, tagExtractingInfoEx
+    .局部变量 lpEisBin, 字节集
+    .局部变量 i, 双精度小数型
+
+    .如果真 (nState ＝ 2)
+        动态调用子程序 (到整数 (回调函数指针), , , hWnd, nState, 到整数 (i))
+        返回 (真)
+    .如果真结束
+    lpEisBin ＝ 指针到字节集 (lpEis, LocalSize_ocr (tagExtractingInfoEx))
+    RtlMoveMemory_ocr (tagExtractingInfoEx, lpEisBin, LocalSize_ocr (tagExtractingInfoEx))
+    .如果 (tagExtractingInfoEx.exinfo.dwFileSize ≠ -1)
+        i ＝ tagExtractingInfoEx.exinfo.dwWriteSize ÷ tagExtractingInfoEx.exinfo.dwFileSize × 100
+    .否则
+        i ＝ tagExtractingInfoEx.exinfo.dwWriteSize ÷ 10
+        .如果真 (i ≥ 99)
+            i ＝ 99
+        .如果真结束
+        
+    .如果结束
+    
+    动态调用子程序 (到整数 (回调函数指针), , , hWnd, nState, 到整数 (i))
+    返回 (真)
+    
+

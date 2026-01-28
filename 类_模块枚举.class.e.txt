@@ -1,0 +1,310 @@
+﻿.版本 2
+
+.程序集 类_模块枚举, , 公开
+.程序集变量 Is64, 逻辑型
+.程序集变量 集_错误信息, 文本型
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    是否位64位进程 ()
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    
+
+.子程序 是否位64位进程, 逻辑型, 公开
+    Is64 ＝ Is64System ()
+    返回 (Is64)
+
+.子程序 Is64System, 逻辑型
+    返回 (读环境变量 (“CommonProgramW6432”) ≠ “”)
+
+.子程序 Unicode转Ansi, 文本型
+    .参数 Unicode, 字节集
+    .参数 目标编码, 整数型, 可空
+    .局部变量 ll, 整数型
+    .局部变量 len, 整数型
+    .局部变量 ansi, 文本型
+
+    .如果真 (Unicode ＝ { })
+        返回 (“”)
+    .如果真结束
+    .如果真 (是否为空 (目标编码))
+        目标编码 ＝ 936
+    .如果真结束
+    ll ＝ 取字节集长度 (Unicode) ÷ 2
+    len ＝ WideCharToMultiByte (目标编码, 0, 取指针_字节集型 (Unicode), ll, 取指针_文本型 (ansi), 0, 0, 0)
+    ansi ＝ 取空白文本 (len)
+    WideCharToMultiByte (目标编码, 0, 取指针_字节集型 (Unicode), ll, 取指针_文本型 (ansi), len, 0, 0)
+    返回 (ansi)
+
+.子程序 十到十六, 文本型
+    .参数 十进制数, 长整数型
+    .局部变量 HexText, 文本型
+
+    HexText ＝ 取空白文本 (255)
+    wvsprintf (HexText, “0x%016I64X”, 十进制数)
+    返回 (HexText)
+    
+
+.子程序 枚举64位进程模块, 逻辑型, 公开, 返回假可调用  取最后错误 来获取错误信息
+    .参数 进程ID, 整数型
+    .参数 模块, 模块信息, 参考 数组
+    .局部变量 pbi, PROCESS_BASIC_INFORMATION64
+    .局部变量 Ldr, PEB_LDR_DATA
+    .局部变量 局_缓冲区, 字节集
+    .局部变量 局_临时地址, 长整数型
+    .局部变量 局_Flink地址, 长整数型
+    .局部变量 局_结构信息, LDR_DATA_TABLE_ENTRY64
+    .局部变量 局_模块路径, 文本型
+    .局部变量 局_32位进程, 逻辑型
+    .局部变量 hSnapShot, 整数型
+    .局部变量 End, 整数型
+    .局部变量 Process, 整数型
+    .局部变量 局_临时模块, 模块信息
+
+    Process ＝ OpenProcess (1040, 0, 进程ID)
+    .如果真 (Process ＝ 0)
+        集_错误信息 ＝ “打开目标进程失败,无法枚举进程模块!”
+        返回 (假)
+    .如果真结束
+    .如果真 (Is64)
+        ' ==============枚举64位进程模块=========================
+        .如果真 (NtWow64QueryInformationProcess64 (Process, 0, pbi, 48, 0) ≠ 0)
+            集_错误信息 ＝ “查询进程信息失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 (假)
+        .如果真结束
+        ' 得到PEB64结构的地址
+        .如果真 (pbi.PebBaseAddress ＝ 0)
+            集_错误信息 ＝ “获取PEB64结构地址失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 (假)
+        .如果真结束
+        ' 获取Ldr64结构地址
+        .如果真 (NtWow64ReadVirtualMemory64_LDR (Process, pbi.PebBaseAddress, Ldr, 40, 0) ≠ 0)
+            集_错误信息 ＝ “获取Ldr64结构地址失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 (假)
+        .如果真结束
+        ' 获取Ldr64.InLoadOrderModuleList.Flink地址
+        局_缓冲区 ＝ 取空白字节集 (8)
+        .如果真 (NtWow64ReadVirtualMemory64_bin (Process, Ldr.Ldr ＋ 16, 局_缓冲区, 8, 0) ≠ 0)
+            集_错误信息 ＝ “获取Ldr64.InLoadOrderModuleList.Flink地址失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 (假)
+        .如果真结束
+        局_临时地址 ＝ 取字节集数据 (局_缓冲区, #长整数型, 1) ' 得到Ldr64.InLoadOrderModuleList.Flink地址
+        局_Flink地址 ＝ 局_临时地址
+        ' 开始遍历链表
+        .循环判断首 ()
+            局_缓冲区 ＝ 取空白字节集 (104) ' LDR_DATA_TABLE_ENTRY64 结构的大小是 104
+            .如果真 (NtWow64ReadVirtualMemory64_bin (Process, 局_临时地址, 局_缓冲区, 104, 0) ＝ 0)
+                RtlMoveMemory_LDR_DATA_TABLE_ENTRY64 (局_结构信息, 局_缓冲区, 104)
+                .如果真 (局_结构信息.DllBase ＝ 0)
+                    跳出循环 ()
+                .如果真结束
+                ' 链表中第一个模块地址是程序本身 把它过滤掉
+                .如果真 (局_Flink地址 ＝ 局_临时地址)
+                    局_临时地址 ＝ 局_结构信息.InLoadOrderLinks.Flink
+                    ' 跳出循环 ()
+                .如果真结束
+                ' 读取64位的模块路径
+                局_缓冲区 ＝ 取空白字节集 (局_结构信息.FullDllName.Length)
+                .如果真 (NtWow64ReadVirtualMemory64_bin (Process, 局_结构信息.FullDllName.Buffer, 局_缓冲区, 局_结构信息.FullDllName.Length, 0) ＝ 0)
+                    局_模块路径 ＝ Unicode转Ansi (局_缓冲区)
+                    局_临时模块.模块句柄 ＝ 十到十六 (局_结构信息.DllBase)
+                    局_临时模块.模块路径 ＝ 局_模块路径
+                    加入成员 (模块, 局_临时模块)
+                    
+                .如果真结束
+                局_临时地址 ＝ 局_结构信息.InLoadOrderLinks.Flink
+            .如果真结束
+            
+        .循环判断尾 (局_结构信息.DllBase ≠ 0)
+        返回 (真)
+    .如果真结束
+    CloseHandle (Process)
+    返回 (假)
+
+.子程序 枚举32位进程模块, 逻辑型, 公开, 返回假可调用  取最后错误 来获取错误信息
+    .参数 进程ID, 整数型
+    .参数 模块, 模块信息, 参考 数组
+    .局部变量 pbi, PROCESS_BASIC_INFORMATION64
+    .局部变量 Ldr, PEB_LDR_DATA
+    .局部变量 局_缓冲区, 字节集
+    .局部变量 局_临时地址, 长整数型
+    .局部变量 局_Flink地址, 长整数型
+    .局部变量 局_结构信息, LDR_DATA_TABLE_ENTRY64
+    .局部变量 局_模块路径, 文本型
+    .局部变量 局_32位进程, 逻辑型
+    .局部变量 hSnapShot, 整数型
+    .局部变量 Mod, 精易_模块信息
+    .局部变量 End, 整数型
+    .局部变量 Process, 整数型
+    .局部变量 局_临时模块, 模块信息
+
+    Process ＝ OpenProcess (1040, 0, 进程ID)
+    .如果真 (Process ＝ 0)
+        集_错误信息 ＝ “打开目标进程失败,无法枚举进程模块!”
+        返回 (假)
+    .如果真结束
+    IsWow64Process (Process, 局_32位进程)
+    
+    .如果真 (Is64 ＝ 假 或 局_32位进程)
+        hSnapShot ＝ CreateToolhelp32Snapshot (8, 进程ID)
+        .如果真 (hSnapShot ＞ 0)
+            ' 编辑框.加入文本 (#换行符 ＋ “--------------------以下是32位模块信息---------------------------------” ＋ #换行符 ＋ #换行符)
+            Mod.size ＝ 1024
+            End ＝ Module32First (hSnapShot, Mod)
+            .判断循环首 (End ≠ 0)
+                ' 由于32位进程在64位系统中运行 存在系统目录的重定向问题 所以要修正一下路径
+                ' 比如 C:\Windows\System32 其实指向的路径是 C:\Windows\SysWOW64
+                局_模块路径 ＝ 到文本 (Mod.模块完整路径)
+                .如果真 (Is64)
+                    局_模块路径 ＝ 子文本替换 (局_模块路径, “C:\Windows\System32”, “C:\Windows\SysWOW64”, , 1, 假)
+                .如果真结束
+                局_临时模块.模块句柄 ＝ 取十六进制文本 (Mod.模块句柄)
+                局_临时模块.模块路径 ＝ 局_模块路径
+                加入成员 (模块, 局_临时模块)
+                End ＝ Module32Next (hSnapShot, Mod)
+            .判断循环尾 ()
+            返回 (真)
+        .如果真结束
+        CloseHandle (hSnapShot)
+    .如果真结束
+    CloseHandle (Process)
+    返回 (假)
+
+.子程序 枚举进程模块, , 公开, 自动判断64或32
+    .参数 进程ID, 整数型
+    .参数 模块, 模块信息, 参考 数组
+    .局部变量 pbi, PROCESS_BASIC_INFORMATION64
+    .局部变量 Ldr, PEB_LDR_DATA
+    .局部变量 局_缓冲区, 字节集
+    .局部变量 局_临时地址, 长整数型
+    .局部变量 局_Flink地址, 长整数型
+    .局部变量 局_结构信息, LDR_DATA_TABLE_ENTRY64
+    .局部变量 局_模块路径, 文本型
+    .局部变量 局_32位进程, 逻辑型
+    .局部变量 hSnapShot, 整数型
+    .局部变量 Mod, 精易_模块信息
+    .局部变量 End, 整数型
+    .局部变量 Process, 整数型
+    .局部变量 局_临时模块, 模块信息
+
+    Process ＝ OpenProcess (1040, 0, 进程ID)
+    .如果真 (Process ＝ 0)
+        集_错误信息 ＝ “打开目标进程失败,无法枚举进程模块!”
+        返回 ()
+    .如果真结束
+    .如果真 (Is64)
+        ' ==============枚举64位进程模块=========================
+        .如果真 (NtWow64QueryInformationProcess64 (Process, 0, pbi, 48, 0) ≠ 0)
+            集_错误信息 ＝ “查询进程信息失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 ()
+        .如果真结束
+        ' 得到PEB64结构的地址
+        .如果真 (pbi.PebBaseAddress ＝ 0)
+            集_错误信息 ＝ “获取PEB64结构地址失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 ()
+        .如果真结束
+        ' 获取Ldr64结构地址
+        .如果真 (NtWow64ReadVirtualMemory64_LDR (Process, pbi.PebBaseAddress, Ldr, 40, 0) ≠ 0)
+            集_错误信息 ＝ “获取Ldr64结构地址失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 ()
+        .如果真结束
+        ' 获取Ldr64.InLoadOrderModuleList.Flink地址
+        局_缓冲区 ＝ 取空白字节集 (8)
+        .如果真 (NtWow64ReadVirtualMemory64_bin (Process, Ldr.Ldr ＋ 16, 局_缓冲区, 8, 0) ≠ 0)
+            集_错误信息 ＝ “获取Ldr64.InLoadOrderModuleList.Flink地址失败,无法枚举进程64位模块!”
+            CloseHandle (Process)
+            返回 ()
+        .如果真结束
+        局_临时地址 ＝ 取字节集数据 (局_缓冲区, #长整数型, 1) ' 得到Ldr64.InLoadOrderModuleList.Flink地址
+        局_Flink地址 ＝ 局_临时地址
+        ' 开始遍历链表
+        .循环判断首 ()
+            局_缓冲区 ＝ 取空白字节集 (104) ' LDR_DATA_TABLE_ENTRY64 结构的大小是 104
+            .如果真 (NtWow64ReadVirtualMemory64_bin (Process, 局_临时地址, 局_缓冲区, 104, 0) ＝ 0)
+                RtlMoveMemory_LDR_DATA_TABLE_ENTRY64 (局_结构信息, 局_缓冲区, 104)
+                .如果真 (局_结构信息.DllBase ＝ 0)
+                    跳出循环 ()
+                .如果真结束
+                ' 链表中第一个模块地址是程序本身 把它过滤掉
+                .如果真 (局_Flink地址 ＝ 局_临时地址)
+                    局_临时地址 ＝ 局_结构信息.InLoadOrderLinks.Flink
+                    ' 跳出循环 ()
+                .如果真结束
+                ' 读取64位的模块路径
+                局_缓冲区 ＝ 取空白字节集 (局_结构信息.FullDllName.Length)
+                .如果真 (NtWow64ReadVirtualMemory64_bin (Process, 局_结构信息.FullDllName.Buffer, 局_缓冲区, 局_结构信息.FullDllName.Length, 0) ＝ 0)
+                    局_模块路径 ＝ Unicode转Ansi (局_缓冲区)
+                    局_临时模块.模块句柄 ＝ 十到十六 (局_结构信息.DllBase)
+                    局_临时模块.模块路径 ＝ 局_模块路径
+                    加入成员 (模块, 局_临时模块)
+                    
+                .如果真结束
+                局_临时地址 ＝ 局_结构信息.InLoadOrderLinks.Flink
+            .如果真结束
+            
+        .循环判断尾 (局_结构信息.DllBase ≠ 0)
+        IsWow64Process (Process, 局_32位进程)
+    .如果真结束
+    .如果真 (Is64 ＝ 假 或 局_32位进程)
+        hSnapShot ＝ CreateToolhelp32Snapshot (8, 进程ID)
+        .如果真 (hSnapShot ＞ 0)
+            
+            Mod.size ＝ 1024
+            End ＝ Module32First (hSnapShot, Mod)
+            .判断循环首 (End ≠ 0)
+                ' 由于32位进程在64位系统中运行 存在系统目录的重定向问题 所以要修正一下路径
+                ' 比如 C:\Windows\System32 其实指向的路径是 C:\Windows\SysWOW64
+                局_模块路径 ＝ 到文本 (Mod.模块完整路径)
+                .如果真 (Is64)
+                    局_模块路径 ＝ 子文本替换 (局_模块路径, “C:\Windows\System32”, “C:\Windows\SysWOW64”, , 1, 假)
+                .如果真结束
+                局_临时模块.模块句柄 ＝ 取十六进制文本 (Mod.base)
+                局_临时模块.模块路径 ＝ 局_模块路径
+                加入成员 (模块, 局_临时模块)
+                End ＝ Module32Next (hSnapShot, Mod)
+            .判断循环尾 ()
+            
+        .如果真结束
+        CloseHandle (hSnapShot)
+    .如果真结束
+    CloseHandle (Process)
+    
+
+.子程序 取最后错误, 文本型, 公开
+    返回 (集_错误信息)
+
+.子程序 取文件名, 文本型, 公开
+    .参数 文件路径, 文本型
+    .局部变量 文本, 文本型
+
+    文本 ＝ 文件路径
+    .判断循环首 (真)
+        .如果真 (寻找文本 (文本, “\”, , 假) ＝ -1)
+            跳出循环 ()
+        .如果真结束
+        文本 ＝ 取文本右边 (文本, 取文本长度 (文本) － 寻找文本 (文本, “\”, , 假))
+    .判断循环尾 ()
+    返回 (文本)
+
+.子程序 模块名取句柄, 文本型, 公开, 返回十六进制文本
+    .参数 进程ID, 整数型
+    .参数 模块名, 文本型
+    .局部变量 模块, 模块信息, , "0"
+    .局部变量 i, 整数型
+
+    枚举64位进程模块 (进程ID, 模块)
+    .计次循环首 (取数组成员数 (模块), i)
+        .如果真 (取文件名 (模块 [i].模块路径) ＝ 模块名)
+            返回 (模块 [i].模块句柄)
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (“”)
+

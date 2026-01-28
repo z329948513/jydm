@@ -1,0 +1,137 @@
+﻿.版本 2
+
+.程序集 集_易语言相关
+.子程序 易语言_取易语言安装目录, 文本型, 公开, 返回全路径文件名,不需要文件名时，目录后面带\
+    .参数 是否需要文件名, 逻辑型, 可空, 默认为假,即为不需要留文件名
+    .局部变量 路径文件名, 文本型
+
+    路径文件名 ＝ 取文本注册项 (#现行用户, “Software\FlySky\E\Install\Path”, “”)
+    路径文件名 ＝ 取文本左边 (路径文件名, 取文本长度 (路径文件名) － 4)
+    .如果真 (是否需要文件名)
+        路径文件名 ＝ 路径文件名 ＋ “e.exe”
+    .如果真结束
+    返回 (路径文件名)
+
+.子程序 易语言_加快捷方式到IE浏览器, 逻辑型, 公开
+    .参数 图标所在路径文件名, 文本型, , 用于加载到IE浏览器快捷按钮上所用原始图标的路径文件名,以ICO结束,如:"e.ico"
+    .参数 提示文字, 文本型, , 用于在IE浏览器中用于提示的文字,如:“易语言3.6”
+    .参数 添加还是清除, 逻辑型
+    .局部变量 路径, 文本型
+
+    .如果真 (文件是否存在 (图标所在路径文件名) ＝ 假)
+        返回 (假)
+    .如果真结束
+    路径 ＝ 取文本注册项 (#现行用户, “Software\FlySky\E\Install\Path”, “”)
+    路径 ＝ 取文本左边 (路径, 取文本长度 (路径) － 4)
+    .如果真 (路径 ≠ “”)
+        写到文件 (路径 ＋ “e.ico”, 读入文件 (图标所在路径文件名))
+    .如果真结束
+    
+    .如果 (添加还是清除 ＝ 真)
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\ButtonText”, 提示文字)
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\CLSID”, “{1FBA04EE-3024-11D2-8F1F-0000F87ABD16}”)
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\Default visible”, “Yes”)
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\Exec”, 路径 ＋ “e.exe”) ' 程序位置(路径)
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\HotIcon”, 路径 ＋ “e.ico”) ' 点燃图标
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\Icon”, 路径 ＋ “e.ico”) ' 程序图标
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\MenuText”, 提示文字)
+        写注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\MenuStatusBar”, 提示文字)
+    .否则
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\ButtonText”)
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\CLSID”)
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\Default visible”)
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\Exec”) ' 程序位置(路径)
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\HotIcon”) ' 点燃图标
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\Icon”) ' 程序图标
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\MenuText”)
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}\MenuStatusBar”)
+        删除注册项 (#本地机器, “SOFTWARE\Microsoft\Internet Explorer\Extensions\{BF5DC4AE-258C-43d5-9D80-1F7ACD734DD8}”)
+    .如果结束
+    返回 (真)
+
+.子程序 易语言_引用易模块, , 公开, 必须编译出来才行,因为在调试状态下,易语言不允许添加模块的
+    .参数 模块路径, 文本型, , 如：C:\精易模块.ec
+    .局部变量 局_模块句柄, 整数型
+    .局部变量 局_模块对话框, 整数型
+    .局部变量 局_打开按钮句柄, 整数型
+    .局部变量 局_Edit句柄, 整数型
+    .局部变量 局_树型框, 外部树型框
+    .局部变量 局_计次, 整数型
+    .局部变量 局_超时返回, 整数型
+
+    局_模块句柄 ＝ 窗口_取句柄_模糊J (“易语言 - ”, “ENewFrame”)
+    .如果真 (局_模块句柄 ≤ 0)
+        提示框J (“易语言未打开,无法引用模块”)
+        返回 ()
+    .如果真结束
+    窗口_置焦点J (局_模块句柄)
+    局_模块句柄 ＝ 功能_取模块引用表句柄 (局_模块句柄)
+    .如果真 (局_模块句柄 ≤ 0)
+        提示框J (“引用表提取失败”)
+        返回 ()
+    .如果真结束
+    局_树型框.初始化 (局_模块句柄)
+    .计次循环首 (局_树型框.取项目数 (), 局_计次)
+        .如果真 (局_树型框.取项目文本 (局_计次 － 1) ＝ “模块引用表”)
+            局_树型框.置现行选中项 (局_计次 － 1)
+            跳出循环 ()
+        .如果真结束
+        
+    .计次循环尾 ()
+    程序_延时 (10)
+    鼠标_消息 (局_模块句柄, 185, 13, 2) ' 发送鼠标右键消息
+    程序_延时 (10)
+    投递消息整数 (局_模块句柄, 256, #I键, 0) ' 发送消息点击菜单上的添加模块引用
+    局_超时返回 ＝ 取启动时间 ()
+    .判断循环首 (0 ＜ 1)
+        局_模块对话框 ＝ 窗口_取句柄J (, , “#32770”, “请选择欲加入易模块文件:”)
+        .判断开始 (局_模块对话框 ＞ 0)
+            局_Edit句柄 ＝ 窗口_取句柄J (局_模块对话框, , “Edit”, )
+            局_打开按钮句柄 ＝ 窗口_取句柄J (局_模块对话框, , “Button”, “打开(&O)”)
+            窗口_置控件内容 (局_Edit句柄, 模块路径)
+            程序_延时 (10)
+            .如果真 (窗口_取控件内容 (局_Edit句柄) ≠ 模块路径)
+                窗口_置控件内容 (局_Edit句柄, 模块路径)
+            .如果真结束
+            鼠标_消息 (局_打开按钮句柄, 5, 5) ' 发送消息点击打开按钮
+            跳出循环 ()
+        .判断 (取启动时间 () － 局_超时返回 ＞ 5000)
+            提示框J (“超时,引用失败”)
+            跳出循环 ()
+        .默认
+            
+        .判断结束
+        
+    .判断循环尾 ()
+
+.子程序 功能_取模块引用表句柄, 整数型
+    .参数 顶级句柄, 整数型
+    .局部变量 局_1级句柄, 整数型
+    .局部变量 局_2级句柄, 整数型
+    .局部变量 局_3级句柄, 整数型
+    .局部变量 局_4级句柄, 整数型
+    .局部变量 局_5级句柄, 整数型
+    .局部变量 子窗口数组, 整数型, , "0"
+
+    局_1级句柄 ＝ 窗口_取句柄J (顶级句柄, , “AfxControlBar42s”, “工作夹”)
+    .如果真 (局_1级句柄 ≤ 0)
+        返回 (0)
+    .如果真结束
+    局_2级句柄 ＝ 窗口_取句柄J (局_1级句柄, , “Afx:400000:8:10011:1900015:0”, “工作夹”)
+    .如果真 (局_2级句柄 ≤ 0)
+        返回 (0)
+    .如果真结束
+    局_3级句柄 ＝ 窗口_取句柄J (局_2级句柄, , “#32770”, )
+    .如果真 (局_3级句柄 ≤ 0)
+        返回 (0)
+    .如果真结束
+    局_4级句柄 ＝ 窗口_取句柄J (局_3级句柄, , “SysTabControl32”, “Tab1”)
+    .如果真 (局_4级句柄 ≤ 0)
+        返回 (0)
+    .如果真结束
+    .如果真 (窗口_枚举子窗口J (局_4级句柄, 子窗口数组, “SysTreeView32”) ＝ 2)
+        返回 (子窗口数组 [2])
+    .如果真结束
+    返回 (0)
+    
+

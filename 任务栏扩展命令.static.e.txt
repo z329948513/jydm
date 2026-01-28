@@ -1,0 +1,389 @@
+﻿.版本 2
+
+.程序集 任务栏扩展命令
+.子程序 WndProc, 整数型
+    .参数 hWnd, 整数型
+    .参数 msg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+    .局部变量 oldProc, 整数型
+    .局部变量 taskbarBtnCreatedMsg, 整数型
+    .局部变量 onTaskbarBtnCreated, 整数型
+    .局部变量 onTaskbarBtnClick, 整数型
+    .局部变量 code, 整数型
+    .局部变量 hImageList, 整数型
+    .局部变量 hIcon, 整数型
+
+    oldProc ＝ GetPropA (hWnd, “oldProc”)
+    taskbarBtnCreatedMsg ＝ GetPropA (hWnd, “taskbarBtnCreatedMsg”)
+    .判断开始 (msg ＝ taskbarBtnCreatedMsg)
+        onTaskbarBtnCreated ＝ GetPropA (hWnd, “onTaskbarBtnCreated”)
+        .如果真 (onTaskbarBtnCreated ≠ 0)
+            call1 (onTaskbarBtnCreated, hWnd)
+        .如果真结束
+        
+    .判断 (msg ＝ #WM_COMMAND)
+        code ＝ 右移 (wParam, 16)
+        .判断开始 (code ＝ #THBN_CLICKED)
+            onTaskbarBtnClick ＝ GetPropA (hWnd, “onTaskbarBtnClick”)
+            .如果真 (onTaskbarBtnClick ≠ 0)
+                call2 (onTaskbarBtnClick, hWnd, 位与 (wParam, 65535))
+            .如果真结束
+            
+        .默认
+            
+        .判断结束
+        
+    .判断 (msg ＝ #WM_DESTROY)
+        .如果真 (oldProc ≠ 0)
+            SetWindowLongA (hWnd, #GWL_WNDPROC, oldProc)
+            SetPropA (hWnd, “oldProc”, 0)
+        .如果真结束
+        hImageList ＝ GetPropA (hWnd, “hImageList”)
+        .如果真 (hImageList ≠ 0)
+            ImageList_Destroy (hImageList)
+            SetPropA (hWnd, “hImageList”, 0)
+        .如果真结束
+        hIcon ＝ GetPropA (hWnd, “OverlayIcon”)
+        .如果真 (hIcon ≠ 0)
+            DestroyIcon (hIcon)
+            SetPropA (hWnd, “OverlayIcon”, 0)
+        .如果真结束
+        
+    .默认
+        
+    .判断结束
+    
+    .如果真 (oldProc ≠ 0)
+        返回 (CallWindowProcA (oldProc, hWnd, msg, wParam, lParam))
+    .如果真结束
+    返回 (DefWindowProc (hWnd, msg, wParam, lParam))
+
+.子程序 call1, 整数型
+    .参数 函数地址, 整数型
+    .参数 参数1, 整数型
+
+    置入代码 ({ 139, 69, 8, 139, 93, 4, 137, 93, 8, 93, 91, 255, 224 })
+    返回 (0)
+
+.子程序 call2, 整数型
+    .参数 函数地址, 整数型
+    .参数 参数1, 整数型
+    .参数 参数2, 整数型
+
+    置入代码 ({ 139, 69, 8, 139, 93, 4, 137, 93, 8, 93, 91, 255, 224 })
+    返回 (0)
+
+.子程序 _Alloc, 整数型
+    .参数 Size, 整数型
+
+    返回 (HeapAlloc (GetProcessHeap (), #HEAP_ZERO_MEMORY, Size))
+
+.子程序 _Free
+    .参数 addr, 整数型
+
+    HeapFree (GetProcessHeap (), 0, addr)
+
+.子程序 _CreateIStream, 整数型
+    .参数 参数_字节集, 字节集, 可空, 字节集数据。
+    .参数 参数_大小, 整数型, 可空, 默认为 参数_字节集 的长度
+    .局部变量 hMem, 整数型
+    .局部变量 IStream, 整数型
+    .局部变量 ptr, 整数型
+
+    .如果真 (是否为空 (参数_大小))
+        参数_大小 ＝ 取字节集长度 (参数_字节集)
+    .如果真结束
+    hMem ＝ GlobalAlloc (位或 (#GMEM_ZEROINIT, #GMEM_MOVEABLE), 参数_大小)
+    CreateStreamOnHGlobal_整数型 (hMem, 1, IStream)
+    .如果真 (是否为空 (参数_字节集) ＝ 假)
+        ptr ＝ GlobalLock (hMem)
+        写到内存 (参数_字节集, ptr, 参数_大小)
+        GlobalUnlock (hMem)
+    .如果真结束
+    返回 (IStream)
+    
+
+.子程序 创建图标自字节集, 整数型, 公开, 创建自图标文件字节集，格式必须是ICON。成功返回图标句柄
+    .参数 参数_字节集, 字节集
+    .参数 参数_索引, 整数型, 可空, 索引从0开始
+    .参数 参数_宽度, 整数型, 可空, 指定图标的宽度，空表示不改变
+    .参数 参数_高度, 整数型, 可空, 指定图标的高度，空表示不改变
+    .局部变量 hIcon, 整数型
+    .局部变量 局部_指针, 整数型
+    .局部变量 局部_idType, 整数型
+    .局部变量 局部_IconDirEntry, IconDirEntry
+
+    局部_指针 ＝ _取指针字节集 (参数_字节集)
+    局部_idType ＝ _指针到短整数 (局部_指针 ＋ 2)
+    RtlMoveMemory_IconDirEntry (局部_IconDirEntry, 局部_指针 ＋ 6 ＋ 参数_索引 × 16, 16)
+    hIcon ＝ CreateIconFromResourceEx (局部_指针 ＋ 局部_IconDirEntry.dwImageOffset, 局部_IconDirEntry.dwBytesInRes, 局部_idType, 196608, 参数_宽度, 参数_高度, 0)
+    返回 (hIcon)
+
+.子程序 _取指针字节集, 整数型
+    .参数 参数_字节集, 字节集, 参考
+
+    置入代码 ({ 139, 69, 8, 139, 0, 133, 192, 116, 5, 5, 8, 0, 0, 0, 201, 194, 4, 0 })
+    返回 (0)
+
+.子程序 _指针到短整数, 短整数型
+    .参数 参数_指针, 整数型
+
+    置入代码 ({ 139, 93, 8, 49, 192, 139, 3, 201, 194, 4, 0 })
+    ' mov ebx,[ebp+08]
+    ' xor eax,eax
+    ' mov word eax,[ebx]
+    ' leave
+    ' retn 04
+    返回 (0)
+
+.子程序 文本到CLSID, 字节集
+    .参数 参数_文本, 文本型
+    .局部变量 局部_clsid, 字节集
+    .局部变量 wzText, 字节集
+
+    局部_clsid ＝ 取空白字节集 (16)
+    wzText ＝ A2W (参数_文本, )
+    CLSIDFromString (取指针_字节集型 (wzText), 局部_clsid)
+    返回 (局部_clsid)
+
+.子程序 GUID到文本, 文本型
+    .参数 参数_GUID, 字节集
+    .局部变量 局部_String, 字节集
+
+    局部_String ＝ 取空白字节集 (78)
+    StringFromGUID2 (参数_GUID, 局部_String, 78)
+    返回 (任务栏_W2A (局部_String))
+
+.子程序 任务栏_W2A, 文本型
+    .参数 参数_Unicode, 字节集
+    .局部变量 局部_Ansi长度, 整数型
+    .局部变量 局部_返回值, 文本型
+
+    局部_Ansi长度 ＝ WideCharToMultiByte (0, 0, 取指针_字节集型 (参数_Unicode), -1, 取指针_文本型 (局部_返回值), 0, 0, 0)
+    局部_返回值 ＝ 取空白文本 (局部_Ansi长度)
+    WideCharToMultiByte (0, 0, 取指针_字节集型 (参数_Unicode), -1, 取指针_文本型 (局部_返回值), 局部_Ansi长度, 0, 0)
+    返回 (局部_返回值)
+
+.子程序 _取指针对象, 整数型
+    .参数 参数_对象, 对象, 参考
+
+    置入代码 ({ 139, 69, 8, 139, 0, 139, 0, 201, 194, 4, 0 })
+    ' mov eax,[ebp+08]
+    ' mov eax,[eax]
+    ' mov eax,[eax]
+    ' leave
+    ' retn 04
+    返回 (0)
+
+.子程序 分割线, , , ——————————————————————————————————————————————————————————
+    
+
+.子程序 ITaskbarList_QueryInterface, 整数型
+    .参数 This, 整数型
+    .参数 riid, 整数型
+    .参数 ppvObject, 整数型, , __RPC__deref_out  void **
+    .局部变量 index, 整数型
+
+    index ＝ 0
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+    
+
+.子程序 ITaskbarList_AddRef, 整数型
+    .参数 This, 整数型
+    .局部变量 index, 整数型
+
+    index ＝ 1
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (0)
+    
+
+.子程序 ITaskbarList_Release, 整数型
+    .参数 This, 整数型
+    .局部变量 index, 整数型
+
+    index ＝ 2
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (0)
+
+.子程序 ITaskbarList_HrInit, 整数型, , HRESULT
+    .参数 This, 整数型
+    .局部变量 index, 整数型
+
+    index ＝ 3
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_AddTab, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 4
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_DeleteTab, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 5
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_ActivateTab, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 6
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetActiveAlt, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 7
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_MarkFullscreenWindow, 整数型, , ITaskbarList2 =====================================
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 fFullscreen, 整数型, , /* [in] */ BOOL
+    .局部变量 index, 整数型
+
+    index ＝ 8
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+    
+    
+
+.子程序 ITaskbarList_SetProgressValue, 整数型, , ITaskbarList3 =====================================
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 ullCompleted, 长整数型, , /* [in] */ ULONGLONG
+    .参数 ullTotal, 长整数型, , /* [in] */ ULONGLONG
+    .局部变量 index, 整数型
+
+    index ＝ 9
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetProgressState, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 tbpFlags, 整数型, , /* [in] */ TBPFLAG
+    .局部变量 index, 整数型
+
+    index ＝ 10
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_RegisterTab, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwndTab, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 hwndMDI, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 11
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_UnregisterTab, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwndTab, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 12
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetTabOrder, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwndTab, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 hwndInsertBefore, 整数型, , /* [in] */ __RPC__in HWND
+    .局部变量 index, 整数型
+
+    index ＝ 13
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetTabActive, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwndTab, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 hwndMDI, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 dwReserved, 整数型, , /* [in] */ DWORD
+    .局部变量 index, 整数型
+
+    index ＝ 14
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_ThumbBarAddButtons, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 cButtons, 整数型, , /* [in] */ UINT
+    .参数 pButton, 整数型, , /* [size_is][in] */ __RPC__in_ecount_full(cButtons) LPTHUMBBUTTON
+    .局部变量 index, 整数型
+
+    index ＝ 15
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_ThumbBarUpdateButtons, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 cButtons, 整数型, , /* [in] */ UINT
+    .参数 pButton, 整数型, , /* [size_is][in] */ __RPC__in_ecount_full(cButtons) LPTHUMBBUTTON
+    .局部变量 index, 整数型
+
+    index ＝ 16
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_ThumbBarSetImageList, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 himl, 整数型, , /* [in] */ __RPC__in_opt HIMAGELIST
+    .局部变量 index, 整数型
+
+    index ＝ 17
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetOverlayIcon, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 hIcon, 整数型, , /* [in] */ __RPC__in HICON
+    .参数 pszDescription, 整数型, , /* [string][unique][in] */ __RPC__in_opt_string LPCWSTR
+    .局部变量 index, 整数型
+
+    index ＝ 18
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetThumbnailTooltip, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 pszTip, 整数型, , /* [string][unique][in] */ __RPC__in_opt_string LPCWSTR
+    .局部变量 index, 整数型
+
+    index ＝ 19
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+
+.子程序 ITaskbarList_SetThumbnailClip, 整数型, , HRESULT
+    .参数 This, 整数型
+    .参数 hwnd, 整数型, , /* [in] */ __RPC__in HWND
+    .参数 prcClip, 整数型, , /* [in] */ __RPC__in RECT*
+    .局部变量 index, 整数型
+
+    index ＝ 20
+    置入代码 ({ 139, 69, 8, 133, 192, 116, 9, 139, 77, 252, 139, 0, 201, 255, 36, 136 })
+    返回 (1)
+

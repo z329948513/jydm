@@ -1,0 +1,614 @@
+﻿.版本 2
+
+.程序集 类_ODBC数据库, , , 此类为易友 校长小猪猪 提供。
+.程序集变量 m_hENV, 整数型
+.程序集变量 m_hDBC, 整数型
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    SQLAllocHandle (#SQL_HANDLE_ENV, #SQL_NULL_HANDLE, m_hENV) ' 申请环境句柄
+    SQLSetEnvAttr (m_hENV, #SQL_ATTR_ODBC_VERSION, #SQL_OV_ODBC3, #SQL_IS_INTEGER)
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    关闭 ()
+    SQLFreeHandle (#SQL_HANDLE_ENV, m_hENV)
+
+.子程序 取数据库句柄, 整数型, 公开
+    返回 (m_hDBC)
+
+.子程序 置数据库句柄, , 公开
+    .参数 参数_数据库句柄, 整数型
+
+    m_hDBC ＝ 参数_数据库句柄
+
+.子程序 连接, 逻辑型, 公开
+    .参数 参数_连接字符串, 文本型
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 局部_输出, 文本型
+    .局部变量 局部_长度, 整数型
+    .局部变量 ret, 短整数型
+
+    .如果真 (m_hDBC ＝ 0)
+        ret ＝ SQLAllocHandle (#SQL_HANDLE_DBC, m_hENV, m_hDBC) ' 申请连接句柄
+        .如果真 (ret ≠ #SQL_SUCCESS)
+            返回 (假)
+        .如果真结束
+        
+    .如果真结束
+    局部_长度 ＝ 取文本长度 (参数_连接字符串)
+    局部_输出 ＝ 取空白文本 (1024)
+    ret ＝ SQLDriverConnect (m_hDBC, 0, 参数_连接字符串, 局部_长度, 局部_输出, 1024, 局部_实际长度, #SQL_DRIVER_NOPROMPT)
+    返回 (ret ＝ #SQL_SUCCESS 或 ret ＝ #SQL_SUCCESS_WITH_INFO)
+
+.子程序 连接SQLServer, 逻辑型, 公开
+    .参数 参数_服务器名, 文本型
+    .参数 参数_数据库, 文本型
+    .参数 参数_用户名, 文本型, 可空, 为空默认以Windows账户登录
+    .参数 参数_密码, 文本型, 可空, 为空默认以Windows账户登录
+    .局部变量 局_连接字符串, 文本型
+
+    局_连接字符串 ＝ “driver={sql server};server=” ＋ 参数_服务器名 ＋ “;database=” ＋ 参数_数据库 ＋ “;uid=” ＋ 参数_用户名 ＋ “;pwd=” ＋ 参数_密码
+    .如果真 (是否为空 (参数_用户名) 且 是否为空 (参数_密码))
+        局_连接字符串 ＝ “Driver=SQL Server;Server=” ＋ 参数_服务器名 ＋ “;Database=” ＋ 参数_数据库 ＋ “;Trusted_Connection=Yes;Connect Timeout=90”
+    .如果真结束
+    返回 (连接 (局_连接字符串))
+
+.子程序 连接Access, 逻辑型, 公开, 连接mdb或accdb数据库
+    .参数 参数_文件名, 文本型, , 本参数提供Access数据库文件的完整路径名。
+    .参数 参数_密码, 文本型, 可空, 本参数提供Access数据库的访问密码。可以为空，若为空，表示Access数据库没有密码。
+    .参数 参数_Accdb, 逻辑型, 可空, 数据库类型。默认为假=mdb，真=accdb。
+    .局部变量 局_连接语句, 文本型
+
+    .如果 (参数_Accdb)
+        局_连接语句 ＝ “ODBC;DSN=MS Access Database;DBQ=” ＋ 参数_文件名 ＋ “;Driver={Microsoft Access Driver (*.mdb, *.accdb)};;DriverId=25;FIL=MS Access;MaxBufferSize=2048;PageTimeout=5;PWD=” ＋ 参数_密码
+    .否则
+        局_连接语句 ＝ “DBQ=” ＋ 参数_文件名 ＋ “;Pwd=” ＋ 参数_密码 ＋ “;DRIVER={Microsoft Access Driver (*.mdb)};”
+    .如果结束
+    返回 (连接 (局_连接语句))
+
+.子程序 关闭, 逻辑型, 公开
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLDisconnect (m_hDBC)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        返回 (假)
+    .如果真结束
+    ret ＝ SQLFreeHandle (#SQL_HANDLE_DBC, m_hDBC)
+    m_hDBC ＝ 0
+    返回 (真)
+
+.子程序 执行SQL, 逻辑型, 公开
+    .参数 参数_SQL语句, 文本型
+    .参数 参数_影响行, 整数型, 参考 可空
+    .局部变量 ret, 短整数型
+    .局部变量 hSTMT, 整数型
+
+    ret ＝ SQLAllocHandle (#SQL_HANDLE_STMT, m_hDBC, hSTMT)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        返回 (假)
+    .如果真结束
+    ret ＝ SQLExecDirect (hSTMT, 参数_SQL语句, 取文本长度 (参数_SQL语句))
+    .如果真 (是否为空 (参数_影响行) ＝ 假)
+        SQLRowCount (hSTMT, 参数_影响行)
+    .如果真结束
+    SQLFreeHandle (#SQL_HANDLE_STMT, hSTMT)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 执行, 逻辑型, 公开
+    .参数 参数_SQL语句, 文本型, , 语句中的第几个“?”，表示参数几
+    .参数 参数_影响行, 整数型, 参考 可空
+    .参数 参数一, 字节集, 可空
+    .参数 参数二, 字节集, 可空
+    .参数 参数三, 字节集, 可空
+    .参数 参数四, 字节集, 可空
+    .参数 参数五, 字节集, 可空
+    .局部变量 ret, 短整数型
+    .局部变量 hSTMT, 整数型
+    .局部变量 len, 整数型, , "5"
+
+    ret ＝ SQLAllocHandle (#SQL_HANDLE_STMT, m_hDBC, hSTMT)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        返回 (假)
+    .如果真结束
+    ret ＝ SQLPrepare (hSTMT, 参数_SQL语句, #SQL_NTS)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        SQLFreeHandle (#SQL_HANDLE_STMT, hSTMT)
+        返回 (假)
+    .如果真结束
+    
+    .计次循环首 (1, )
+        .如果真 (是否为空 (参数一))
+            跳出循环 ()
+        .如果真结束
+        len [1] ＝ 取字节集长度 (参数一)
+        ret ＝ SQLBindParameter (hSTMT, 1, #SQL_PARAM_INPUT, #SQL_C_BINARY, #SQL_LONGVARBINARY, len [1], 0, 参数一, len [1], len [1])
+        .如果真 (是否为空 (参数二))
+            跳出循环 ()
+        .如果真结束
+        len [2] ＝ 取字节集长度 (参数二)
+        ret ＝ SQLBindParameter (hSTMT, 2, #SQL_PARAM_INPUT, #SQL_C_BINARY, #SQL_LONGVARBINARY, len [2], 0, 参数二, len [2], len [2])
+        .如果真 (是否为空 (参数三))
+            跳出循环 ()
+        .如果真结束
+        len [3] ＝ 取字节集长度 (参数三)
+        ret ＝ SQLBindParameter (hSTMT, 3, #SQL_PARAM_INPUT, #SQL_C_BINARY, #SQL_LONGVARBINARY, len [3], 0, 参数三, len [3], len [3])
+        .如果真 (是否为空 (参数四))
+            跳出循环 ()
+        .如果真结束
+        len [4] ＝ 取字节集长度 (参数四)
+        ret ＝ SQLBindParameter (hSTMT, 4, #SQL_PARAM_INPUT, #SQL_C_BINARY, #SQL_LONGVARBINARY, len [4], 0, 参数四, len [4], len [4])
+        .如果真 (是否为空 (参数五))
+            跳出循环 ()
+        .如果真结束
+        len [5] ＝ 取字节集长度 (参数五)
+        ret ＝ SQLBindParameter (hSTMT, 5, #SQL_PARAM_INPUT, #SQL_C_BINARY, #SQL_LONGVARBINARY, len [5], 0, 参数五, len [5], len [5])
+        
+    .计次循环尾 ()
+    ret ＝ SQLExecute (hSTMT)
+    .如果真 (是否为空 (参数_影响行) ＝ 假)
+        SQLRowCount (hSTMT, 参数_影响行)
+    .如果真结束
+    SQLFreeHandle (#SQL_HANDLE_STMT, hSTMT)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 查询, 整数型, 公开, 返回记录集句柄。此时记录集位置在首记录前
+    .参数 参数_SQL语句, 文本型
+    .参数 参数_光标类型, 整数型, 可空, “光标类型_”开头常量。默认为“光标类型_键集”
+    .局部变量 ret, 短整数型
+    .局部变量 hSTMT, 整数型
+
+    ret ＝ SQLAllocHandle (#SQL_HANDLE_STMT, m_hDBC, hSTMT)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        返回 (0)
+    .如果真结束
+    .如果真 (是否为空 (参数_光标类型))
+        参数_光标类型 ＝ #光标类型_键集
+    .如果真结束
+    ret ＝ SQLSetStmtAttr (hSTMT, #SQL_ATTR_CURSOR_TYPE, 参数_光标类型, 0)
+    ret ＝ SQLExecDirect (hSTMT, 参数_SQL语句, 取文本长度 (参数_SQL语句))
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        SQLFreeHandle (#SQL_HANDLE_STMT, hSTMT)
+        返回 (0)
+    .如果真结束
+    返回 (hSTMT)
+
+.子程序 置SQL语句, 整数型, 公开, 准备一条SQL语句，此时并没有执行。返回记录集句柄
+    .参数 参数_SQL语句, 文本型
+    .参数 参数_光标类型, 整数型, 可空, “光标类型_”开头常量。默认为“光标类型_向前”
+    .局部变量 ret, 短整数型
+    .局部变量 hSTMT, 整数型
+
+    ret ＝ SQLAllocHandle (#SQL_HANDLE_STMT, m_hDBC, hSTMT)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        返回 (0)
+    .如果真结束
+    .如果真 (是否为空 (参数_光标类型))
+        参数_光标类型 ＝ #光标类型_键集
+    .如果真结束
+    
+    ret ＝ SQLSetStmtAttr (hSTMT, #SQL_ATTR_CURSOR_TYPE, 参数_光标类型, 0)
+    ret ＝ SQLPrepare (hSTMT, 参数_SQL语句, #SQL_NTS)
+    .如果真 (ret ≠ #SQL_SUCCESS)
+        SQLFreeHandle (#SQL_HANDLE_STMT, hSTMT)
+        返回 (0)
+    .如果真结束
+    返回 (hSTMT)
+
+.子程序 执行记录集, 逻辑型, 公开, 执行由“置SQL语句”返回的记录集。
+    .参数 参数_记录集句柄, 整数型
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLExecute (参数_记录集句柄)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 绑定参数, 逻辑型, 公开, 给记录集绑定参数。
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_参数索引, 整数型, , 表示第几个参数，索引从1开始
+    .参数 参数_字节集, 字节集
+    .局部变量 len, 整数型
+    .局部变量 ret, 短整数型
+
+    len ＝ 取字节集长度 (参数_字节集)
+    ret ＝ SQLBindParameter (参数_记录集句柄, 参数_参数索引, #SQL_PARAM_INPUT, #SQL_C_BINARY, #SQL_LONGVARBINARY, len, 0, 参数_字节集, len, len)
+    返回 (ret ≠ #SQL_SUCCESS)
+
+.子程序 释放记录集, 逻辑型, 公开
+    .参数 参数_记录集句柄, 整数型
+
+    返回 (SQLFreeHandle (#SQL_HANDLE_STMT, 参数_记录集句柄) ＝ #SQL_SUCCESS)
+
+.子程序 到下一条, 逻辑型, 公开, 如果到最后一行，返回假
+    .参数 参数_记录集句柄, 整数型
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLFetchScroll (参数_记录集句柄, #SQL_FETCH_NEXT, 0)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 到上一条, 逻辑型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLFetchScroll (参数_记录集句柄, #SQL_FETCH_PRIOR, 0)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 到首记录, 逻辑型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLFetchScroll (参数_记录集句柄, #SQL_FETCH_FIRST, 0)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 到尾记录, 逻辑型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLFetchScroll (参数_记录集句柄, #SQL_FETCH_LAST, 0)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 移到, 逻辑型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_行号, 整数型
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLFetchScroll (参数_记录集句柄, #SQL_FETCH_ABSOLUTE, 参数_行号)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 字段名到序号, 整数型
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段名, 文本型
+    .局部变量 i, 整数型
+
+    .计次循环首 (取字段数 (参数_记录集句柄), i)
+        .如果真 (取字段名 (参数_记录集句柄, i － 1) ＝ 参数_字段名)
+            返回 (i － 1)
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (-1)
+
+.子程序 读字段文本, 文本型, 公开, 用字段名读
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段名, 文本型
+    .局部变量 局部_序号, 整数型
+
+    局部_序号 ＝ 字段名到序号 (参数_记录集句柄, 参数_字段名)
+    .如果真 (局部_序号 ＝ -1)
+        返回 (“”)
+    .如果真结束
+    返回 (读文本 (参数_记录集句柄, 局部_序号))
+
+.子程序 读字段字节集, 字节集, 公开, 用字段名读
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段名, 文本型
+    .局部变量 局部_序号, 整数型
+
+    局部_序号 ＝ 字段名到序号 (参数_记录集句柄, 参数_字段名)
+    .如果真 (局部_序号 ＝ -1)
+        返回 ({ })
+    .如果真结束
+    返回 (读字节集 (参数_记录集句柄, 局部_序号))
+
+.子程序 读字段整数, 整数型, 公开, 用字段名读
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段名, 文本型
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 局部_整数, 整数型
+    .局部变量 局部_序号, 整数型
+
+    局部_序号 ＝ 字段名到序号 (参数_记录集句柄, 参数_字段名)
+    .如果真 (局部_序号 ＝ -1)
+        返回 (0)
+    .如果真结束
+    ret ＝ SQLGetData (参数_记录集句柄, 局部_序号 ＋ 1, #SQL_C_LONG, 取指针整数_ (局部_整数), 4, 局部_实际长度)
+    返回 (局部_整数)
+
+.子程序 读字段单精度, 小数型, 公开, 用字段名读
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段名, 文本型
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 value, 小数型
+    .局部变量 局部_序号, 整数型
+
+    局部_序号 ＝ 字段名到序号 (参数_记录集句柄, 参数_字段名)
+    .如果真 (局部_序号 ＝ -1)
+        返回 (0)
+    .如果真结束
+    ret ＝ SQLGetData (参数_记录集句柄, 局部_序号 ＋ 1, #SQL_C_FLOAT, 取指针小数_ (value), 4, 局部_实际长度)
+    返回 (value)
+
+.子程序 读字段双精度, 双精度小数型, 公开, 用字段名读
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段名, 文本型
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 value, 双精度小数型
+    .局部变量 局部_序号, 整数型
+
+    局部_序号 ＝ 字段名到序号 (参数_记录集句柄, 参数_字段名)
+    .如果真 (局部_序号 ＝ -1)
+        返回 (0)
+    .如果真结束
+    ret ＝ SQLGetData (参数_记录集句柄, 局部_序号 ＋ 1, #SQL_C_DOUBLE, 取指针双精度_ (value), 8, 局部_实际长度)
+    返回 (value)
+
+.子程序 读文本, 文本型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 索引从0开始
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 buffer, 文本型
+    .局部变量 ret, 短整数型
+    .局部变量 局部_返回值, 文本型
+
+    .如果真 (参数_记录集句柄 ＝ 0)
+        返回 (“”)
+    .如果真结束
+    局部_实际长度 ＝ 255
+    .循环判断首 ()
+        buffer ＝ 取空白文本 (局部_实际长度)
+        ret ＝ SQLGetData (参数_记录集句柄, 参数_列号 ＋ 1, #SQL_C_CHAR, 取指针文本_ (buffer), 局部_实际长度, 局部_实际长度)
+        .如果真 (ret ＝ #SQL_ERROR 或 ret ＝ #SQL_INVALID_HANDLE 或 局部_实际长度 ＝ -1)
+            返回 (“”)
+        .如果真结束
+        局部_返回值 ＝ 局部_返回值 ＋ 取文本左边 (buffer, 局部_实际长度)
+    .循环判断尾 (ret ＝ #SQL_SUCCESS_WITH_INFO)
+    返回 (局部_返回值)
+
+.子程序 读字节集, 字节集, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 索引从0开始
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 buffer, 字节集
+    .局部变量 局部_返回值, 字节集
+
+    .如果真 (参数_记录集句柄 ＝ 0)
+        返回 ({ })
+    .如果真结束
+    局部_实际长度 ＝ 10240
+    .循环判断首 ()
+        buffer ＝ 取空白字节集 (局部_实际长度)
+        ret ＝ SQLGetData (参数_记录集句柄, 参数_列号 ＋ 1, #SQL_C_BINARY, 取指针字节集_ (buffer), 局部_实际长度, 局部_实际长度)
+        .如果真 (ret ＝ #SQL_ERROR 或 ret ＝ #SQL_INVALID_HANDLE 或 局部_实际长度 ＝ -1)
+            返回 ({ })
+        .如果真结束
+        局部_返回值 ＝ 局部_返回值 ＋ 取字节集左边 (buffer, 局部_实际长度)
+    .循环判断尾 (ret ＝ #SQL_SUCCESS_WITH_INFO)
+    返回 (局部_返回值)
+
+.子程序 读整数, 整数型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 索引从0开始
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 局部_整数, 整数型
+
+    .如果真 (参数_记录集句柄 ＝ 0)
+        返回 (0)
+    .如果真结束
+    ret ＝ SQLGetData (参数_记录集句柄, 参数_列号 ＋ 1, #SQL_C_LONG, 取指针整数_ (局部_整数), 4, 局部_实际长度)
+    返回 (局部_整数)
+
+.子程序 读单精度, 小数型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 索引从0开始
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 value, 小数型
+
+    .如果真 (参数_记录集句柄 ＝ 0)
+        返回 (0)
+    .如果真结束
+    ret ＝ SQLGetData (参数_记录集句柄, 参数_列号 ＋ 1, #SQL_C_FLOAT, 取指针小数_ (value), 4, 局部_实际长度)
+    返回 (value)
+
+.子程序 读双精度, 双精度小数型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 索引从0开始
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 value, 双精度小数型
+
+    .如果真 (参数_记录集句柄 ＝ 0)
+        返回 (0)
+    .如果真结束
+    ret ＝ SQLGetData (参数_记录集句柄, 参数_列号 ＋ 1, #SQL_C_DOUBLE, 取指针双精度_ (value), 8, 局部_实际长度)
+    返回 (value)
+
+.子程序 取字段名, 文本型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 列号从0开始
+    .局部变量 局部_字段名, 文本型
+
+    局部_字段名 ＝ 取空白文本 (255)
+    .如果 (SQLDescribeCol (参数_记录集句柄, 参数_列号 ＋ 1, 局部_字段名, 255, 0, 0, 0, 0, 0) ≠ #SQL_SUCCESS)
+        返回 (“”)
+    .否则
+        返回 (局部_字段名)
+    .如果结束
+    
+
+.子程序 取字段数, 整数型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .局部变量 ColumnCount, 整数型
+
+    SQLNumResultCols (参数_记录集句柄, ColumnCount)
+    返回 (ColumnCount)
+
+.子程序 取字段类型, 整数型, 公开, 返回“SQL_”开头常量
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 列号从0开始
+    .局部变量 局部_类型, 整数型
+
+    .如果 (SQLDescribeCol (参数_记录集句柄, 参数_列号 ＋ 1, 字符 (0), 0, 0, 局部_类型, 0, 0, 0) ≠ #SQL_SUCCESS)
+        返回 (0)
+    .否则
+        返回 (局部_类型)
+    .如果结束
+    
+
+.子程序 取字段定义长度, 整数型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_列号, 整数型, , 列号从0开始
+    .局部变量 局部_长度, 整数型
+
+    .如果 (SQLDescribeCol (参数_记录集句柄, 参数_列号 ＋ 1, 字符 (0), 0, 0, 0, 局部_长度, 0, 0) ≠ #SQL_SUCCESS)
+        返回 (0)
+    .否则
+        返回 (局部_长度)
+    .如果结束
+    
+
+.子程序 字段是否可空, 逻辑型, 公开
+    .参数 参数_记录集句柄, 整数型
+    .参数 参数_字段序号, 整数型, , 列号从0开始
+    .局部变量 局部_是否为空, 整数型
+
+    .如果 (SQLDescribeCol (参数_记录集句柄, 参数_字段序号 ＋ 1, 字符 (0), 0, 0, 0, 0, 0, 局部_是否为空) ≠ #SQL_SUCCESS)
+        返回 (假)
+    .否则
+        返回 (局部_是否为空 ≠ 0)
+    .如果结束
+    
+
+.子程序 取记录数, 整数型, 公开
+    .参数 参数_表名, 文本型
+    .参数 参数_条件, 文本型, 可空
+    .局部变量 sql, 文本型
+    .局部变量 局部_行数, 整数型
+    .局部变量 res, 整数型
+
+    sql ＝ “select count(1) from ” ＋ 参数_表名 ＋ “ ”
+    .如果真 (是否为空 (参数_条件) ＝ 假)
+        sql ＝ sql ＋ 参数_条件
+    .如果真结束
+    res ＝ 查询 (sql, #光标类型_向前)
+    到下一条 (res)
+    局部_行数 ＝ 读整数 (res, 0)
+    SQLFreeHandle (#SQL_HANDLE_STMT, res)
+    返回 (局部_行数)
+
+.子程序 开始事务, 逻辑型, 公开
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLSetConnectAttr (m_hDBC, #SQL_ATTR_AUTOCOMMIT, #SQL_AUTOCOMMIT_OFF, #SQL_IS_UINTEGER)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 回滚事务, 逻辑型, 公开
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLEndTran (#SQL_HANDLE_DBC, m_hDBC, #SQL_ROLLBACK)
+    SQLSetConnectAttr (m_hDBC, #SQL_ATTR_AUTOCOMMIT, #SQL_AUTOCOMMIT_ON, #SQL_IS_UINTEGER)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 提交事务, 逻辑型, 公开
+    .局部变量 ret, 短整数型
+
+    ret ＝ SQLEndTran (#SQL_HANDLE_DBC, m_hDBC, #SQL_COMMIT)
+    SQLSetConnectAttr (m_hDBC, #SQL_ATTR_AUTOCOMMIT, #SQL_AUTOCOMMIT_ON, #SQL_IS_UINTEGER)
+    返回 (ret ＝ #SQL_SUCCESS)
+
+.子程序 设超时时间, 逻辑型, 公开
+    .参数 参数_要设置的时间, 整数型
+    .局部变量 ret, 短整数型
+
+    .如果真 (m_hDBC ＝ 0)
+        ret ＝ SQLAllocHandle (#SQL_HANDLE_DBC, m_hENV, m_hDBC) ' 申请连接句柄
+        .如果真 (ret ≠ #SQL_SUCCESS)
+            返回 (假)
+        .如果真结束
+        
+    .如果真结束
+    返回 (SQLSetConnectAttr (m_hDBC, #SQL_ATTR_CONNECTION_TIMEOUT, 取指针整数_ (参数_要设置的时间), 0) ＝ #SQL_SUCCESS)
+
+.子程序 取超时时间, 整数型, 公开
+    .局部变量 ret, 短整数型
+    .局部变量 value, 整数型
+
+    .如果真 (m_hDBC ＝ 0)
+        ret ＝ SQLAllocHandle (#SQL_HANDLE_DBC, m_hENV, m_hDBC) ' 申请连接句柄
+        .如果真 (ret ≠ #SQL_SUCCESS)
+            返回 (0)
+        .如果真结束
+        
+    .如果真结束
+    ret ＝ SQLGetConnectAttr (m_hDBC, #SQL_ATTR_CONNECTION_TIMEOUT, 取指针整数_ (value), #SQL_IS_UINTEGER, 0)
+    返回 (value)
+
+.子程序 取最后错误, 整数型, 公开, 返回错误号。
+    .参数 参数_错误状态, 文本型, 参考 可空
+    .参数 参数_错误描述, 文本型, 参考 可空
+    .局部变量 局部_实际长度, 整数型
+    .局部变量 ret, 短整数型
+    .局部变量 state, 文本型
+    .局部变量 message, 文本型
+    .局部变量 index, 整数型
+    .局部变量 error, 整数型
+
+    .循环判断首 ()
+        index ＝ index ＋ 1
+        state ＝ 取空白文本 (6)
+        message ＝ 取空白文本 (#SQL_MAX_MESSAGE_LENGTH)
+        ret ＝ SQLGetDiagRec (#SQL_HANDLE_DBC, m_hDBC, index, state, error, message, #SQL_MAX_MESSAGE_LENGTH, 局部_实际长度)
+        .如果真 (ret ＝ #SQL_ERROR 或 ret ＝ #SQL_INVALID_HANDLE 或 局部_实际长度 ＝ -1)
+            返回 (0)
+        .如果真结束
+        参数_错误状态 ＝ 参数_错误状态 ＋ state
+        参数_错误描述 ＝ 参数_错误描述 ＋ 取文本左边 (message, 局部_实际长度)
+    .循环判断尾 (ret ≠ #SQL_NO_DATA)
+    返回 (error)
+
+.子程序 取查询信息, 文本型
+    .参数 参_查询参数, 文本型
+    .局部变量 ret, 整数型
+    .局部变量 szConnStrOut, 文本型
+    .局部变量 sConnStrOut, 整数型
+
+    .如果真 (m_hDBC ＝ 0)
+        ret ＝ SQLAllocHandle (#SQL_HANDLE_DBC, m_hENV, m_hDBC) ' 申请连接句柄
+        .如果真 (ret ≠ #SQL_SUCCESS)
+            返回 (“”)
+        .如果真结束
+        
+    .如果真结束
+    szConnStrOut ＝ 取空白文本 (2048)
+    SQLBrowseConnect (m_hDBC, 参_查询参数, #SQL_NTS, szConnStrOut, 2048, sConnStrOut)
+    返回 (删首尾空 (szConnStrOut))
+
+.子程序 枚举SQL服务器, 整数型, 公开, 枚举局域网内中SQL服务器，成功返回服务器名称数量，失败返回0
+    .参数 参_服务列表, 文本型, 数组, 变量储存返回值
+    .局部变量 szConnStrOut, 文本型
+    .局部变量 strText, 文本型
+
+    szConnStrOut ＝ 取查询信息 (“Driver={SQL Server}”)
+    .如果真 (szConnStrOut ＝ “”)
+        返回 (0)
+    .如果真结束
+    清除数组 (参_服务列表)
+    .如果真 (寻找文本 (szConnStrOut, “SERVER:”, , 假) ＝ -1)
+        返回 (0)
+    .如果真结束
+    strText ＝ 文本_取出中间文本 (szConnStrOut, “={”, “}”)
+    参_服务列表 ＝ 分割文本 (strText, “,”, )
+    返回 (取数组成员数 (参_服务列表))
+
+.子程序 枚举SQL数据库, 整数型, 公开, 枚举指定SQL服务器的数据库，成功返回数据列表数量，失败返回0
+    .参数 参_服务器, 文本型
+    .参数 参_登录用户名, 文本型
+    .参数 参_登录密码, 文本型
+    .参数 参_数据库列表, 文本型, 数组, 变量储存返回值
+    .局部变量 szConnStrOut, 文本型
+    .局部变量 strText, 文本型
+
+    szConnStrOut ＝ 取查询信息 (“Driver={SQL Server};SERVER=” ＋ 参_服务器 ＋ “;UID=” ＋ 参_登录用户名 ＋ “;PWD=” ＋ 参_登录密码)
+    .如果真 (szConnStrOut ＝ “”)
+        返回 (0)
+    .如果真结束
+    清除数组 (参_数据库列表)
+    .如果真 (寻找文本 (szConnStrOut, “DATABASE”, , 假) ＝ -1)
+        返回 (0)
+    .如果真结束
+    strText ＝ 文本_取出中间文本 (szConnStrOut, “={”, “}”)
+    参_数据库列表 ＝ 分割文本 (strText, “,”, )
+    返回 (取数组成员数 (参_数据库列表))
+

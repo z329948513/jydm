@@ -1,0 +1,275 @@
+﻿.版本 2
+
+.程序集 COM
+.子程序 COM_bstr_t, 整数型, 公开
+    .参数 _bstr_t, 文本型
+
+    返回 (SysAllocString (编码_Ansi到Unicode (_bstr_t)))
+
+.子程序 COM_QueryInterface, 整数型, 公开
+    .参数 this_, 整数型
+    .参数 refiid_, 整数型
+    .参数 pvoid_, 整数型, 参考
+    .局部变量 index, 整数型
+
+    index ＝ 0
+    置入代码 (#COM调用)
+    返回 (0)
+
+.子程序 COM_AddRef, 整数型, 公开
+    .参数 this_, 整数型
+    .局部变量 index, 整数型
+
+    index ＝ 1
+    置入代码 (#COM调用)
+    返回 (0)
+
+.子程序 COM_Release, 整数型, 公开
+    .参数 this_, 整数型
+    .局部变量 index, 整数型
+
+    index ＝ 2
+    置入代码 (#COM调用)
+    返回 (0)
+
+.子程序 _GetMethodAddr, 整数型
+    .参数 Instance, 整数型
+    .参数 index, 整数型, , 索引从0开始
+    .局部变量 var, 整数型
+
+    var ＝ 取字节集数据 (指针到字节集 (Instance, 4), #整数型, )
+    var ＝ var ＋ index × 4
+    var ＝ 取字节集数据 (指针到字节集 (var, 4), #整数型, )
+    返回 (var)
+
+.子程序 COM_调用COM方法, 整数型, 公开
+    .参数 pThis, 整数型
+    .参数 Index, 整数型, , 索引从1开始
+    .参数 arg1, 整数型, 可空
+    .参数 arg2, 整数型, 可空
+    .参数 arg3, 整数型, 可空
+    .参数 arg4, 整数型, 可空
+    .参数 arg5, 整数型, 可空
+    .参数 arg6, 整数型, 可空
+    .参数 arg7, 整数型, 可空
+    .参数 arg8, 整数型, 可空
+    .参数 arg9, 整数型, 可空
+    .参数 arg10, 整数型, 可空
+    .局部变量 参数数组, 整数型, , "0"
+
+    加入成员 (参数数组, pThis)
+    .计次循环首 (1, )
+        .如果 (是否为空 (arg1))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg1)
+        .如果结束
+        .如果 (是否为空 (arg2))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg2)
+        .如果结束
+        .如果 (是否为空 (arg3))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg3)
+        .如果结束
+        .如果 (是否为空 (arg4))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg4)
+        .如果结束
+        .如果 (是否为空 (arg5))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg5)
+        .如果结束
+        .如果 (是否为空 (arg6))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg6)
+        .如果结束
+        .如果 (是否为空 (arg7))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg7)
+        .如果结束
+        .如果 (是否为空 (arg8))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg8)
+        .如果结束
+        .如果 (是否为空 (arg9))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg9)
+        .如果结束
+        .如果 (是否为空 (arg10))
+            跳出循环 ()
+        .否则
+            加入成员 (参数数组, arg10)
+        .如果结束
+        
+    .计次循环尾 ()
+    返回 (CallWindowProcA (取指针_字节集型 (#动态调用代码), _GetMethodAddr (pThis, Index), 取数据_通用型_数组 (参数数组), 取数组成员数 (参数数组), 0))
+
+.子程序 COM_StringToCLSID, GUID, 公开
+    .参数 参数_文本, 文本型
+    .局部变量 局部_clsid, GUID
+
+    CLSIDFromString_GUID (编码_Ansi到Unicode (参数_文本, ), 局部_clsid)
+    返回 (局部_clsid)
+    
+
+.子程序 COM_StringtoIID, GUID, 公开, 把COM中的接口名转换成接口标识GUID结构
+    .参数 接口类型, 文本型
+    .局部变量 iid, GUID
+    .局部变量 dwError
+
+    dwError ＝ IIDFromString (编码_Ansi到Unicode (接口类型), iid)
+    返回 (iid)
+
+.子程序 取对象指针, 整数型, 公开
+    .参数 对象数据, 对象
+    .局部变量 pThisF, 整数型
+
+    CopyMemory_objcet2int (pThisF, 对象数据, 4)
+    返回 (pThisF)
+
+.子程序 取变体型指针, 整数型, 公开
+    .参数 变体型, 变体型
+
+    返回 (lstrcat_int2variant (变体型, 0))
+
+.子程序 COM_连接命名空间, 整数型, 公开, 成功返回一个IWbemServices类指针，失败返回零。
+    .参数 名字空间, 文本型, , 如“root\CIMV2”
+    .局部变量 CLSID_WbemLocator, GUID
+    .局部变量 IID_IWbemLocator, GUID
+    .局部变量 hresult, 整数型
+    .局部变量 WbemLocator, 整数型
+    .局部变量 ppNamespace, 整数型
+    .局部变量 strNetworkResource
+
+    CoInitializeEx (0, 0)
+    CoInitializeSecurity (0, -1, 0, 0, 0, 3, 0, 0, 0)
+    CLSID_WbemLocator ＝ COM_StringToCLSID (“{4590f811-1d3a-11d0-891f-00aa004b2e24}”)
+    IID_IWbemLocator ＝ COM_StringtoIID (“{dc12a687-737f-11cf-884d-00aa004b2e24}”)
+    hresult ＝ CoCreateInstance (CLSID_WbemLocator, 0, 1, IID_IWbemLocator, WbemLocator)
+    .如果真 (hresult ＝ 0)
+        strNetworkResource ＝ COM_bstr_t (名字空间)
+        hresult ＝ IWbemLocator_ConnectServer (WbemLocator, strNetworkResource, 0, 0, 0, 0, 0, 0, ppNamespace)
+        SysFreeString (strNetworkResource)
+        .如果 (hresult ＝ 0)
+            hresult ＝ CoSetProxyBlanket (ppNamespace, 10, 0, 0, 3, 3, 0, 0)
+            COM_Release (WbemLocator)
+            返回 (ppNamespace)
+        .否则
+            输出调试文本 (“Windows Management Instrumentation 服务已禁用，请启动后重试！”)
+        .如果结束
+        
+    .如果真结束
+    CoUninitialize ()
+    返回 (0)
+
+.子程序 IWbemLocator_ConnectServer, 整数型
+    .参数 this
+    .参数 strNetworkResource
+    .参数 strUser
+    .参数 strPassword
+    .参数 strLocale
+    .参数 lSecurityFlags
+    .参数 strAuthority
+    .参数 pCtx
+    .参数 ppNamespace, , 参考
+    .局部变量 index
+
+    index ＝ 3
+    置入代码 ({ 139, 69, 8, 139, 0, 107, 77, 252, 4, 3, 193, 131, 196, 4, 93, 255, 32 })
+    返回 (0)
+
+.子程序 IEnumVARIANT_Next, 整数型
+    .参数 this
+    .参数 celt
+    .参数 rgvar
+    .参数 pceltFetched, , 参考
+    .局部变量 index
+
+    index ＝ 3
+    置入代码 ({ 139, 69, 8, 139, 0, 107, 77, 252, 4, 3, 193, 131, 196, 4, 93, 255, 32 })
+    返回 (0)
+
+.子程序 IWbemServices_ExecQuery, 整数型
+    .参数 This, , , __RPC__in IWbemServices
+    .参数 strQueryLanguage, , , /* [in] */ __RPC__in const BSTR
+    .参数 strQuery, , , /* [in] */ __RPC__in const BSTR 
+    .参数 lFlags, , , /* [in] */ long
+    .参数 pCtx, , , /* [in] */ __RPC__in_opt IWbemContext
+    .参数 ppEnum, , 参考, /* [out] */ __RPC__deref_out_opt IEnumWbemClassObject
+    .局部变量 index
+
+    index ＝ 20
+    置入代码 ({ 139, 69, 8, 139, 0, 107, 77, 252, 4, 3, 193, 131, 196, 4, 93, 255, 32 })
+    返回 (0)
+
+.子程序 IEnumWbemClassObject_Next, 整数型
+    .参数 This, , , __RPC__in IEnumWbemClassObject
+    .参数 lTimeout, , , /* [in] */ long
+    .参数 uCount, , , /* [in] */ ULONG
+    .参数 apObjects, , 参考, /* [length_is][size_is][out] */ __RPC__out_ecount_part(uCount, *puReturned) IWbemClassObject 
+    .参数 puReturned, , 参考, /* [out] */ __RPC__out ULONG
+    .局部变量 index
+
+    index ＝ 4
+    置入代码 ({ 139, 69, 8, 139, 0, 107, 77, 252, 4, 3, 193, 131, 196, 4, 93, 255, 32 })
+    返回 (0)
+
+.子程序 IWbemClassObject_Get, 整数型
+    .参数 This, , , IWbemClassObject
+    .参数 wszName, , , /* [string][in] */ LPCWSTR
+    .参数 lFlags, , , /* [in] */ long
+    .参数 pVal, , , /* [unique][in][out] */
+    .参数 pType, , 参考, /* [unique][in][out] */ CIMTYPE
+    .参数 plFlavor, , 参考, /* [unique][in][out] */
+    .局部变量 index
+
+    index ＝ 4
+    置入代码 ({ 139, 69, 8, 139, 0, 107, 77, 252, 4, 3, 193, 131, 196, 4, 93, 255, 32 })
+    返回 (0)
+
+.子程序 查询类属性, 变体型, , ExecQuery
+    .参数 wSql语句, 文本型, , 如“Select * From Win32_OperatingSystem”
+    .参数 属性名称, 文本型, , 如属性名“BuildNumber”
+    .局部变量 pWbemServices, 整数型
+    .局部变量 hresult, 整数型
+    .局部变量 ppObject, 整数型
+    .局部变量 pEnumerator, 整数型
+    .局部变量 var, 变体型
+    .局部变量 pcFetched, 整数型
+    .局部变量 strQueryLanguage, 整数型, , , /* [in] */ __RPC__in const BSTR
+    .局部变量 strQuery, 整数型, , , /* [in] */ __RPC__in const BSTR 
+    .局部变量 wszName, 整数型
+
+    pWbemServices ＝ COM_连接命名空间 (“root\CIMV2”)
+    .如果真 (pWbemServices ＞ 0)
+        strQueryLanguage ＝ COM_bstr_t (“WQL”)
+        strQuery ＝ COM_bstr_t (wSql语句)
+        hresult ＝ IWbemServices_ExecQuery (pWbemServices, strQueryLanguage, strQuery, 位或 (32, 16), 0, pEnumerator)
+        .如果真 (hresult ＝ 0)
+            .循环判断首 ()
+                hresult ＝ IEnumWbemClassObject_Next (pEnumerator, 2000, 1, ppObject, pcFetched)
+                .如果真 (hresult ＝ 0)
+                    wszName ＝ COM_bstr_t (属性名称)
+                    hresult ＝ IWbemClassObject_Get (ppObject, wszName, 0, 取变体型指针 (var), 0, 0)
+                    SysFreeString (wszName)
+                    COM_Release (ppObject)
+                .如果真结束
+                
+            .循环判断尾 (pcFetched ＝ 1)
+            COM_Release (pEnumerator)
+        .如果真结束
+        COM_Release (pWbemServices)
+        SysFreeString (strQueryLanguage)
+        SysFreeString (strQuery)
+    .如果真结束
+    返回 (var)
+

@@ -1,0 +1,334 @@
+﻿.版本 2
+
+.程序集 集_取硬盘特征字
+.子程序 系统_取硬盘特征字, 整数型, 公开, 获取系统硬盘特征字
+    .参数 iDrive, 整数型, 可空
+    .参数 硬盘序列号, 文本型, 参考 可空
+    .参数 硬盘模型号, 文本型, 参考 可空
+    .局部变量 sFilePath, 文本型
+    .局部变量 hDevice, 整数型
+    .局部变量 InBufferIDE, 取硬盘特征号0
+    .局部变量 OutBufferIDE, 取硬盘特征号1
+    .局部变量 InBufferSCSI, 取硬盘特征号2
+    .局部变量 OutBuffer, 字节集
+    .局部变量 BytesRet, 整数型
+    .局部变量 IDEData, 取硬盘特征号3
+    .局部变量 硬盘特征码, 整数型
+
+    硬盘特征码 ＝ 取硬盘特征字 ()
+    .如果真 (硬盘特征码 ≠ 0)
+        返回 (硬盘特征码)
+    .如果真结束
+    .如果 (系统_取操作系统类别 () ≥ 4)
+        sFilePath ＝ “\\.\PHYSICALDRIVE” ＋ 整数型_到文本 (iDrive)
+        hDevice ＝ CreateFileA (sFilePath, 位或 (2147483648, 1073741824), 位或 (1, 2), 0, 3, 0, 0)
+        .判断开始 (hDevice ≠ -1)
+            .如果真 (_设备操作0 (hDevice, 475264, 0, 0, OutBufferIDE, 24, BytesRet, 0) ≠ 0)
+                OutBuffer ＝ 字节集_取空白 (544)
+                InBufferIDE.cBufferSize ＝ 512
+                InBufferIDE.bSectorCountReg ＝ 1
+                InBufferIDE.bSectorNumberReg ＝ 1
+                .如果 (位与 (iDrive, 1) ≠ 0)
+                    InBufferIDE.bDriveHeadReg ＝ 176
+                .否则
+                    InBufferIDE.bDriveHeadReg ＝ 160
+                .如果结束
+                .如果 (iDrive ≠ 0)
+                    InBufferIDE.bCommandReg ＝ OutBufferIDE.bIDEDeviceMap ÷ 位与 (iDrive, 16)
+                .否则
+                    InBufferIDE.bCommandReg ＝ OutBufferIDE.bIDEDeviceMap
+                .如果结束
+                .如果 (InBufferIDE.bCommandReg ＝ 0)
+                    InBufferIDE.bCommandReg ＝ 161
+                .否则
+                    InBufferIDE.bCommandReg ＝ 236
+                .如果结束
+                .如果真 (DeviceIoControl (hDevice, 508040, InBufferIDE, 32, OutBuffer, 544, BytesRet, 0) ＝ 0)
+                    InBufferIDE.bCommandReg ＝ 236
+                    DeviceIoControl (hDevice, 508040, InBufferIDE, 32, OutBuffer, 544, BytesRet, 0)
+                .如果真结束
+                RtlMoveMemory_取硬盘特征号3 (IDEData, 字节集_取指定位置字节集 (OutBuffer, 17, 256), 256)
+            .如果真结束
+            
+        .默认
+            CloseHandle (hDevice)
+            sFilePath ＝ “\\.\SCSI” ＋ 整数型_到文本 (iDrive) ＋ “:”
+            hDevice ＝ CreateFileA (sFilePath, 位或 (2147483648, 1073741824), 位或 (1, 2), 0, 3, 0, 0)
+            .如果真 (hDevice ≠ -1)
+                InBufferSCSI.HeaderLength ＝ 28
+                RtlMoveMemory_整数型 (取数据_通用型_数组 (InBufferSCSI.Signature), 取指针_文本型 (“SCSIDISK”), 8)
+                InBufferSCSI.Timeout ＝ 2
+                InBufferSCSI.Length ＝ 544
+                InBufferSCSI.ControlCode ＝ 1770753
+                InBufferSCSI.cBufferSize ＝ 512
+                InBufferSCSI.bSectorCountReg ＝ 1
+                InBufferSCSI.bSectorNumberReg ＝ 1
+                .如果 (位与 (iDrive, 1) ≠ 0)
+                    InBufferSCSI.bDriveHeadReg ＝ 176
+                .否则
+                    InBufferSCSI.bDriveHeadReg ＝ 160
+                .如果结束
+                InBufferSCSI.bCommandReg ＝ 236
+                OutBuffer ＝ 字节集_取空白 (572)
+                .如果真 (_设备操作2 (hDevice, 315400, InBufferSCSI, 60, OutBuffer, 572, BytesRet, 0) ≠ 0)
+                    RtlMoveMemory_取硬盘特征号3 (IDEData, 字节集_取指定位置字节集 (OutBuffer, 45, 256), 256)
+                .如果真结束
+                
+            .如果真结束
+            
+        .判断结束
+        
+    .否则
+        sFilePath ＝ “\\.\SMARTVSD”
+        hDevice ＝ CreateFileA (sFilePath, 0, 0, 0, 1, 0, 0)
+        .如果真 (hDevice ≠ -1)
+            InBufferIDE.cBufferSize ＝ 512
+            InBufferIDE.bSectorCountReg ＝ 1
+            InBufferIDE.bSectorNumberReg ＝ 1
+            .如果 (位与 (iDrive, 1) ≠ 0)
+                InBufferIDE.bDriveHeadReg ＝ 176
+            .否则
+                InBufferIDE.bDriveHeadReg ＝ 160
+            .如果结束
+            InBufferIDE.bCommandReg ＝ 236
+            OutBuffer ＝ 字节集_取空白 (528)
+            .如果真 (DeviceIoControl (hDevice, 508040, InBufferIDE, 32, OutBuffer, 528, BytesRet, 0) ≠ 0)
+                RtlMoveMemory_取硬盘特征号3 (IDEData, 字节集_取指定位置字节集 (OutBuffer, 17, 256), 256)
+            .如果真结束
+            
+        .如果真结束
+        
+    .如果结束
+    CloseHandle (hDevice)
+    .如果真 (是否为空 (硬盘序列号) ＝ 假)
+        硬盘序列号 ＝ FixString (IDEData.sSerialNumber)
+    .如果真结束
+    .如果真 (是否为空 (硬盘模型号) ＝ 假)
+        硬盘模型号 ＝ FixString (IDEData.sModelNumber)
+    .如果真结束
+    硬盘特征码 ＝ 特征字计算 (IDEData)
+    .如果真 (取文本长度 (到文本 (硬盘特征码)) ≤ 2)
+        硬盘特征码 ＝ 系统_取硬盘特征字1 ()
+    .如果真结束
+    返回 (硬盘特征码)
+
+.子程序 系统_取操作系统类别, 整数型, 公开, 返回当前操作系统的版本类别。返回值为以下值之一：0、未知； 1、Win95； 2、Win98； 3、WinME； 4、WinNT； 5、Win2000； 6、WinXP； 7、Win2003； 8、Vista；9、Win7； 10、Win8； 11、Win8.1； 12、Win10
+    置入代码 ({ 83, 49, 192, 100, 139, 29, 24, 0, 0, 0, 100, 139, 13, 48, 0, 0, 0, 133, 201, 121, 32, 185, 0, 0, 83, 0, 57, 75, 88, 117, 4, 176, 1, 235, 113, 57, 75, 84, 117, 4, 176, 2, 235, 104, 57, 75, 124, 117, 99, 176, 3, 235, 95, 139, 153, 168, 0, 0, 0, 139, 137, 164, 0, 0, 0, 131, 249, 4, 119, 4, 176, 4, 235, 74, 131, 249, 5, 117, 27, 131, 251, 0, 117, 4, 176, 5, 235, 60, 131, 251, 1, 117, 4, 176, 6, 235, 51, 131, 251, 2, 117, 4, 176, 7, 235, 42, 131, 249, 6, 117, 35, 131, 251, 0, 117, 4, 176, 8, 235, 28, 131, 251, 1, 117, 2, 176, 9, 131, 251, 2, 117, 2, 176, 10, 131, 251, 3, 117, 2, 176, 11, 131, 251, 4, 117, 2, 176, 12, 91, 201, 195 })
+    返回 (0)
+
+.子程序 系统_取硬盘特征字1, 整数型, , 返回0说明未取到。这个主要是补充易不能在某些系统或是硬盘上取硬盘特征字。
+    .局部变量 driveName, 文本型
+    .局部变量 hPhysicalDriveIOCTL, 整数型
+    .局部变量 query, 字节集
+    .局部变量 cbBytesReturned, 整数型
+    .局部变量 buffer, 字节集
+    .局部变量 buffersize, 整数型
+    .局部变量 st, 逻辑型
+    .局部变量 crc1, 整数型
+
+    driveName ＝ “\\.\PhysicalDrive0”
+    hPhysicalDriveIOCTL ＝ CreateFileA (driveName, 0, 位或 (1, 2), 0, 3, 0, 0)
+    .如果真 (hPhysicalDriveIOCTL ＝ -1)
+        返回 (0)
+    .如果真结束
+    buffersize ＝ 1024
+    query ＝ 取空白字节集 (12)
+    buffer ＝ 取空白字节集 (buffersize)
+    st ＝ DeviceIoControl1 (hPhysicalDriveIOCTL, 2954240, lstrcpynA_字节集 (query, query, 0), 12, lstrcpynA_字节集 (buffer, buffer, 0), buffersize, cbBytesReturned, 0)
+    .如果真 (st ＝ 真)
+        crc1 ＝ get_crc32 (buffer)
+    .如果真结束
+    CloseHandle (hPhysicalDriveIOCTL)
+    返回 (crc1)
+
+.子程序 取硬盘特征字2, 整数型, 公开, 获取电脑中第一个物理硬盘的物理特征字,失败返回0,与取硬盘特征字不同的是可以在任何操作系统下取出特征字不受重装系统的引响,兼容WIN7系统
+    .参数 硬盘序号, 整数型, 可空, 默认为磁盘0  第一个硬盘为0,第二个为1,第三个为2,依此类推
+    .局部变量 驱动名, 文本型
+    .局部变量 驱动句柄, 整数型
+    .局部变量 查询, 字节集
+    .局部变量 缓存, 字节集
+    .局部变量 缓存大小, 整数型
+    .局部变量 特征字, 整数型
+
+    驱动名 ＝ “\\.\PhysicalDrive” ＋ 到文本 (硬盘序号)
+    驱动句柄 ＝ CreateFile (驱动名, 0, 3, 0, 3, 0, 0)
+    .如果真 (驱动句柄 ＝ -1)
+        返回 (0)
+    .如果真结束
+    缓存大小 ＝ 1024
+    查询 ＝ 取空白字节集 (12)
+    缓存 ＝ 取空白字节集 (缓存大小)
+    .如果真 (_a设备操作2 (驱动句柄, 2954240, _取指针_字节集 (查询, 查询, 0), 12, _取指针_字节集 (缓存, 缓存, 0), 缓存大小, 0, 0))
+        特征字 ＝ crc32 (缓存)
+    .如果真结束
+    _a关闭对象 (驱动句柄)
+    返回 (特征字)
+
+.子程序 get_crc32, 整数型, , 1
+    .参数 原文, 字节集, , 主要用来取文本的crc32，取文件的crc32要专门写个取文件的
+    .局部变量 crcval, 整数型
+    .局部变量 长度, 整数型
+    .局部变量 i, 整数型
+    .局部变量 结果, 整数型
+    .局部变量 位置, 整数型
+    .局部变量 crc, 整数型
+    .局部变量 table, 整数型, , "256"
+
+    长度 ＝ 取字节集长度 (原文)
+    .如果真 (长度 ＜ 1)
+        返回 (0)
+    .如果真结束
+    .变量循环首 (0, 255, 1, i) ' 用来得到码表
+        crc ＝ i
+        .变量循环首 (1, 8, 1, )
+            .如果 (位与 (crc, 1) ≠ 0)
+                crc ＝ 位异或 (位与 (右移 (crc, 1), 2147483647), 3988292384) ' crc xor EDB88320
+            .否则
+                crc ＝ 位与 (右移 (crc, 1), 2147483647)
+            .如果结束
+            
+        .变量循环尾 ()
+        table [i ＋ 1] ＝ crc
+    .变量循环尾 ()
+    crcval ＝ 4294967295
+    .计次循环首 (长度, i)
+        位置 ＝ 位异或 (原文 [i], 位与 (crcval, 255)) ＋ 1 ' 查表
+        crcval ＝ 位异或 (位与 (右移 (crcval, 8), 16777215), table [位置])
+    .计次循环尾 ()
+    结果 ＝ 位取反 (crcval)
+    返回 (结果)
+
+.子程序 crc32, 整数型
+    .参数 原文, 字节集, , 主要用来取文本的crc32，取文件的crc32要专门写个取文件的
+    .局部变量 crcval, 整数型
+    .局部变量 长度, 整数型
+    .局部变量 i, 整数型
+    .局部变量 位置, 整数型
+    .局部变量 crc, 整数型
+    .局部变量 table, 整数型, , "256"
+
+    长度 ＝ 取字节集长度 (原文)
+    .如果真 (长度 ＜ 1)
+        返回 (0)
+    .如果真结束
+    .变量循环首 (0, 255, 1, i) ' 用来得到码表
+        crc ＝ i
+        .变量循环首 (1, 8, 1, )
+            .如果 (位与 (crc, 1) ≠ 0)
+                crc ＝ 位异或 (位与 (右移 (crc, 1), 2147483647), 3988292384) ' crc xor EDB88320
+            .否则
+                crc ＝ 位与 (右移 (crc, 1), 2147483647)
+            .如果结束
+            
+        .变量循环尾 ()
+        table [i ＋ 1] ＝ crc
+    .变量循环尾 ()
+    crcval ＝ 4294967295
+    .计次循环首 (长度, i)
+        位置 ＝ 位异或 (原文 [i], 位与 (crcval, 255)) ＋ 1 ' 查表
+        crcval ＝ 位异或 (位与 (右移 (crcval, 8), 16777215), table [位置])
+    .计次循环尾 ()
+    返回 (位取反 (crcval))
+    
+
+.子程序 FixString, 文本型
+    .参数 pwDiskData, 字节型, 数组
+    .局部变量 DiskData, 字节集
+    .局部变量 i, 整数型
+
+    DiskData ＝ 字节集_取空白 (取数组成员数 (pwDiskData))
+    .变量循环首 (1, 取数组成员数 (pwDiskData), 2, i)
+        DiskData [i] ＝ pwDiskData [i ＋ 1]
+        DiskData [i ＋ 1] ＝ pwDiskData [i]
+    .变量循环尾 ()
+    DiskData ＝ 子字节集替换 (DiskData, { 32 }, , , )
+    返回 (字节集_到文本 (DiskData))
+
+.子程序 特征字计算, 整数型
+    .参数 Data, 取硬盘特征号3
+    .局部变量 Dword, 字节集
+    .局部变量 i, 整数型
+    .局部变量 ToData, 整数型
+    .局部变量 Total, 整数型
+    .局部变量 返回值, 整数型
+
+    Dword ＝ { 0, 0, 0, 0 }
+    .计次循环首 (40, i)
+        .判断开始 (i ％ 2 ＝ 0)
+            Dword [2] ＝ Data.sModelNumber [i]
+            Total ＝ Total ＋ 字节集_到整数 (Dword)
+        .默认
+            Dword [1] ＝ Data.sModelNumber [i]
+        .判断结束
+        
+    .计次循环尾 ()
+    .计次循环首 (8, i)
+        .判断开始 (i ％ 2 ＝ 0)
+            Dword [2] ＝ Data.sFirmwareRev [i]
+            Total ＝ Total ＋ 字节集_到整数 (Dword)
+        .默认
+            Dword [1] ＝ Data.sFirmwareRev [i]
+        .判断结束
+        
+    .计次循环尾 ()
+    .计次循环首 (20, i)
+        .判断开始 (i ％ 2 ＝ 0)
+            Dword [2] ＝ Data.sSerialNumber [i]
+            Total ＝ Total ＋ 字节集_到整数 (Dword)
+        .默认
+            Dword [1] ＝ Data.sSerialNumber [i]
+        .判断结束
+        
+    .计次循环尾 ()
+    ToData ＝ Data.wBufferSize ＋ Data.wSectorsPerTrack ＋ Data.wNumHeads ＋ Data.wNumCyls
+    .如果 (ToData × 65536 ＋ Total ≤ 4294967295)
+        返回值 ＝ ToData × 65536 ＋ Total
+    .否则
+        返回值 ＝ ((ToData － 1) ％ 65535 ＋ 1) × 65536 ＋ Total ％ 65535
+    .如果结束
+    返回 (返回值)
+
+.子程序 字节集_子寻找, 整数型, , 分割字节集时用
+    .参数 X, 字节集
+    .参数 Y, 字节集
+    .参数 Z, 整数型, 数组
+    .参数 StartOffset, 整数型, 可空
+    .局部变量 i, 整数型
+    .局部变量 j, 整数型
+    .局部变量 Len_Y, 整数型
+
+    清除数组 (Z)
+    i ＝ 1
+    .如果 (是否为空 (StartOffset))
+        j ＝ 1
+    .否则
+        j ＝ StartOffset
+    .如果结束
+    Len_Y ＝ 字节集_取长度 (Y)
+    .判断循环首 (i ≠ -1)
+        i ＝ 字节集_寻找 (X, Y, j)
+        .如果真 (i ≠ -1)
+            加入成员 (Z, i)
+            j ＝ i ＋ Len_Y
+        .如果真结束
+        程序_延时 (1)
+    .判断循环尾 ()
+    返回 (取数组成员数 (Z))
+
+.子程序 文本型_取空白, 文本型, , 支持斩月,但速度不是最快,不过简单,哈～～
+    .参数 零字节数目, 整数型
+    .局部变量 Address, 整数型
+    .局部变量 返回值, 文本型
+
+    .如果真 (零字节数目 ＜ 1)
+        返回 (“”)
+    .如果真结束
+    Address ＝ LocalAlloc (64, 零字节数目 ＋ 1)
+    .如果真 (Address ＝ 0)
+        返回 (“”)
+    .如果真结束
+    RtlFillMemory_字节 (Address, 零字节数目, 32)
+    返回值 ＝ 指针到文本 (Address)
+    LocalFree (Address)
+    返回 (返回值)
+

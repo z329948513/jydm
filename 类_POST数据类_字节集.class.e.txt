@@ -1,0 +1,148 @@
+﻿.版本 2
+
+.程序集 类_POST数据类_字节集, , 公开
+.程序集变量 _keys, 文本型, , "0"
+.程序集变量 _values, 字节集, , "0"
+.程序集变量 _filename, 文本型, , "0"
+.程序集变量 _types, 文本型, , "0"
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    
+
+.子程序 清空, , 公开
+    清除数组 (_keys)
+    清除数组 (_values)
+    清除数组 (_types)
+    清除数组 (_filename)
+
+.子程序 添加, , 公开
+    .参数 key, 文本型
+    .参数 value, 字节集
+    .参数 types, 文本型, 可空, 如： Content-Type: audio/mp3，请填写【audio/mp3】
+    .参数 filename, 文本型, 可空, 如： Content-Type: audio/mp3，请填写【audio/mp3】
+
+    加入成员 (_keys, key)
+    加入成员 (_values, value)
+    加入成员 (_types, types)
+    加入成员 (_filename, filename)
+
+.子程序 取值, 字节集, 公开
+    .参数 key, 文本型
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (_keys), i)
+        .如果真 (_keys [i] ＝ key)
+            返回 (_values [i])
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 ({ })
+
+.子程序 置值, , 公开
+    .参数 key, 文本型
+    .参数 value, 字节集
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (_keys), i)
+        .如果真 (_keys [i] ＝ key)
+            _values [i] ＝ value
+            返回 ()
+        .如果真结束
+        
+    .计次循环尾 ()
+    添加 (key, value)
+
+.子程序 ______获取Post数据, 字节集
+    .参数 boundary, 文本型
+    .参数 分割符数量, 整数型, 可空, 默认为2，如：--WebKitFormBoundaryPPRO2xsdBWf1T1h4
+    .局部变量 i, 整数型
+    .局部变量 head, 文本型
+    .局部变量 t, 文本型
+    .局部变量 bin, 字节集
+    .局部变量 keys, 文本型, , "0"
+    .局部变量 values, 文本型, , "0"
+
+    .如果真 (分割符数量 ＝ 0)
+        分割符数量 ＝ 2
+    .如果真结束
+    head ＝ 取重复文本 (分割符数量, “-”) ＋ boundary ＋ #换行符
+    .计次循环首 (取数组成员数 (_keys), i)
+        t ＝ head ＋ “Content-Disposition: form-data; name=” ＋ #引号 ＋ _keys [i] ＋ #引号 ＋ “; filename=” ＋ #引号 ＋ _keys [i] ＋ #引号 ＋ #换行符
+        .如果真 (_types [i] ≠ “”)
+            t ＝ t ＋ “Content-Type: ” ＋ _types [i] ＋ #换行符
+        .如果真结束
+        t ＝ t ＋ #换行符
+        bin ＝ bin ＋ 到字节集 (t) ＋ _values [i] ＋ { 13, 10 }
+    .计次循环尾 ()
+    置入代码 ({ 255, 117, 236, 255, 117, 232, 139, 69, 8, 139, 0, 139, 88, 4, 137, 93, 236, 139, 88, 8, 137, 93, 232 })
+    .计次循环首 (取数组成员数 (keys), i)
+        t ＝ head ＋ “Content-Disposition: form-data; name=” ＋ #引号 ＋ keys [i] ＋ #引号 ＋ #换行符 ＋ #换行符
+        t ＝ t ＋ values [i] ＋ #换行符
+        bin ＝ bin ＋ 到字节集 (t)
+    .计次循环尾 ()
+    置入代码 ({ 143, 69, 236, 143, 69, 232 })
+    bin ＝ bin ＋ 到字节集 (取重复文本 (分割符数量, “-”) ＋ boundary ＋ “--” ＋ #换行符)
+    返回 (bin)
+
+.子程序 获取Post数据, 字节集, 公开
+    .参数 boundary, 文本型
+    .参数 分割符数量, 整数型, 可空, 默认为2，如：--WebKitFormBoundaryPPRO2xsdBWf1T1h4
+    .局部变量 i, 整数型
+    .局部变量 head, 文本型
+    .局部变量 t, 文本型
+    .局部变量 bin, 字节集
+    .局部变量 keys, 文本型, , "0"
+    .局部变量 values, 文本型, , "0"
+
+    ' 修复代码来自;https://bbs.125.la/forum.php?mod=viewthread&tid=14285660
+    .如果真 (分割符数量 ＝ 0)
+        分割符数量 ＝ 2
+    .如果真结束
+    head ＝ 取重复文本 (分割符数量, “-”) ＋ boundary ＋ #换行符
+    .计次循环首 (取数组成员数 (_keys), i)
+        t ＝ head ＋ “Content-Disposition: form-data; name=” ＋ #引号 ＋ _keys [i] ＋ #引号
+        .如果 (_filename [i] ≠ “”)
+            t ＝ t ＋ “; filename=” ＋ #引号 ＋ _filename [i] ＋ #引号 ＋ #换行符
+        .否则
+            t ＝ t ＋ #换行符
+        .如果结束
+        
+        .如果真 (_types [i] ≠ “”)
+            t ＝ t ＋ “Content-Type: ” ＋ _types [i] ＋ #换行符
+        .如果真结束
+        t ＝ t ＋ #换行符
+        bin ＝ bin ＋ 到字节集 (t) ＋ _values [i] ＋ { 13, 10 }
+    .计次循环尾 ()
+    bin ＝ bin ＋ 到字节集 (取重复文本 (分割符数量, “-”) ＋ boundary ＋ “--” ＋ #换行符)
+    返回 (bin)
+
+.子程序 获取Key数组, , 公开
+    .参数 arr, 文本型, 参考 数组
+    .局部变量 keys, 文本型, , "0"
+    .局部变量 len, 整数型
+    .局部变量 i, 整数型
+
+    置入代码 ({ 255, 117, 252, 139, 69, 8, 139, 0, 139, 64, 4, 137, 69, 252 })
+    arr ＝ _keys
+    重定义数组 (arr, 真, 取数组成员数 (_keys) ＋ 取数组成员数 (keys))
+    .计次循环首 (取数组成员数 (keys), i)
+        arr [取数组成员数 (_keys) ＋ i] ＝ keys [i]
+    .计次循环尾 ()
+    置入代码 ({ 143, 69, 252 })
+
+.子程序 获取Value数组, , 公开
+    .参数 arr, 字节集, 参考 数组
+    .局部变量 values, 文本型, , "0"
+    .局部变量 i, 整数型
+
+    置入代码 ({ 255, 117, 252, 139, 69, 8, 139, 0, 139, 64, 8, 137, 69, 252 })
+    arr ＝ _values
+    重定义数组 (arr, 真, 取数组成员数 (_values) ＋ 取数组成员数 (values))
+    .计次循环首 (取数组成员数 (values), i)
+        arr [取数组成员数 (_values) ＋ i] ＝ 到字节集 (values [i])
+    .计次循环尾 ()
+    置入代码 ({ 143, 69, 252 })
+

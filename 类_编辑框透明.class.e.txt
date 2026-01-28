@@ -1,0 +1,132 @@
+﻿.版本 2
+
+.程序集 类_编辑框透明, , 公开
+.程序集变量 集_窗口句柄, 整数型
+.程序集变量 集_编辑框, 编辑框
+.程序集变量 集_字体颜色, 整数型
+.程序集变量 集_子类化_窗口, 整数型
+.程序集变量 ImageObject, 对象
+.程序集变量 hBkBitmap, 整数型
+.程序集变量 集_子类化_编辑框, 整数型
+
+.子程序 _初始化, , , 1
+    
+
+.子程序 _销毁, , , 2
+    
+
+.子程序 NewProc_Main, 整数型, , 3
+    .参数 hWnd, 整数型
+    .参数 Msg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+
+    .判断开始 (Msg ＝ #WM_CTLCOLOREDIT)
+        .判断开始 (lParam ＝ 集_编辑框.取窗口句柄 ())
+            SetTextColor (wParam, 集_字体颜色) ' 50174)
+            SetBkMode (wParam, #TRANSPARENT)
+            返回 (GetStockObject (#NULL_BRUSH))
+        .默认
+            
+        .判断结束
+        
+    .判断 (Msg ＝ #WM_COMMAND)
+        .判断开始 (lParam ＝ 集_编辑框.取窗口句柄 ())
+            .判断开始 (右移 (wParam, 16) ＝ #EN_VSCROLL)
+                InvalidateRect_逻辑型 (lParam, 0, 真)
+            .判断 (右移 (wParam, 16) ＝ #EN_HSCROLL)
+                InvalidateRect_逻辑型 (lParam, 0, 真)
+            .判断 (右移 (wParam, 16) ＝ #EN_CHANGE)
+                InvalidateRect_逻辑型 (lParam, 0, 真)
+            .默认
+                
+            .判断结束
+            
+        .默认
+            
+        .判断结束
+        
+    .默认
+        
+    .判断结束
+    返回 (CallWindowProcA (集_子类化_窗口, hWnd, Msg, wParam, lParam))
+
+.子程序 NewProc_Edit, 整数型, , 4
+    .参数 hWnd, 整数型
+    .参数 Msg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+    .局部变量 hMemDC_BkPicture, 整数型
+    .局部变量 hOldBitmap, 整数型
+    .局部变量 矩形, 精易_矩形J
+    .局部变量 hBrush, 整数型
+    .局部变量 hOldBrush, 整数型
+    .局部变量 hTempMemBitmap, 整数型
+    .局部变量 hScrDC, 整数型
+    .局部变量 hOldTempMemBitmap, 整数型
+    .局部变量 hMemDC_BkColor, 整数型
+
+    .判断开始 (Msg ＝ #WM_ERASEBKGND)
+        .如果真 (hBkBitmap ＝ 0)
+            集_编辑框.可视 ＝ 假
+            处理事件 ()
+            CoInitialize (0)
+            .如果真 (ImageObject.创建图片对象 (快照 (集_编辑框.取窗口句柄 (), , )))
+                hBkBitmap ＝ ImageObject.读数值属性 (“handle”, )
+            .如果真结束
+            CoUninitialize ()
+            集_编辑框.可视 ＝ 真
+        .如果真结束
+        GetClientRect (hWnd, 矩形)
+        hScrDC ＝ GetDC (0)
+        hMemDC_BkColor ＝ CreateCompatibleDC (hScrDC)
+        hTempMemBitmap ＝ CreateCompatibleBitmap (hScrDC, 矩形.右边, 矩形.底边)
+        hOldTempMemBitmap ＝ SelectObject (hMemDC_BkColor, hTempMemBitmap)
+        hBrush ＝ CreateSolidBrush (#白色)
+        hOldBrush ＝ SelectObject (hMemDC_BkColor, hBrush)
+        FillRect (hMemDC_BkColor, 矩形, hBrush)
+        SelectObject (hMemDC_BkColor, hOldBrush)
+        DeleteObject (hBrush)
+        hMemDC_BkPicture ＝ CreateCompatibleDC (hScrDC)
+        hOldBitmap ＝ SelectObject (hMemDC_BkPicture, hBkBitmap)
+        BitBlt (hMemDC_BkColor, 矩形.左边, 矩形.顶边, 矩形.右边, 矩形.底边, hMemDC_BkPicture, 0, 0, #SRCCOPY)
+        BitBlt (wParam, 矩形.左边, 矩形.顶边, 矩形.右边, 矩形.底边, hMemDC_BkColor, 0, 0, #SRCCOPY)
+        SelectObject (hMemDC_BkPicture, hOldBitmap)
+        DeleteDC (hMemDC_BkPicture)
+        SelectObject (hMemDC_BkColor, hOldTempMemBitmap)
+        DeleteObject (hTempMemBitmap)
+        DeleteDC (hMemDC_BkColor)
+        ReleaseDC (0, hScrDC)
+        InvalidateRect_逻辑型 (hWnd, 0, 假)
+    .判断 (Msg ＝ #WM_VSCROLL)
+        InvalidateRect_逻辑型 (hWnd, 0, 真)
+    .判断 (Msg ＝ #WM_HSCROLL)
+        InvalidateRect_逻辑型 (hWnd, 0, 真)
+    .判断 (Msg ＝ #WM_DESTROY)
+        .如果真 (取反 (ImageObject.是否为空 ()))
+            ImageObject.清除 ()
+        .如果真结束
+        
+    .默认
+        
+    .判断结束
+    返回 (CallWindowProcA (集_子类化_编辑框, hWnd, Msg, wParam, lParam))
+
+.子程序 初始化, , 公开
+    .参数 参_窗口句柄, 整数型
+    .参数 参_编辑框, 编辑框
+    .参数 参_字体颜色, 整数型
+
+    集_窗口句柄 ＝ 参_窗口句柄
+    集_编辑框 ＝ 参_编辑框
+    集_字体颜色 ＝ 参_字体颜色
+    集_子类化_窗口 ＝ SetWindowLongA (参_窗口句柄, #GWL_WNDPROC, 类_取内部方法地址 (3))
+    集_子类化_编辑框 ＝ SetWindowLongA (参_编辑框.取窗口句柄 (), #GWL_WNDPROC, 类_取内部方法地址 (4))
+    
+    
+
+.子程序 销毁, , 公开
+    SetWindowLongA (集_窗口句柄, #GWL_WNDPROC, 集_子类化_窗口)
+    SetWindowLongA (集_编辑框.取窗口句柄 (), #GWL_WNDPROC, 集_子类化_编辑框)
+    
+

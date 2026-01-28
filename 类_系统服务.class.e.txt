@@ -1,0 +1,767 @@
+﻿.版本 2
+
+.程序集 类_系统服务, , 公开, 使用例程 - http://bbs.125.la/thread-102354-1-1.html
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    
+
+.子程序 取服务状态, 整数型, 公开, 返回值如下:1=已停止;2=开始;3=停止;4=正在运行;5=继续挂起;6=暂停挂起;7暂停.
+    .参数 服务名, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 Status, SERVICE_STATUS
+    .局部变量 CurrentState
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名, #GENERIC_READ)
+        .如果真 (hService ≠ 0)
+            .如果真 (QueryServiceStatus (hService, Status))
+                CurrentState ＝ Status.dwCurrentState
+            .如果真结束
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (CurrentState)
+
+.子程序 取服务类型, 整数型, 公开, 返回值如下:1=设备驱动;2=文件系统驱动;16=进程;32=自己进程或其它服务;256=交互服务.
+    .参数 服务名, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 Status, SERVICE_STATUS
+    .局部变量 dwServiceType
+    .局部变量 pcbBytesNeeded, 整数型
+    .局部变量 lpServiceConfig
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名, #GENERIC_READ)
+        .如果真 (hService ≠ 0)
+            QueryServiceConfig (hService, 0, 0, pcbBytesNeeded)
+            lpServiceConfig ＝ GlobalAlloc (64, pcbBytesNeeded)
+            bresult ＝ QueryServiceConfig (hService, lpServiceConfig, pcbBytesNeeded, pcbBytesNeeded)
+            .如果真 (bresult)
+                dwServiceType ＝ 取字节集数据 (指针到字节集 (lpServiceConfig, 4), #整数型, )
+            .如果真结束
+            GlobalFree (lpServiceConfig)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (dwServiceType)
+
+.子程序 取服务描述, 文本型, 公开, 成功返回服务描述文本，失败返回空！
+    .参数 服务名, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 cbBufSize, 整数型
+    .局部变量 hMem
+    .局部变量 Return, 文本型
+    .局部变量 lpBuffer, SERVICE_DESCRIPTION
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名, #SC_MANAGER_CONNECT)
+        .如果真 (hService ≠ 0)
+            QueryServiceConfig2 (hService, 1, 0, 0, cbBufSize)
+            hMem ＝ HeapAlloc (GetProcessHeap (), 8, cbBufSize) ' GlobalAlloc (64, cbBufSize)
+            .如果真 (QueryServiceConfig2 (hService, 1, hMem, cbBufSize, cbBufSize))
+                CopyMemory_SERVICE_DESCRIPTION (lpBuffer, hMem, 4)
+                Return ＝ lpBuffer.lpDescription
+            .如果真结束
+            CloseServiceHandle (hService)
+            HeapFree (GetProcessHeap (), 1, hMem)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (Return)
+
+.子程序 置服务描述, 逻辑型, 公开, 修改指定系统服务描述，成功返回真，失败返回假。
+    .参数 服务名, 文本型, , 非显示名称。
+    .参数 新描述, 文本型
+    .局部变量 hSCManager
+    .局部变量 hService
+    .局部变量 sd
+    .局部变量 szDesc
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_EXECUTE)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名, #SERVICE_CHANGE_CONFIG)
+        .如果真 (hService ≠ 0)
+            szDesc ＝ lstrcpyn_文本型 (新描述, 新描述, 0)
+            bresult ＝ ChangeServiceConfig2A (hService, 1, szDesc)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 取显示名称, 文本型, 公开, 根据系统服务数据库名称，获取显示名称。
+    .参数 服务名, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 sbuffer, 文本型
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        sbuffer ＝ 取空白文本 (255)
+        bresult ＝ GetServiceDisplayName (hSCManager, 服务名, sbuffer, 255)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (选择 (bresult, sbuffer, “”))
+
+.子程序 取服务名称, 文本型, 公开, 根据系统服务数据库名称，获取显示名称。
+    .参数 显示名称, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 sbuffer, 文本型
+    .局部变量 Length, 整数型
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        GetServiceKeyName (hSCManager, 显示名称, sbuffer, Length)
+        sbuffer ＝ 取空白文本 (Length)
+        bresult ＝ GetServiceKeyName (hSCManager, 显示名称, sbuffer, Length)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (选择 (bresult, sbuffer, “”))
+
+.子程序 安装服务, 逻辑型, 公开, 创建一个系统服务项，成功返回真，失败返回假。
+    .参数 服务名称, 文本型, , 系统服务数据库中ID名称，不能为中文！
+    .参数 显示名称, 文本型
+    .参数 执行文件, 文本型, , 文件绝对路径
+    .参数 服务描述, 文本型, 可空
+    .参数 允许桌面交互, 逻辑型, 可空, 可为空,默认不允许与桌面进行交互.
+    .参数 服务类型, , 可空, 可为空,默认即进程.1=内核驱动;2=文件系统驱动;16=进程;32=其它服务.
+    .参数 启动类型, , 可空, 可为空,默认即手动,参数;2=自动;3=手动;4=禁用.
+    .参数 依存关系, 文本型, 可空, 某些服务依赖于其它服务,系统驱动程序或加载顺序组.
+    .参数 登录用户, 文本型, 可空, 非本地系统,登陆用户名.
+    .参数 登录密码, 文本型, 可空
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+
+    服务类型 ＝ 选择 (是否为空 (服务类型), 16, 服务类型)
+    启动类型 ＝ 选择 (是否为空 (启动类型), 3, 启动类型)
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        .如果真 (允许桌面交互)
+            服务类型 ＝ 位或 (服务类型, #SERVICE_INTERACTIVE_PROCESS)
+        .如果真结束
+        hService ＝ CreateService (hSCManager, 服务名称, 显示名称, #SERVICE_ALL_ACCESS, 服务类型, 启动类型, #SERVICE_ERROR_NORMAL, 执行文件, 字符 (0), 0, 依存关系, 登录用户, 登录密码)
+        .如果真 (hService ≠ 0)
+            置服务描述 (服务名称, 服务描述)
+        .如果真结束
+        CloseServiceHandle (hService)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (hService ≠ 0)
+
+.子程序 卸载服务, 逻辑型, 公开, 如果服务正在运动会先停止服务然后再删除。成功返回真，失败返回假。
+    .参数 服务名称, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 Status, SERVICE_STATUS
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 位或 (16, 32, 65536)) ' DELETE
+        .如果真 (hService ≠ 0)
+            bresult ＝ DeleteService (hService)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 开始服务, 逻辑型, 公开, 开启一个系统服务，成功返回真，如果系统服务被禁用则返回假。
+    .参数 服务名, 文本型, , 需提供系统服务数据库名非显示名称
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名, #SERVICE_START)
+        .如果真 (hService ≠ 0)
+            bresult ＝ StartService (hService, 0, 0)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 停止服务, 逻辑型, 公开, 停止一个存在运行的系统服务，成功返回真，失败返回假。
+    .参数 服务名, 文本型, , 需提供服务名称非显示名称。
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 Status, SERVICE_STATUS
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 1) ' 1
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名, 32) ' 32
+        .如果真 (hSCManager ≠ 0) ' 判断打开的服务句柄，如果为0 返回假
+            bresult ＝ ControlService (hService, 1, Status)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 暂停服务, 逻辑型, 公开, 暂停一个存在运行的系统服务，成功返回真，失败返回假。
+    .参数 服务名称, 文本型, , 需提供服务名称非显示名称。
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 Status, SERVICE_STATUS
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 983551)
+        .如果真 (hService ≠ 0)
+            bresult ＝ ControlService (hService, 2, Status)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 恢复服务, 逻辑型, 公开, 恢复被暂停的系统服务，成功返回真，失败返回假。
+    .参数 服务名称, 文本型, , 需提供服务名称非显示名称。
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 Status, SERVICE_STATUS
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 983551)
+        .如果真 (hService ≠ 0)
+            bresult ＝ ControlService (hService, 3, Status) ' SERVICE_CONTROL_CONTINUE
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 是否存在, 逻辑型, 公开, 判断一个系统服务是否存在,存在返回真,否则返回假.
+    .参数 服务名称, 文本型, , 需提供服务名称非显示名称。
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, #GENERIC_READ)
+        CloseServiceHandle (hService)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (hService ≠ 0)
+
+.子程序 置启动类型, 逻辑型, 公开, 修改一个已有的系统服务启动类型，有些服务有权限是否允许操作，成功返回真，失败返回假。
+    .参数 服务名称, 文本型, , 提供服务名称非服务显示名称
+    .参数 启动类型, 整数型, , 启动类型以下选项：2=自动(延迟启动);3=手动;4=禁用
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103) ' 983103
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 983551) ' 983551
+        .如果真 (hService ≠ 0)
+            bresult ＝ ChangeServiceConfig (hService, 4294967295, 启动类型, 4294967295, 字符 (0), 字符 (0), 0, 字符 (0), 字符 (0), 字符 (0), 字符 (0))
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 取启动类型, 整数型, 公开, 获取指定系统服务启动类型，成功返回启动类型值;1=自动;2=自动(延迟启动);3=手动;4=禁用，失败返回-1。
+    .参数 服务名称, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 bresult, 逻辑型
+    .局部变量 dwBytesNeeded
+    .局部变量 lpsc, QUERY_SERVICE_CONFIG
+    .局部变量 hMem
+    .局部变量 dwStartType
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 1)
+        .如果真 (hService ≠ 0)
+            QueryServiceConfig (hService, 0, 0, dwBytesNeeded)
+            hMem ＝ GlobalAlloc (64, dwBytesNeeded)
+            bresult ＝ QueryServiceConfig (hService, hMem, dwBytesNeeded, dwBytesNeeded)
+            .如果真 (bresult)
+                CopyMemory_QUERY_SERVICE_CONFIG (lpsc, hMem, 36)
+                .判断开始 (lpsc.dwStartType ＝ 2 且 lpsc.dwServiceType ＝ 32)
+                    dwStartType ＝ 1 ' 返回 (“自动”)
+                .判断 (lpsc.dwStartType ＝ 2 且 lpsc.dwServiceType ＝ 16)
+                    dwStartType ＝ 2 ' 返回 (“自动(延迟启动)”)
+                .判断 (lpsc.dwStartType ＝ 3)
+                    dwStartType ＝ 3 ' 返回 (“手动”)
+                .判断 (lpsc.dwStartType ＝ 4)
+                    dwStartType ＝ 4 ' 返回 (“禁用”)
+                .默认
+                    dwStartType ＝ -1
+                .判断结束
+                处理事件 ()
+            .如果真结束
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+        GlobalFree (hMem)
+    .如果真结束
+    返回 (dwStartType)
+
+.子程序 取文件路径, 文本型, 公开, 获取指定系统服务可执行文件的路径，失败返回空文本。
+    .参数 服务名称, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 bresult, 逻辑型
+    .局部变量 dwBytesNeeded
+    .局部变量 lpsc, QUERY_SERVICE_CONFIG
+    .局部变量 hMem
+    .局部变量 dwStartType
+    .局部变量 lpBinaryPathName, 文本型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, #SC_MANAGER_CONNECT)
+        .如果真 (hService ≠ 0)
+            QueryServiceConfig (hService, 0, 0, dwBytesNeeded)
+            hMem ＝ GlobalAlloc (64, dwBytesNeeded)
+            bresult ＝ QueryServiceConfig (hService, hMem, dwBytesNeeded, dwBytesNeeded)
+            .如果真 (bresult)
+                CopyMemory_QUERY_SERVICE_CONFIG (lpsc, hMem, 36)
+                lpBinaryPathName ＝ 指针到文本 (lpsc.lpBinaryPathName)
+            .如果真结束
+            GlobalFree (hMem)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (选择 (bresult, lpBinaryPathName, “”))
+
+.子程序 置文件路径, 逻辑型, 公开, 修改一个已有的系统服务可执行文件的路径，有些服务有权限是否允许操作，成功返回真，失败返回假。
+    .参数 服务名称, 文本型, , 提供服务名称非服务显示名称
+    .参数 文件路径, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 bresult, 逻辑型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 983551)
+        .如果真 (hService ≠ 0)
+            bresult ＝ ChangeServiceConfig (hService, 4294967295, 4294967295, 4294967295, 文件路径, 字符 (0), 0, 字符 (0), 字符 (0), 字符 (0), 字符 (0))
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (bresult)
+
+.子程序 取登录类型, 文本型, 公开, 获取指定服务登录类型,如,本地系统,本地服务或网络服务.
+    .参数 服务名称, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 hService, 整数型
+    .局部变量 bresult, 逻辑型
+    .局部变量 dwBytesNeeded
+    .局部变量 lpsc, QUERY_SERVICE_CONFIG
+    .局部变量 hMem
+    .局部变量 StartName, 文本型
+    .局部变量 Service, 文本型
+
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        hService ＝ OpenService (hSCManager, 服务名称, 1)
+        .如果真 (hService ≠ 0)
+            QueryServiceConfig (hService, 0, 0, dwBytesNeeded)
+            hMem ＝ GlobalAlloc (64, dwBytesNeeded)
+            bresult ＝ QueryServiceConfig (hService, hMem, dwBytesNeeded, dwBytesNeeded)
+            .如果真 (bresult)
+                CopyMemory_QUERY_SERVICE_CONFIG (lpsc, hMem, 36)
+                StartName ＝ 到大写 (指针到文本 (lpsc.lpServiceStartName))
+                .判断开始 (寻找文本 (StartName, 到大写 (“localservice”), , 假) ≠ -1)
+                    Service ＝ “本地服务”
+                .判断 (寻找文本 (StartName, 到大写 (“Networkservice”), , 假) ≠ -1)
+                    Service ＝ “网络服务”
+                .判断 (寻找文本 (StartName, 到大写 (“localsystem”), , 假) ≠ -1)
+                    Service ＝ “本地系统”
+                .默认
+                    
+                .判断结束
+                处理事件 ()
+            .如果真结束
+            GlobalFree (hMem)
+            CloseServiceHandle (hService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+        
+    .如果真结束
+    返回 (Service)
+
+.子程序 枚举服务, 整数型, 公开, 枚举本机安装的系统服务，成功返回系统服务数量，失败返回0.
+    .参数 服务类型, , , 1、正在运行服务 2、未运行的服务  3、所有的服务
+    .参数 服务列表, 精易_系统服务列表, 数组, 储存返回值。
+    .局部变量 success, 逻辑型
+    .局部变量 hSCManager, 整数型
+    .局部变量 buffer, 整数型
+    .局部变量 cbRequired, 整数型
+    .局部变量 dwReturned, 整数型
+    .局部变量 hEnumResume, 整数型
+    .局部变量 hMem
+    .局部变量 i, 整数型
+    .局部变量 lpsc, ENUM_SERVICE_STATUS
+    .局部变量 lpServices, 字节集
+    .局部变量 lpServiceName, 字节集
+    .局部变量 hService, 整数型
+    .局部变量 dwBytesNeeded, 整数型
+    .局部变量 Bytes
+    .局部变量 Config, QUERY_SERVICE_CONFIG
+    .局部变量 StartName, 文本型
+
+    数组清零 (服务列表)
+    hSCManager ＝ OpenSCManagerA (0, 0, 983103)
+    .如果真 (hSCManager ≠ 0)
+        success ＝ EnumServicesStatus (hSCManager, 48, 服务类型, 0, 0, cbRequired, dwReturned, hEnumResume)
+        hMem ＝ HeapAlloc (GetProcessHeap (), 8, cbRequired) ' GlobalAlloc (64, cbRequired)
+        success ＝ EnumServicesStatus (hSCManager, 48, 服务类型, hMem, cbRequired, cbRequired, dwReturned, hEnumResume)
+        .如果真 (success ＝ 假)
+            返回 (0)
+        .如果真结束
+        重定义数组 (服务列表, 假, dwReturned)
+        .变量循环首 (0, dwReturned － 1, 1, i)
+            lpServices ＝ 指针到字节集 (hMem ＋ 36 × i, 36)
+            CopyMemory_ENUM_SERVICE_STATUS (lpsc, lpServices, 36)
+            服务列表 [i ＋ 1].服务名称 ＝ 指针到文本 (lpsc.lpServiceName)
+            服务列表 [i ＋ 1].显示名称 ＝ 指针到文本 (lpsc.lpDisplayName)
+            ' ' -----------------
+            hService ＝ OpenService (hSCManager, 服务列表 [i ＋ 1].服务名称, 983551)
+            .如果真 (hService ≠ 0)
+                QueryServiceConfig (hService, 0, 0, dwBytesNeeded)
+                Bytes ＝ HeapAlloc (GetProcessHeap (), 8, dwBytesNeeded) ' GlobalAlloc (64, dwBytesNeeded)
+                success ＝ QueryServiceConfig (hService, Bytes, dwBytesNeeded, dwBytesNeeded)
+                .如果真 (success)
+                    CopyMemory_QUERY_SERVICE_CONFIG (Config, Bytes, 36)
+                    服务列表 [i ＋ 1].描述 ＝ 取服务描述 (服务列表 [i ＋ 1].服务名称)
+                    服务列表 [i ＋ 1].服务状态 ＝ GetServiceState (lpsc.ServiceStatus.dwCurrentState)
+                    服务列表 [i ＋ 1].文件路径 ＝ 文本_指针到文本A (Config.lpBinaryPathName)
+                    .判断开始 (Config.dwStartType ＝ 2 且 lpsc.ServiceStatus.dwServiceType ＝ 32)
+                        服务列表 [i ＋ 1].启动类型 ＝ “自动”
+                    .判断 (Config.dwStartType ＝ 2 且 lpsc.ServiceStatus.dwServiceType ＝ 16)
+                        服务列表 [i ＋ 1].启动类型 ＝ “自动(延迟启动)”
+                    .判断 (Config.dwStartType ＝ 3)
+                        服务列表 [i ＋ 1].启动类型 ＝ “手动”
+                    .判断 (Config.dwStartType ＝ 4)
+                        服务列表 [i ＋ 1].启动类型 ＝ “禁用”
+                    .默认
+                        
+                    .判断结束
+                    StartName ＝ 到大写 (文本_指针到文本A (Config.lpServiceStartName))
+                    .判断开始 (寻找文本 (StartName, 到大写 (“LocalService”), , 假) ≠ -1)
+                        服务列表 [i ＋ 1].登陆为 ＝ “本地服务”
+                    .判断 (寻找文本 (StartName, 到大写 (“NetworkService”), , 假) ≠ -1)
+                        服务列表 [i ＋ 1].登陆为 ＝ “网络服务”
+                    .判断 (寻找文本 (StartName, 到大写 (“LocalSystem”), , 假) ≠ -1)
+                        服务列表 [i ＋ 1].登陆为 ＝ “本地系统”
+                    .默认
+                        服务列表 [i ＋ 1].登陆为 ＝ StartName
+                    .判断结束
+                    
+                .如果真结束
+                HeapFree (GetProcessHeap (), 1, Bytes)
+                CloseServiceHandle (hService)
+            .如果真结束
+            处理事件 ()
+        .变量循环尾 ()
+        ' GlobalFree (cbRequired)
+        HeapFree (GetProcessHeap (), 1, hMem)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (dwReturned)
+
+.子程序 取服务数, 整数型, 公开, 枚举本机安装的系统服务，成功返回系统服务数量，失败返回0.
+    .参数 服务状态, , 可空, 1、正在运行服务 2、未运行的服务  3、所有的服务
+    .局部变量 bresult, 逻辑型
+    .局部变量 hSCManager, 整数型
+    .局部变量 buffer, 整数型
+    .局部变量 cbRequired, 整数型
+    .局部变量 dwReturned, 整数型
+    .局部变量 hEnumResume, 整数型
+    .局部变量 hMem
+    .局部变量 i, 整数型
+    .局部变量 lpsc, ENUM_SERVICE_STATUS
+    .局部变量 lpServices, 字节集
+    .局部变量 lpServiceName, 字节集
+
+    服务状态 ＝ 选择 (是否为空 (服务状态), 3, 服务状态)
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        EnumServicesStatus (hSCManager, 48, 服务状态, 0, 0, cbRequired, dwReturned, hEnumResume)
+        hMem ＝ GlobalAlloc (64, cbRequired)
+        bresult ＝ EnumServicesStatus (hSCManager, 48, 服务状态, hMem, cbRequired, cbRequired, dwReturned, hEnumResume)
+        GlobalFree (hMem)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (dwReturned)
+    
+
+.子程序 取指定服务信息, , 公开
+    .参数 参_服务名称, 文本型
+    .参数 参_服务状态, 整数型, , 1、正在运行服务 2、未运行的服务  3、所有的服务
+    .参数 参_服务信息, 精易_系统服务列表Ex, 参考
+    .局部变量 数组, 精易_系统服务列表Ex, , "0"
+    .局部变量 枚举, 类_系统服务
+    .局部变量 i, 整数型
+
+    清除数组 (数组)
+    枚举.枚举服务Ex (参_服务状态, 数组)
+    .计次循环首 (取数组成员数 (数组), i)
+        .如果真 (数组 [i].服务名称 ＝ 参_服务名称)
+            参_服务信息 ＝ 数组 [i]
+        .如果真结束
+        系统_处理事件 ()
+    .计次循环尾 ()
+    
+
+.子程序 枚举服务Ex, 整数型, 公开, 枚举本机安装的系统服务，成功返回系统服务数量，失败返回0.
+    .参数 服务状态, , , 1、正在运行服务 2、未运行的服务  3、所有的服务
+    .参数 服务列表, 精易_系统服务列表Ex, 数组, 储存返回值。
+    .局部变量 hSCManager, 整数型
+    .局部变量 bresult, 逻辑型
+    .局部变量 cbBufSize, 整数型
+    .局部变量 cbRequired, 整数型
+    .局部变量 dwReturned, 整数型
+    .局部变量 hEnumResume, 整数型
+    .局部变量 lpServices
+    .局部变量 i, 整数型
+    .局部变量 ServiceProcess, ENUM_SERVICE_STATUS_PROCESS
+    .局部变量 sbuffer, 字节集
+    .局部变量 hService, 整数型
+    .局部变量 Bytes
+    .局部变量 Config, QUERY_SERVICE_CONFIG
+    .局部变量 dwBytesNeeded, 整数型
+    .局部变量 StartName, 文本型
+
+    数组清零 (服务列表)
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        EnumServicesStatusEx (hSCManager, 0, 48, 服务状态, 0, 0, cbRequired, dwReturned, hEnumResume, 字符 (0))
+        lpServices ＝ GlobalAlloc (64, cbRequired)
+        bresult ＝ EnumServicesStatusEx (hSCManager, 0, 48, 服务状态, lpServices, cbRequired, cbRequired, dwReturned, hEnumResume, 字符 (0))
+        .如果真 (bresult)
+            重定义数组 (服务列表, 假, dwReturned)
+            .变量循环首 (0, dwReturned － 1, 1, i)
+                sbuffer ＝ 指针到字节集 (lpServices ＋ 44 × i, 44)
+                CopyMemory_enum_service_status_process (ServiceProcess, sbuffer, 44)
+                服务列表 [i ＋ 1].服务名称 ＝ 指针到文本 (ServiceProcess.lpServiceName)
+                服务列表 [i ＋ 1].显示名称 ＝ 指针到文本 (ServiceProcess.lpDisplayName)
+                服务列表 [i ＋ 1].进程ID ＝ ServiceProcess.ServiceStatusProcess.dwProcessId
+                ' ------------------
+                hService ＝ OpenService (hSCManager, 指针到文本 (ServiceProcess.lpServiceName), 983551)
+                bresult ＝ QueryServiceConfig (hService, 0, 0, dwBytesNeeded)
+                Bytes ＝ GlobalAlloc (64, dwBytesNeeded)
+                bresult ＝ QueryServiceConfig (hService, Bytes, dwBytesNeeded, dwBytesNeeded)
+                .如果真 (bresult)
+                    CopyMemory_QUERY_SERVICE_CONFIG (Config, Bytes, 36)
+                    服务列表 [i ＋ 1].描述 ＝ 取服务描述 (指针到文本 (ServiceProcess.lpServiceName))
+                    服务列表 [i ＋ 1].服务状态 ＝ GetServiceState (ServiceProcess.ServiceStatusProcess.dwCurrentState)
+                    服务列表 [i ＋ 1].文件路径 ＝ 指针到文本 (Config.lpBinaryPathName)
+                    .判断开始 (Config.dwStartType ＝ 2 且 ServiceProcess.ServiceStatusProcess.dwServiceType ＝ 32)
+                        服务列表 [i ＋ 1].启动类型 ＝ “自动”
+                    .判断 (Config.dwStartType ＝ 2 且 ServiceProcess.ServiceStatusProcess.dwServiceType ＝ 16)
+                        服务列表 [i ＋ 1].启动类型 ＝ “自动(延迟启动)”
+                    .判断 (Config.dwStartType ＝ 3)
+                        服务列表 [i ＋ 1].启动类型 ＝ “手动”
+                    .判断 (Config.dwStartType ＝ 4)
+                        服务列表 [i ＋ 1].启动类型 ＝ “禁用”
+                    .默认
+                        
+                    .判断结束
+                    StartName ＝ 到大写 (指针到文本 (Config.lpServiceStartName))
+                    .判断开始 (寻找文本 (StartName, 到大写 (“LocalService”), , 假) ≠ -1)
+                        服务列表 [i ＋ 1].登陆为 ＝ “本地服务”
+                    .判断 (寻找文本 (StartName, 到大写 (“NetworkService”), , 假) ≠ -1)
+                        服务列表 [i ＋ 1].登陆为 ＝ “网络服务”
+                    .判断 (寻找文本 (StartName, 到大写 (“LocalSystem”), , 假) ≠ -1)
+                        服务列表 [i ＋ 1].登陆为 ＝ “本地系统”
+                    .默认
+                        服务列表 [i ＋ 1].登陆为 ＝ StartName
+                    .判断结束
+                    GlobalFree (Bytes)
+                .如果真结束
+                CloseServiceHandle (hService)
+            .变量循环尾 ()
+        .如果真结束
+        GlobalFree (lpServices)
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (dwReturned)
+
+.子程序 枚举依赖服务, 整数型, , 有问题暂时不公开 
+    .参数 服务名称, 文本型
+    .参数 服务列表, 精易_系统服务列表, 数组, 变量储存返回值.
+    .局部变量 hSCManager, 整数型
+    .局部变量 schService, 整数型
+    .局部变量 lpDependencies, 整数型
+    .局部变量 dwBytesNeeded, 整数型
+    .局部变量 dwCount, 整数型
+    .局部变量 bresult, 逻辑型
+    .局部变量 i, 整数型
+    .局部变量 ess, ENUM_SERVICE_STATUS
+    .局部变量 Bytes, 字节集
+    .局部变量 hService, 整数型
+    .局部变量 Config, QUERY_SERVICE_CONFIG
+    .局部变量 StartName, 文本型
+    .局部变量 hMem
+
+    数组清零 (服务列表)
+    hSCManager ＝ OpenSCManagerA (0, 0, #SC_MANAGER_ALL_ACCESS)
+    .如果真 (hSCManager ≠ 0)
+        schService ＝ OpenService (hSCManager, 服务名称, 4 ＋ 8 ＋ 32) ' #SERVICE_STOP ＋ #SERVICE_QUERY_STATUS ＋ #SERVICE_ENUMERATE_DEPENDENTS
+        .如果真 (schService ≠ 0)
+            EnumDependentServices (schService, 3, lpDependencies, 0, dwBytesNeeded, dwCount) ' #SERVICE_ACTIVE
+            lpDependencies ＝ GlobalAlloc (64, dwBytesNeeded)
+            bresult ＝ EnumDependentServices (schService, 3, lpDependencies, dwBytesNeeded, dwBytesNeeded, dwCount)
+            .如果真 (bresult)
+                重定义数组 (服务列表, 假, dwCount)
+                .变量循环首 (0, dwCount － 1, 1, i)
+                    Bytes ＝ 指针到字节集 (lpDependencies ＋ 36 × i, 36)
+                    CopyMemory_ENUM_SERVICE_STATUS (ess, Bytes, 36)
+                    服务列表 [i ＋ 1].服务名称 ＝ 指针到文本 (ess.lpServiceName)
+                    服务列表 [i ＋ 1].显示名称 ＝ 指针到文本 (ess.lpDisplayName)
+                    ' -------------------
+                    hService ＝ OpenService (hSCManager, 指针到文本 (ess.lpServiceName), #GENERIC_READ)
+                    bresult ＝ QueryServiceConfig (hService, 0, 0, dwBytesNeeded)
+                    hMem ＝ GlobalAlloc (64, dwBytesNeeded)
+                    bresult ＝ QueryServiceConfig (hService, hMem, dwBytesNeeded, dwBytesNeeded)
+                    .如果真 (bresult)
+                        CopyMemory_QUERY_SERVICE_CONFIG (Config, hMem, 36)
+                        服务列表 [i ＋ 1].描述 ＝ 取服务描述 (指针到文本 (ess.lpServiceName))
+                        服务列表 [i ＋ 1].服务状态 ＝ GetServiceState (ess.ServiceStatus.dwCurrentState)
+                        服务列表 [i ＋ 1].文件路径 ＝ 指针到文本 (Config.lpBinaryPathName)
+                        .判断开始 (Config.dwStartType ＝ 2 且 ess.ServiceStatus.dwServiceType ＝ 32)
+                            服务列表 [i ＋ 1].启动类型 ＝ “自动”
+                        .判断 (Config.dwStartType ＝ 2 且 ess.ServiceStatus.dwServiceType ＝ 16)
+                            服务列表 [i ＋ 1].启动类型 ＝ “自动(延迟启动)”
+                        .判断 (Config.dwStartType ＝ 3)
+                            服务列表 [i ＋ 1].启动类型 ＝ “手动”
+                        .判断 (Config.dwStartType ＝ 4)
+                            服务列表 [i ＋ 1].启动类型 ＝ “禁用”
+                        .默认
+                            
+                        .判断结束
+                        StartName ＝ 到大写 (指针到文本 (Config.lpServiceStartName))
+                        .判断开始 (寻找文本 (StartName, 到大写 (“LocalService”), , 假) ≠ -1)
+                            服务列表 [i ＋ 1].登陆为 ＝ “本地服务”
+                        .判断 (寻找文本 (StartName, 到大写 (“NetworkService”), , 假) ≠ -1)
+                            服务列表 [i ＋ 1].登陆为 ＝ “网络服务”
+                        .判断 (寻找文本 (StartName, 到大写 (“LocalSystem”), , 假) ≠ -1)
+                            服务列表 [i ＋ 1].登陆为 ＝ “本地系统”
+                        .默认
+                            服务列表 [i ＋ 1].登陆为 ＝ StartName
+                        .判断结束
+                        处理事件 ()
+                    .如果真结束
+                    CloseServiceHandle (hService)
+                    GlobalFree (hMem)
+                .变量循环尾 ()
+            .如果真结束
+            CloseServiceHandle (schService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    返回 (dwCount)
+
+.子程序 停止所有依赖服务, , , 有问题暂时不公开
+    .参数 服务名称, 文本型
+    .局部变量 hSCManager, 整数型
+    .局部变量 schService, 整数型
+    .局部变量 lpDependencies, 整数型
+    .局部变量 dwBytesNeeded, 整数型
+    .局部变量 dwCount, 整数型
+    .局部变量 bresult, 逻辑型
+    .局部变量 i, 整数型
+    .局部变量 ess, ENUM_SERVICE_STATUS
+    .局部变量 Bytes, 字节集
+    .局部变量 hDepService, 整数型
+    .局部变量 ssp, SERVICE_STATUS
+    .局部变量 dwStartTime, 整数型
+    .局部变量 dwTimeout, 整数型
+
+    dwStartTime ＝ 取启动时间 ()
+    dwTimeout ＝ 30000
+    hSCManager ＝ OpenSCManagerA (0, 0, #GENERIC_READ)
+    .如果真 (hSCManager ≠ 0)
+        schService ＝ OpenService (hSCManager, 服务名称, 32 ＋ 4 ＋ 8)
+        .如果真 (schService ≠ 0)
+            EnumDependentServices (schService, 1, lpDependencies, 0, dwBytesNeeded, dwCount)
+            lpDependencies ＝ GlobalAlloc (64, dwBytesNeeded)
+            bresult ＝ EnumDependentServices (schService, 1, lpDependencies, dwBytesNeeded, dwBytesNeeded, dwCount)
+            .如果真 (bresult)
+                .变量循环首 (0, dwCount － 1, 1, i)
+                    Bytes ＝ 指针到字节集 (lpDependencies ＋ 36 × i, 36)
+                    CopyMemory_ENUM_SERVICE_STATUS (ess, Bytes, 36)
+                    hDepService ＝ OpenService (hSCManager, 指针到文本 (ess.lpServiceName), 位或 (32, 4)) ' SERVICE_STOP | SERVICE_QUERY_STATUS
+                    .如果真 (ControlService (hDepService, 1, ssp))
+                        .判断循环首 (ssp.dwCurrentState ≠ 1) ' SERVICE_STOPPED
+                            延时 (ssp.dwWaitHint)
+                            QueryServiceStatus (hDepService, ssp)
+                            .判断开始 (ssp.dwCurrentState ＝ 1)
+                                跳出循环 ()
+                            .判断 (取启动时间 () － dwStartTime ＞ dwTimeout)
+                                输出调试文本 (“停止服务失败，原因：超时！”)
+                                跳出循环 ()
+                            .默认
+                                
+                            .判断结束
+                            处理事件 ()
+                        .判断循环尾 ()
+                    .如果真结束
+                    CloseServiceHandle (hDepService)
+                .变量循环尾 ()
+                GlobalFree (lpDependencies)
+            .如果真结束
+            CloseServiceHandle (schService)
+        .如果真结束
+        CloseServiceHandle (hSCManager)
+    .如果真结束
+    
+
+.子程序 GetServiceState, 文本型, , 系统服务_枚举系统服务
+    .参数 dwState
+
+    .判断开始 (dwState ＝ 1)
+        返回 (“已停止”)
+    .判断 (dwState ＝ 2)
+        返回 (“启动期间”)
+    .判断 (dwState ＝ 3)
+        返回 (“停止期间”)
+    .判断 (dwState ＝ 4)
+        返回 (“正运行”)
+    .判断 (dwState ＝ 5)
+        返回 (“继续”)
+    .判断 (dwState ＝ 6)
+        返回 (“暂停期间”)
+    .判断 (dwState ＝ 7)
+        返回 (“已暂停”)
+    .默认
+        返回 (“”)
+    .判断结束
+    
+
+.子程序 重启服务, 逻辑型, 公开, 重新启动系统服务，成功返回真，失败返回假
+    .参数 参_服务名, 文本型
+
+    .如果真 (停止服务 (参_服务名))
+        返回 (开始服务 (参_服务名))
+    .如果真结束
+    返回 (假)
+

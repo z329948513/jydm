@@ -1,0 +1,3160 @@
+﻿.版本 2
+
+.程序集 集_系统
+.程序集变量 集_任务管理器文件号, 整数型
+.程序集变量 liOldSystemTime, 双精度小数型, , , 系统_取CPU占用率
+.程序集变量 liOldIdleTime, 双精度小数型, , , 系统_取CPU占用率
+.程序集变量 Status_域, 整数型
+
+
+.程序集变量 m_OsVersion, 整数型
+.程序集变量 m_Isx64, 逻辑型
+.程序集变量 m_nDataOffset, 整数型
+.程序集变量 m_nStrOffset, 整数型
+
+.程序集变量 hDisplayInf, 整数型, , "0"
+
+
+.子程序 系统_取计算机语言, 文本型, 公开, 返回计算机语言相关信息
+    .局部变量 局_标识, 整数型
+    .局部变量 局_数组, 文本型, , "0"
+    .局部变量 i, 整数型
+    .局部变量 局_记录, 文本型, , "0"
+
+    ' 目前处于活动状态的OEM代码页的标识符。针对一种特定的语言，可能存在多个代码页。以下是可用代码页列表
+    ' 代码页标识符：https://docs.microsoft.com/zh-cn/windows/desktop/Intl/code-page-identifiers
+    局_标识 ＝ GetOEMCP ()
+    局_数组 ＝ 分割文本 (#常量_代码页标识符, #换行符, )
+    .计次循环首 (取数组成员数 (局_数组), i)
+        清除数组 (局_记录)
+        局_记录 ＝ 分割文本 (局_数组 [i], “|”, )
+        .如果真 (取数组成员数 (局_记录) ＝ 3)
+            .如果真 (到整数 (局_记录 [1]) ＝ 局_标识)
+                返回 (局_记录 [1] ＋ “：” ＋ 局_记录 [3])
+            .如果真结束
+            
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (“失败”)
+
+.子程序 系统_取系统信息, 文本型, 公开
+    .局部变量 局_系统信息, 文本型
+
+    局_系统信息 ＝ 系统_取DOS执行结果 (“systeminfo”)
+    返回 (局_系统信息)
+
+.子程序 系统_显示器操作, , 公开, -1 打开显示  1低电状态  2关闭显示器
+    .参数 参_操作类型, 整数型
+
+    SendMessageA (65535, 274, 61808, 参_操作类型)
+
+.子程序 系统_取系统信息1, 文本型, 公开
+    .局部变量 局_对象, 对象
+    .局部变量 局_系统信息, 文本型
+
+    CoInitialize (0)
+    局_对象.创建 (“Scriptcontrol”, )
+    局_对象.写属性 (“Language”, “VBScript”)
+    局_对象.通用方法 (“AddCode”, #Code)
+    局_系统信息 ＝ 局_对象.文本方法 (“Run”, “GetSysInfo”)
+    局_对象.清除 ()
+    CoUninitialize ()
+    返回 (局_系统信息)
+
+.子程序 系统_磁盘是否支持稀疏文件, 逻辑型, 公开
+    .参数 参_盘符, 文本型
+    .局部变量 局_文件系统标识, 整数型
+    .局部变量 局_卷标名, 文本型
+    .局部变量 局_序列号, 整数型
+    .局部变量 局_最大文件名长度, 整数型
+    .局部变量 局_文件系统名, 文本型
+    .局部变量 局_返回值, 逻辑型
+
+    局_返回值 ＝ GetVolumeInformationA (取文本左边 (参_盘符, 3), 局_卷标名, 取文本长度 (局_卷标名), 局_序列号, 局_最大文件名长度, 局_文件系统标识, 局_文件系统名, 取文本长度 (局_文件系统名))
+    .如果真 (局_返回值 ＝ 假)
+        返回 (假)
+    .如果真结束
+    .如果 (位与 (局_文件系统标识, #FILE_SUPPORTS_SPARSE_FILES) ＝ 64)
+        返回 (真)
+    .否则
+        返回 (假)
+    .如果结束
+    
+
+.子程序 系统_取网卡信息_彗星版, 整数型, 公开, 获取网卡的IP地址、MAC等信息。By:邓学彬(泪闯天涯)
+    .参数 网卡信息数组, 精易_网卡信息_彗星, 参考 数组
+    .局部变量 MapList, NetworkCardMapName, 数组, "0"
+    .局部变量 AdapterInfo, IP_ADAPTER_INFO_彗星
+    .局部变量 BufBin, 字节集
+    .局部变量 pAda, 整数型
+    .局部变量 nSize, 整数型
+    .局部变量 nBufLen, 整数型
+    .局部变量 nResult, 整数型
+    .局部变量 pAddr, 整数型
+    .局部变量 ipAddr, IP_ADDR_STRING
+    .局部变量 strTmp, 文本型
+    .局部变量 strMac, 文本型
+    .局部变量 Card, 精易_网卡信息_彗星
+    .局部变量 i, 整数型
+    .局部变量 局_mac, 文本型
+    .局部变量 局_总数, 整数型
+
+    清除数组 (网卡信息数组)
+    GetAdapterFriendlyName (MapList)
+    ' //--------------------------------------------------
+    nResult ＝ GetAdaptersInfo (0, nBufLen)
+    .如果真 (nResult ＝ #ERROR_BUFFER_OVERFLOW)
+        BufBin ＝ 取空白字节集 (nBufLen)
+        pAda ＝ GetPtr_Bin (BufBin, BufBin, 0)
+        nResult ＝ GetAdaptersInfo (pAda, nBufLen)
+        .如果真 (#ERROR_SUCCESS ＝ nResult)
+            nSize ＝ LocalSize_IP_ADAPTER_INFO (AdapterInfo)
+            .判断循环首 (pAda ≠ 0)
+                CopyMemory_P2IP_ADAPTER_INFO (AdapterInfo, pAda, nSize)
+                Card.网卡名称 ＝ 到文本 (AdapterInfo.AdapterName) ' //网卡名称
+                Card.网卡描述 ＝ 到文本 (AdapterInfo.Description) ' //网卡描述
+                Card.网卡类型n ＝ AdapterInfo.Type
+                Card.网卡类型 ＝ GetAdapterInfoType (AdapterInfo.Type) ' //网卡类型
+                
+                ' //取出MAC地址
+                Card.MAC地址 ＝ “”
+                局_总数 ＝ AdapterInfo.AddressLength
+                .计次循环首 (局_总数, i)
+                    ' .如果真 (i ＞ 1)
+                        ' Card.MAC地址 ＝ Card.MAC地址 ＋ “-”
+                    ' .如果真结束
+                    ' .如果真 (AdapterInfo.Address [i] ≤ 16)
+                        ' Card.MAC地址 ＝ Card.MAC地址 ＋ “0”
+                    ' .如果真结束
+                    ' Card.MAC地址 ＝ Card.MAC地址 ＋ 取十六进制文本 (AdapterInfo.Address [i])
+                    局_mac ＝ 取十六进制文本 (AdapterInfo.Address [i])
+                    .如果 (i ≠ 局_总数)
+                        Card.MAC地址 ＝ Card.MAC地址 ＋ 选择 (取文本长度 (局_mac) ＝ 1, “0” ＋ 局_mac, 局_mac) ＋ “-”
+                    .否则
+                        Card.MAC地址 ＝ Card.MAC地址 ＋ 选择 (取文本长度 (局_mac) ＝ 1, “0” ＋ 局_mac, 局_mac)
+                    .如果结束
+                    
+                .计次循环尾 ()
+                
+                ' //取出IP地址和子网掩码
+                ipAddr ＝ AdapterInfo.IpAddressList
+                .循环判断首 ()
+                    Card.IP地址 ＝ 到文本 (ipAddr.IpAddress)
+                    Card.子网掩码 ＝ 到文本 (ipAddr.IpMask)
+                    跳出循环 () ' //只取一个
+                    
+                    pAddr ＝ ipAddr.Next
+                    .如果真 (pAddr ≠ 0)
+                        CopyMemory_IP_ADDR_STRING (ipAddr, pAddr, LocalSize_IP_ADDR_STRING (ipAddr))
+                    .如果真结束
+                    
+                .循环判断尾 (pAddr ≠ 0)
+                
+                ' //取出
+                ipAddr ＝ AdapterInfo.GatewayList
+                .循环判断首 ()
+                    Card.网关地址 ＝ 到文本 (ipAddr.IpAddress)
+                    跳出循环 () ' //只取一个
+                    
+                    pAddr ＝ ipAddr.Next
+                    .如果真 (pAddr ≠ 0)
+                        CopyMemory_IP_ADDR_STRING (ipAddr, pAddr, LocalSize_IP_ADDR_STRING (ipAddr))
+                        
+                    .如果真结束
+                    
+                .循环判断尾 (pAddr ≠ 0)
+                
+                ' //取出DNS服务器
+                GetDnsServer (AdapterInfo.Index, Card.首选DNS服务器, Card.备用DNS服务器)
+                ' //--------------------------------------------------
+                .计次循环首 (取数组成员数 (MapList), i)
+                    .如果真 (MapList [i].strGUID ＝ Card.网卡名称)
+                        Card.连接名称 ＝ MapList [i].strFriendName
+                        跳出循环 ()
+                    .如果真结束
+                    
+                .计次循环尾 ()
+                ' //--------------------------------------------------
+                Card.是否启用DHCP ＝ AdapterInfo.DhcpEnabled ＝ 1
+                加入成员 (网卡信息数组, Card)
+                pAda ＝ AdapterInfo.Next
+            .判断循环尾 ()
+        .如果真结束
+        
+    .如果真结束
+    ' //--------------------------------------------------
+    返回 (取数组成员数 (网卡信息数组))
+
+.子程序 GetAdapterFriendlyName, , , 通过mprapi库获取连接名称
+    .参数 MapList, NetworkCardMapName, 数组
+    .局部变量 hMprConfig
+    .局部变量 dwBufferSize
+    .局部变量 BufferBin, 字节集
+    .局部变量 plfTable, 整数型
+    .局部变量 FaceInfo, IP_INTERFACE_INFO
+    .局部变量 Adapter, IP_ADAPTER_INDEX_MAP, , "0"
+
+    .局部变量 szMapName, 字节集
+    .局部变量 szFriendName, 字节集
+    .局部变量 nSize, 整数型
+    .局部变量 dwRet
+    .局部变量 i, 整数型
+    .局部变量 nPos, 整数型
+
+    清除数组 (MapList)
+    ' //-----------------------------------------------------------
+    dwRet ＝ MprConfigServerConnect (0, hMprConfig) ' //获得句柄
+    dwRet ＝ GetInterfaceInfo (0, dwBufferSize) ' //获得接口信息表大小
+    
+    .如果真 (dwRet ＝ #ERROR_INSUFFICIENT_BUFFER)
+        BufferBin ＝ 取空白字节集 (dwBufferSize)
+        plfTable ＝ GetPtr_Bin (BufferBin, BufferBin, 0)
+        dwRet ＝ GetInterfaceInfo (plfTable, dwBufferSize) ' //获得接口信息
+        
+        nSize ＝ LocalSize_IP_INTERFACE_INFO (FaceInfo)
+        CopyMemory_P2IP_INTERFACE_INFO (FaceInfo, plfTable, nSize)
+        .如果真 (FaceInfo.NumAdapters ＞ 0)
+            重定义数组 (Adapter, 假, FaceInfo.NumAdapters)
+            nSize ＝ FaceInfo.NumAdapters × LocalSize_IP_ADAPTER_INDEX_MAP (Adapter [1])
+            .如果真 (nSize ＞ dwBufferSize)
+                nSize ＝ dwBufferSize
+            .如果真结束
+            CopyMemory_P2IP_ADAPTER_INDEX_MAP_Array (Adapter, plfTable ＋ 4, nSize)
+            重定义数组 (MapList, 假, FaceInfo.NumAdapters)
+            .计次循环首 (FaceInfo.NumAdapters, i)
+                szMapName ＝ 到字节集 (Adapter [i].Name)
+                szFriendName ＝ 取空白字节集 (256)
+                MprConfigGetFriendlyName (hMprConfig, szMapName, szFriendName, 255)
+                MapList [i].Index ＝ Adapter [i].Index
+                MapList [i].strMapName ＝ W2A (szMapName)
+                MapList [i].strFriendName ＝ W2A (szFriendName)
+                
+                ' //\DEVICE\TCPIP_{BC803C3B-B533-4B99-83D5-38E9DCFC51AB}
+                MapList [i].strGUID ＝ MapList [i].strMapName
+                nPos ＝ 寻找文本 (MapList [i].strGUID, “{”, , 假)
+                .如果真 (nPos ≠ -1)
+                    MapList [i].strGUID ＝ 取文本右边 (MapList [i].strGUID, 取文本长度 (MapList [i].strGUID) － nPos ＋ 1)
+                .如果真结束
+                
+            .计次循环尾 ()
+        .如果真结束
+        
+    .如果真结束
+    
+
+.子程序 W2A, 文本型
+    .参数 CharStr, 字节集
+    .局部变量 len, 整数型
+    .局部变量 Returned, 文本型
+
+    len ＝ WideCharToMultiByte (1, 0, 取指针_字节集型 (CharStr), -1, 0, 0, 0, 0)
+    Returned ＝ 取空白文本 (len)
+    WideCharToMultiByte (1, 0, 取指针_字节集型 (CharStr), -1, 取指针_文本型 (Returned), 取文本长度 (Returned), 0, 0)
+    返回 (Returned)
+    
+
+.子程序 GetDnsServer, 逻辑型, , 通过GetPerAdapterInfo获取指定网卡的DNS服务器
+    .参数 nIndex, 整数型, , IP_ADAPTER_INFO.Index
+    .参数 strDNS1, 文本型, 参考, 首选DNS服务器
+    .参数 strDNS2, 文本型, 参考, 备用DNS服务器
+    .局部变量 PerAdapterInfo, IP_PER_ADAPTER_INFO_彗星
+    .局部变量 BufBin, 字节集
+    .局部变量 pAda, 整数型
+    .局部变量 nSize, 整数型
+    .局部变量 nBufLen, 整数型
+    .局部变量 nResult, 整数型
+    .局部变量 pAddr, 整数型
+    .局部变量 ipAddr, IP_ADDR_STRING
+    .局部变量 nCount, 整数型
+
+    strDNS1 ＝ “”
+    strDNS2 ＝ “”
+    ' //--------------------------------------------------
+    nResult ＝ GetPerAdapterInfo_Ptr (nIndex, 0, nBufLen)
+    .如果真 (nResult ＝ #ERROR_BUFFER_OVERFLOW)
+        BufBin ＝ 取空白字节集 (nBufLen)
+        pAda ＝ GetPtr_Bin (BufBin, BufBin, 0)
+        nResult ＝ GetPerAdapterInfo_Ptr (nIndex, pAda, nBufLen)
+        .如果真 (#ERROR_SUCCESS ＝ nResult)
+            nSize ＝ LocalSize_IP_PER_ADAPTER_INFO (PerAdapterInfo)
+            CopyMemory_P2IP_PER_ADAPTER_INFO (PerAdapterInfo, pAda, nSize)
+            ipAddr ＝ PerAdapterInfo.DnsServerList
+            .循环判断首 ()
+                nCount ＝ nCount ＋ 1
+                .判断开始 (nCount ＝ 1)
+                    strDNS1 ＝ 到文本 (ipAddr.IpAddress)
+                .判断 (nCount ＝ 2)
+                    strDNS2 ＝ 到文本 (ipAddr.IpAddress)
+                .默认
+                    
+                .判断结束
+                
+                pAddr ＝ ipAddr.Next
+                .如果真 (pAddr ≠ 0)
+                    CopyMemory_IP_ADDR_STRING (ipAddr, pAddr, LocalSize_IP_ADDR_STRING (ipAddr))
+                    
+                .如果真结束
+                
+            .循环判断尾 (pAddr ≠ 0)
+            
+            返回 (真)
+        .如果真结束
+        
+    .如果真结束
+    ' //--------------------------------------------------
+    返回 (假)
+
+.子程序 GetAdapterInfoType, 文本型
+    .参数 nType, 整数型
+
+    .判断开始 (nType ＝ #MIB_IF_TYPE_OTHER)
+        返回 (“OTHER”)
+    .判断 (nType ＝ #MIB_IF_TYPE_ETHERNET)
+        返回 (“ETHERNET”)
+    .判断 (nType ＝ #MIB_IF_TYPE_TOKENRING)
+        返回 (“TOKENRING”)
+    .判断 (nType ＝ #MIB_IF_TYPE_FDDI)
+        返回 (“FDDI”)
+    .判断 (nType ＝ #MIB_IF_TYPE_PPP)
+        返回 (“PPP”)
+    .判断 (nType ＝ #MIB_IF_TYPE_LOOPBACK)
+        返回 (“LOOPBACK”)
+    .判断 (nType ＝ #MIB_IF_TYPE_SLIP)
+        返回 (“SLIP”)
+    .判断 (nType ＝ #MIB_IF_TYPE_IEEE80211)
+        返回 (“IEEE80211”)
+    .默认
+        返回 (到文本 (nType))
+    .判断结束
+    
+
+.子程序 系统_取屏幕数量, 整数型, 公开
+    清除数组 (hDisplayInf)
+    EnumDisplayMonitors (0, 0, 到整数 (&MonitorEnumProc), 0)
+    返回 (取数组成员数 (hDisplayInf))
+
+.子程序 MonitorEnumProc, 逻辑型
+    .参数 hMonitor, 整数型
+    .参数 hdcMonitor, 整数型
+    .参数 lprcMonitor, 整数型
+    .参数 dwData, 整数型
+
+    加入成员 (hDisplayInf, hMonitor)
+    返回 (真)
+
+.子程序 系统_生成随机mac, 文本型, 公开, 随机返回一个MAC地址 如：F8:1F:CC:C2:AF:14
+    .局部变量 临时整数, 整数型
+    .局部变量 l1, 整数型
+    .局部变量 MAC, 文本型
+
+    ' http://bbs.125.la/forum.php?mod=viewthread&tid=14230227
+    .计次循环首 (6, l1)
+        置随机数种子 ()
+        临时整数 ＝ 取随机数 (16, 255) ' 代表16进制的00-FF范围
+        .如果真 (l1 ＝ 1)
+            .如果真 (临时整数 ％ 2 ＝ 1) ' 取随机数后判断是否为偶数不是就+1
+                .判断开始 (临时整数 ＝ 255)
+                    临时整数 ＝ 临时整数 － 1
+                .默认
+                    临时整数 ＝ 临时整数 ＋ 1
+                .判断结束
+                
+            .如果真结束
+            
+        .如果真结束
+        .判断开始 (l1 ＝ 6) ' 判断否是最后一组是就不加分隔符
+            MAC ＝ MAC ＋ 取十六进制文本 (临时整数)
+        .默认
+            MAC ＝ MAC ＋ 取十六进制文本 (临时整数) ＋ “:”
+        .判断结束
+        
+    .计次循环尾 ()
+    返回 (MAC)
+
+.子程序 系统_取系统DPI, 整数型, 公开, 成功返回缩放比，失败返回0。
+    .局部变量 hDC, 整数型
+    .局部变量 DPI_A, 整数型
+    .局部变量 DPI_B, 整数型
+
+    ' https://blog.csdn.net/qq_25916469/article/details/86762197
+    hDC ＝ GetDC (#NULL)
+    DPI_A ＝ GetDeviceCaps (hDC, 118) ÷ GetDeviceCaps (hDC, 8) × 100
+    DPI_B ＝ GetDeviceCaps (hDC, 88) ÷ 96 × 100
+    ReleaseDC (#NULL, hDC)
+    .判断开始 (DPI_A ＝ 100)
+        返回 (DPI_B)
+    .判断 (DPI_B ＝ 100)
+        返回 (DPI_A)
+    .判断 (DPI_A ＝ DPI_B)
+        返回 (DPI_A)
+    .默认
+        返回 (0)
+    .判断结束
+    
+
+.子程序 系统_取系统DPI_注册表版, 整数型, 公开
+    .局部变量 局_系统DPI, 整数型
+
+    局_系统DPI ＝ 取数值注册项 (#现行用户, “Control Panel\Desktop\WindowMetrics\AppliedDPI”, )
+    局_系统DPI ＝ 局_系统DPI ÷ 96 × 100
+    返回 (局_系统DPI)
+
+.子程序 系统_禁用DPI缩放, 逻辑型, 公开
+    返回 (SetProcessDPIAware ())
+
+.子程序 系统_主板发声, 逻辑型, 公开, 让主板也疯狂嗨的命令
+    .参数 发出的频率, 整数型
+    .参数 发音的时长, 整数型
+
+    返回 (Beep (发出的频率, 发音的时长))
+
+.子程序 系统_清除托盘残留, , 公开, 清除因调试或者其他原因进程已退出但托盘未退出的残留图标
+    m_OsVersion ＝ _OsVersion ()
+    m_Isx64 ＝ _Isx64 ()
+    .判断开始 (m_Isx64)
+        m_nDataOffset ＝ 16
+        m_nStrOffset ＝ 24
+    .默认
+        m_nDataOffset ＝ 12
+        m_nStrOffset ＝ 18
+    .判断结束
+    _RefreshTaskbarIcon ()
+    
+
+.子程序 _Isx64, 逻辑型
+    .局部变量 p_Address, 整数型
+    .局部变量 p_Bool, 整数型
+
+    p_Address ＝ GetProcAddress (GetModuleHandleA (“kernel32”), “IsWow64Process”)
+    .如果真 (p_Address ＝ 0)
+        返回 (假)
+    .如果真结束
+    IsWow64Process_a (-1, p_Bool)
+    返回 (p_Bool ≠ 0)
+
+.子程序 _RefreshTaskbarIcon
+    .局部变量 p_hWnd, 整数型
+
+    .判断开始 (m_OsVersion ＝ 6) ' 因为没有XP，所以没有写
+        p_hWnd ＝ _FindTrayWnd ()
+        .如果真 (p_hWnd ＞ 0)
+            _EnumNotifyWindow (p_hWnd)
+        .如果真结束
+        
+    .判断 (m_OsVersion ＞ 6) ' 测试支持WIN7,WIN8,WIN10还没试
+        p_hWnd ＝ _FindTrayWnd ()
+        .如果真 (p_hWnd ＞ 0)
+            _EnumNotifyWindow (p_hWnd)
+        .如果真结束
+        ' 输出调试文本 (“-------------------------------- 我是分割线 -------------------------------”)
+        p_hWnd ＝ _FindNotifyIconOverflowWindow ()
+        .如果真 (p_hWnd ＞ 0)
+            _EnumNotifyWindow (p_hWnd)
+        .如果真结束
+        
+    .默认
+        返回 ()
+    .判断结束
+    
+
+.子程序 _EnumNotifyWindow
+    .参数 hWnd, 整数型
+    .局部变量 dwProcessId, 整数型
+    .局部变量 hProcess, 整数型
+    .局部变量 lAddress, 整数型
+    .局部变量 iNum, 整数型
+    .局部变量 i, 整数型
+    .局部变量 BButton, TBBUTTON
+    .局部变量 Bin, 字节集
+    .局部变量 data, TRAYDATA
+    .局部变量 TrayInfo, TRAYDATAEX
+    .局部变量 delete, 整数型, , "0",  
+
+    iNum ＝ SendMessageA (hWnd, #TB_BUTTONCOUNT, 0, 0) ' 数量
+    .如果真 (iNum ＞ 0)
+        GetWindowThreadProcessId (hWnd, dwProcessId)
+        .如果真 (dwProcessId ＞ 0)
+            hProcess ＝ OpenProcess (#PROCESS_ALL_ACCESS, 0, dwProcessId)
+            .如果真 (hProcess ≠ 0)
+                lAddress ＝ VirtualAllocEx_a (hProcess, 0, 4096, #MEM_COMMIT, #PAGE_READWRITE)
+                Bin ＝ 取空白字节集 (1024)
+                .变量循环首 (0, iNum － 1, 1, i)
+                    SendMessageA (hWnd, #TB_GETBUTTON, i, lAddress) ' 获取TBBUTTON数据
+                    ReadProcessMemory_BButton (hProcess, lAddress, BButton, 24, 0) ' 获取TBBUTTON结构
+                    ' 输出调试文本 (BButton.idBitMap, BButton.idCommand, BButton.fsState, BButton.fsStyle, BButton.dwData, BButton.iString)
+                    
+                    .如果真 (BButton.dwData ≠ -1)
+                        ReadProcessMemory_Bin (hProcess, BButton.dwData, Bin, 1024, 0)
+                        ReadProcessMemory_TRAYDATA (hProcess, BButton.dwData, data, 24, 0) ' 对这个结构不是很清楚，网上的版本太多了，然后OD找了下结构，也不明显，但是勉强可以用
+                        
+                        ' 输出调试文本 (data.hWnd, data.uID, data.uCallbackMessage, data.Reserved, data.hIcon)
+                        
+                        TrayInfo.hWnd ＝ data.hWnd
+                        .如果真 (IsWindow (TrayInfo.hWnd) ＝ 0) ' 判断窗口时候有效
+                            加入成员 (delete, i)
+                        .如果真结束
+                        TrayInfo.idCommand ＝ BButton.idCommand
+                        TrayInfo.strFilePath ＝ _W2A (取字节集中间 (Bin, 25 ＋ m_nStrOffset, 520)) ' 这因为是unicode,所以长度*2 260*2
+                        TrayInfo.strTile ＝ _W2A (取字节集中间 (Bin, 25 ＋ 520 ＋ m_nStrOffset, 260)) ' 这里不是很清除长度是好多，麻烦
+                        ' 输出调试文本 (TrayInfo.hWnd, TrayInfo.idCommand, TrayInfo.strFilePath, TrayInfo.strTile)
+                    .如果真结束
+                    
+                .变量循环尾 ()
+                ' 删除图标操作
+                .计次循环首 (取数组成员数 (delete), i)
+                    SendMessageA (hWnd, #TB_DELETEBUTTON, delete [i], 1)
+                .计次循环尾 ()
+                VirtualFreeEx_a (hProcess, lAddress, 4096, #MEM_RELEASE)
+                CloseHandle (hProcess)
+            .如果真结束
+            
+        .如果真结束
+        
+    .如果真结束
+    
+    
+
+.子程序 _W2A, 文本型
+    .参数 Unicode, 字节集
+    .局部变量 p_len, 整数型
+    .局部变量 p_Ansi, 字节集
+    .局部变量 p_nUtf8, 整数型
+    .局部变量 p_nUnicode, 整数型
+
+    .如果真 (Unicode ＝ { })
+        返回 (“”)
+    .如果真结束
+    p_len ＝ 取字节集长度 (Unicode) ÷ 2
+    p_nUnicode ＝ WideCharToMultiByte (#CP_ACP, 0, 取指针_字节集型 (Unicode), p_len, 0, 0, 0, 0)
+    p_Ansi ＝ 取空白字节集 (p_nUnicode)
+    WideCharToMultiByte (#CP_ACP, 0, 取指针_字节集型 (Unicode), p_len, 取指针_字节集型 (p_Ansi), p_nUnicode, 0, 0)
+    返回 (到文本 (p_Ansi))
+
+.子程序 _FindTrayWnd, 整数型
+    .局部变量 p_hWnd, 整数型
+
+    p_hWnd ＝ FindWindowA (“Shell_TrayWnd”, 字符 (0))
+    .如果真 (p_hWnd ＝ 0)
+        返回 (0)
+    .如果真结束
+    p_hWnd ＝ FindWindowExA (p_hWnd, 0, 取指针文本_ (“TrayNotifyWnd”), 0)
+    .如果真 (p_hWnd ＝ 0)
+        返回 (0)
+    .如果真结束
+    p_hWnd ＝ FindWindowExA (p_hWnd, 0, 取指针文本_ (“SysPager”), 0)
+    .如果真 (p_hWnd ＝ 0)
+        返回 (0)
+    .如果真结束
+    p_hWnd ＝ FindWindowExA (p_hWnd, 0, 取指针文本_ (“ToolbarWindow32”), 0)
+    .如果真 (p_hWnd ＝ 0)
+        返回 (0)
+    .如果真结束
+    返回 (p_hWnd)
+
+.子程序 _FindNotifyIconOverflowWindow, 整数型
+    .局部变量 p_hWnd, 整数型
+
+    p_hWnd ＝ FindWindowA (“NotifyIconOverflowWindow”, 字符 (0))
+    .如果真 (p_hWnd ＝ 0)
+        返回 (0)
+    .如果真结束
+    p_hWnd ＝ FindWindowExA (p_hWnd, 0, 取指针文本_ (“ToolbarWindow32”), 0)
+    .如果真 (p_hWnd ＝ 0)
+        返回 (0)
+    .如果真结束
+    返回 (p_hWnd)
+
+.子程序 _OsVersion, 整数型, , [0]未知[1]Win95[2]Win98[3]WinME[4]WinNT[5]Win2000[6]WinXP[7]Win2003[8]Vista[9]win7[10]Win8[11]Win8.1[12]Win10
+    置入代码 ({ 83, 49, 192, 100, 139, 29, 24, 0, 0, 0, 100, 139, 13, 48, 0, 0, 0, 133, 201, 121, 32, 185, 0, 0, 83, 0, 57, 75, 88, 117, 4, 176, 1, 235, 113, 57, 75, 84, 117, 4, 176, 2, 235, 104, 57, 75, 124, 117, 99, 176, 3, 235, 95, 139, 153, 168, 0, 0, 0, 139, 137, 164, 0, 0, 0, 131, 249, 4, 119, 4, 176, 4, 235, 74, 131, 249, 5, 117, 27, 131, 251, 0, 117, 4, 176, 5, 235, 60, 131, 251, 1, 117, 4, 176, 6, 235, 51, 131, 251, 2, 117, 4, 176, 7, 235, 42, 131, 249, 6, 117, 7, 131, 251, 0, 117, 4, 176, 8, 235, 28, 131, 251, 1, 117, 2, 176, 9, 131, 251, 2, 117, 2, 176, 10, 131, 251, 3, 117, 2, 176, 11, 131, 251, 4, 117, 2, 176, 12, 91, 201, 195 })
+    返回 (0)
+
+.子程序 系统_取网卡信息, 整数型, 公开, 本源码由 【剩下我de孩子气】提供
+    .参数 网卡信息, 精易_网卡信息, 参考 数组
+    .局部变量 size_link, 整数型
+    .局部变量 AdapterInfo, IP_ADAPTER_INFO
+    .局部变量 buf_link, 字节集
+    .局部变量 addr_link, 整数型
+    .局部变量 i, 整数型
+    .局部变量 mac, 文本型
+    .局部变量 tmp, 文本型
+    .局部变量 buf_ip, IP_ADDR_STRING
+    .局部变量 link, 精易_网卡信息
+    .局部变量 size_dns, 整数型
+    .局部变量 dns, IP_PER_ADAPTER_INFO
+    .局部变量 buf_dns, 字节集
+    .局部变量 addr_dns, 整数型
+
+    重定义数组 (网卡信息, 假, 0)
+    GetAdaptersInfo_字节集 ({ 0 }, size_link)
+    buf_link ＝ 取空白字节集 (size_link)
+    addr_link ＝ 取变量地址_字节集 (buf_link, buf_link, 0)
+    .如果真 (GetAdaptersInfo_字节集 (buf_link, size_link) ＝ 0)
+        .循环判断首 ()
+            RtlMoveMemory_IP_ADAPTER_INFO (AdapterInfo, addr_link, 640)
+            link.名称 ＝ 到文本 (AdapterInfo.Description)
+            mac ＝ “”
+            .计次循环首 (AdapterInfo.AddressLength, i)
+                tmp ＝ 取十六进制文本 (AdapterInfo.Address [i])
+                mac ＝ mac ＋ 选择 (取文本长度 (tmp) ＝ 1, “0” ＋ tmp, tmp) ＋ “-”
+                ' mac ＝ mac ＋ 选择 (tmp ＝ “0”, “00”, tmp) ＋ “-”
+            .计次循环尾 ()
+            mac ＝ 取文本左边 (mac, 取文本长度 (mac) － 1)
+            link.Mac ＝ mac
+            CopyMemory_ias (buf_ip, AdapterInfo.IpAddressList, 40)
+            link.Ip ＝ 到文本 (buf_ip.IpAddress)
+            link.掩码 ＝ 到文本 (buf_ip.IpMask)
+            CopyMemory_ias (buf_ip, AdapterInfo.GatewayList, 40)
+            link.网关 ＝ 到文本 (buf_ip.IpAddress)
+            link.连接名称 ＝ 取文本注册项 (4, “SYSTEM\CurrentControlSet\Control\Network\{4D36E972-E325-11CE-BFC1-08002BE10318}\” ＋ 到文本 (AdapterInfo.AdapterName) ＋ “\Connection\Name”, )
+            size_dns ＝ GetPerAdapterInfo (AdapterInfo.Index, buf_dns, size_dns)
+            buf_dns ＝ 取空白字节集 (size_dns)
+            addr_dns ＝ 取变量地址_字节集 (buf_dns, buf_dns, 0)
+            GetDnsServer (AdapterInfo.Index, link.DNS1, link.DNS2)
+            
+            ' .如果 (GetPerAdapterInfo (AdapterInfo.Index, buf_dns, size_dns) ＝ 0)
+                ' RtlMoveMemory_IP_PER_ADAPTER_INFO (dns, addr_dns, 92)
+                ' link.DNS1 ＝ 到文本 (dns.CurrentDnsServer.IpAddress)
+                ' link.DNS2 ＝ 到文本 (dns.DnsServerList.IpAddress)
+            ' .否则
+                ' link.DNS1 ＝ “”
+                ' link.DNS2 ＝ “”
+            ' .如果结束
+            加入成员 (网卡信息, link)
+            addr_link ＝ AdapterInfo.Next
+        .循环判断尾 (addr_link ≠ 0)
+        返回 (取数组成员数 (网卡信息))
+    .如果真结束
+    返回 (0)
+    
+
+.子程序 系统_添加计划任务, 文本型, 公开, 向系统中增加一个计划任务，该操作在WIN7上面需要管理员权限
+    .参数 计划任务名, 文本型, , 用于显示在系统中的计划任务的名称
+    .参数 计划任务执行文件路径, 文本型, , 执行文件的路径，可以EXE也可以BAT
+    .参数 计划任务执行方式, 整数型, , 方式有以下几种：6=一次，7=在系统启动时，8=在用户登录时，9=在系统空闲时。
+    .参数 执行任务的用户名, 文本型, 可空, 需要执行该任务的用户名。如果不需要可以留空
+    .参数 执行任务的密码, 文本型, 可空, 用户名对应的密码。如果不需要可以留空。如果是已解锁电脑则无需输入密码
+    .参数 任务执行时间, 日期时间型, 可空, 如果执行方式是一次，则必须有该值。该值为日期时间型
+    .参数 是否强制创建, 逻辑型, 可空, 如果为真，则忽略任何错误，强制创建任务
+    .局部变量 命令行文本, 文本型
+    .局部变量 任务执行方式文本, 文本型
+    .局部变量 临时_执行任务用户名, 文本型
+    .局部变量 临时_执行任务密码, 文本型
+    .局部变量 临时_任务执行时间, 文本型
+
+    .局部变量 输出内容, 文本型
+    .局部变量 错误输出, 文本型
+    .局部变量 执行返回值, 整数型
+    .局部变量 局_返回值, 文本型
+
+    ' 示例:
+    ' ==> 在远程机器 "ABC" 上创建计划任务 "doc"，
+    ' 该机器每小时在 "runasuser" 用户下运行 notepad.exe。
+    
+    ' SCHTASKS /Create /S ABC /U user /P password /RU runasuser
+    ' /RP runaspassword /SC HOURLY /TN doc /TR notepad
+    
+    ' ==> 在远程机器 "ABC" 上创建计划任务 "accountant"，
+    ' 在指定的开始日期和结束日期之间的开始时间和结束时间内，
+    ' 每隔五分钟运行 calc.exe。
+    
+    ' SCHTASKS /Create /S ABC /U domain\user /P password /SC MINUTE
+    ' /MO 5 /TN accountant /TR calc.exe /ST 12:00 /ET 14:00
+    ' /SD 06/06/2006 /ED 06/06/2006 /RU runasuser /RP userpassword
+    
+    ' ==> 创建计划任务 "gametime"，在每月的第一个星期天
+    ' 运行“空当接龙”。
+    
+    ' SCHTASKS /Create /SC MONTHLY /MO first /D SUN /TN gametime
+    ' /TR c:\windows\system32\freecell
+    
+    ' ==> 在远程机器 "ABC" 创建计划任务 "report"，
+    ' 每个星期运行 notepad.exe。
+    
+    ' SCHTASKS /Create /S ABC /U user /P password /RU runasuser
+    ' /RP runaspassword /SC WEEKLY /TN report /TR notepad.exe
+    
+    ' ==> 在远程机器 "ABC" 创建计划任务 "logtracker"，
+    ' 每隔五分钟从指定的开始时间到无结束时间，
+    ' 运行 notepad.exe。将提示输入 /RP
+    ' 密码。
+    
+    ' SCHTASKS /Create /S ABC /U domain\user /P password /SC MINUTE
+    ' /MO 5 /TN logtracker
+    ' /TR c:\windows\system32\notepad.exe /ST 18:30
+    ' /RU runasuser /RP
+    
+    ' ==> 创建计划任务 "gaming"，每天从 12:00 点开始到
+    ' 14:00 点自动结束，运行 freecell.exe。
+    
+    ' SCHTASKS /Create /SC DAILY /TN gaming /TR c:\freecell /ST 12:00
+    ' /ET 14:00 /K
+    ' ==> 创建计划任务“EventLog”以开始运行 wevtvwr.msc
+    ' 只要在“系统”通道中发布事件 101
+    
+    ' SCHTASKS /Create /TN EventLog /TR wevtvwr.msc /SC ONEVENT
+    ' /EC System /MO *[System/EventID=101]
+    ' ==> 文件路径中可以加入空格，但需要加上两组引号，
+    ' 一组引号用于 CMD.EXE，另一组用于 SchTasks.exe。用于 CMD
+    ' 的外部引号必须是一对双引号；内部引号可以是一对单引号或
+    ' 一对转义双引号:
+    ' SCHTASKS /Create
+    ' /tr "'c:\program files\internet explorer\iexplorer.exe'
+    ' \"c:\log data\today.xml\"" ...
+    
+    .如果真 (计划任务执行方式 ＞ 9 或 计划任务执行方式 ＜ 6)
+        返回 (“计划任务执行方式不正确，请重新填写”)
+    .如果真结束
+    
+    任务执行方式文本 ＝ 多项选择 (计划任务执行方式 － 5, “ONCE”, “ONSTART”, “ONLOGON”, “ONIDLE”)
+    
+    .如果真 (执行任务的用户名 ≠ “”)
+        临时_执行任务用户名 ＝ “ /RU ” ＋ #引号 ＋ 执行任务的用户名 ＋ #引号
+    .如果真结束
+    
+    .如果真 (执行任务的密码 ≠ “”)
+        临时_执行任务密码 ＝ “ /RP ” ＋ #引号 ＋ 执行任务的密码 ＋ #引号
+    .如果真结束
+    
+    .如果真 (计划任务执行方式 ＝ 6)
+        临时_任务执行时间 ＝ “ /SD ” ＋ 时间_到文本 (任务执行时间, 2, 1) ＋ “ /ST ” ＋ 时间_格式化 (任务执行时间, , “hh:mm”, 真)
+    .如果真结束
+    
+    命令行文本 ＝ “SCHTASKS /Create  ” ＋ 临时_执行任务用户名 ＋ 临时_执行任务密码 ＋ “ /SC ” ＋ 任务执行方式文本 ＋ “ /TN ” ＋ #引号 ＋ 计划任务名 ＋ #引号 ＋ “ /TR ” ＋ #引号 ＋ 计划任务执行文件路径 ＋ #引号 ＋ 临时_任务执行时间 ＋ 选择 (是否强制创建, “ /F”, “”)
+    局_返回值 ＝ 系统_取DOS执行结果 (“cmd.exe /c ” ＋ 命令行文本)
+    ' 运行控制台程序 (“cmd.exe /c ” ＋ 命令行文本, 输出内容, 错误输出, 执行返回值)
+    返回 (局_返回值)
+
+.子程序 系统_删除计划任务, 文本型, 公开, 删除指定名计划任务
+    .参数 计划任务名, 文本型
+    .局部变量 局_命令行文本, 文本型
+    .局部变量 局_返回值, 文本型
+
+    局_命令行文本 ＝ “SCHTASKS /Delete ” ＋ “ /TN ” ＋ #引号 ＋ 计划任务名 ＋ #引号 ＋ “ /F”
+    局_返回值 ＝ 系统_取DOS执行结果 (“cmd.exe /c ” ＋ 局_命令行文本)
+    返回 (局_返回值)
+
+.子程序 系统_修改用户名, 逻辑型, 公开, 修改系统用户名
+    .参数 新用户名, 文本型
+    .局部变量 局_结果, 逻辑型
+
+    局_结果 ＝ 运行 (“cmd /c reg add ” ＋ #引号 ＋ “ HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\ComputerName\ActiveComputerName” ＋ #引号 ＋ “ /v ComputerName /t reg_sz /d ” ＋ 删首尾空 (新用户名) ＋ “ /f >nul 2>nul”, 真, 1)
+    .如果真 (局_结果 ＝ 假)
+        返回 (假)
+    .如果真结束
+    局_结果 ＝ 运行 (“cmd /c reg add ” ＋ #引号 ＋ “HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Tcpip\Parameters” ＋ #引号 ＋ “ /v ” ＋ #引号 ＋ “NV Hostname” ＋ #引号 ＋ “ /t reg_sz /d ” ＋ 删首尾空 (新用户名) ＋ “ /f >nul 2>nul”, 真, 1)
+    .如果真 (局_结果 ＝ 假)
+        返回 (假)
+    .如果真结束
+    
+    局_结果 ＝ 运行 (“cmd /c reg add ” ＋ #引号 ＋ “HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Tcpip\Parameters” ＋ #引号 ＋ “ /v Hostname /t reg_sz /d ” ＋ 删首尾空 (新用户名) ＋ “ /f >nul 2>nul”, 真, 1)
+    .如果真 (局_结果 ＝ 假)
+        返回 (假)
+    .如果真结束
+    返回 (真)
+
+.子程序 系统_创建还原点, 整数型, 公开, 创建系统还原点，成功返回还原点ID，失败返回Null，系统还原服务必须开启或还原服务打开，更新信息请参考[控制面板—>系统属性->系统保护页。
+    .参数 描述, 文本型
+    .参数 类型, , 可空, 可为空，默认即程序安装，参数 1＝程序安装；2＝程序卸载；3＝驱动安装；4＝系统。
+    .局部变量 RestorePtInfo, RESTOREPTINFO
+    .局部变量 SMgrStatus, SMGRSTATUS
+    .局部变量 bool, 逻辑型
+
+    .判断开始 (类型 ＝ 1)
+        类型 ＝ 0 ' #APPLICATION_INSTALL
+    .判断 (类型 ＝ 2)
+        类型 ＝ 1 ' #APPLICATION_UNINSTALL
+    .判断 (类型 ＝ 3)
+        类型 ＝ 10 ' #DEVICE_DRIVER_INSTALL
+    .判断 (类型 ＝ 4)
+        类型 ＝ 12 ' #MODIFY_SETTINGS
+    .默认
+        
+    .判断结束
+    RestorePtInfo.dwEventType ＝ 100 ' #BEGIN_SYSTEM_CHANGE
+    RestorePtInfo.dwRestorePtType ＝ 类型
+    
+    lstrcpy_bytes (RestorePtInfo.szDescription, 描述)
+    bool ＝ SRSetRestorePoint (RestorePtInfo, SMgrStatus)
+    .如果真 (bool)
+        返回 (SMgrStatus.llSequenceNumber)
+    .如果真结束
+    返回 (0)
+
+.子程序 系统_删除还原点, 逻辑型, 公开, 删除指定还原点，成功返回真，失败返回假。
+    .参数 还原点ID, 长整数型, , 由“创建还原点()”返回。
+
+    返回 (SRRemoveRestorePoint (还原点ID) ＝ 0)
+
+.子程序 系统_加入域, 逻辑型, 公开, 加入指定系统域，成功返回真，失败返回假，重启后生效。
+    .参数 域名称, 文本型
+    .参数 用户名, 文本型
+    .参数 密码, 文本型
+
+    Status_域 ＝ NetJoinDomain (0, 编码_Ansi到Unicode (域名称), 0, 编码_Ansi到Unicode (用户名 ＋ “@” ＋ 域名称), 编码_Ansi到Unicode (密码), 位或 (1, 2, 32))
+    返回 (Status_域 ＝ 0)
+
+.子程序 系统_退出域, 逻辑型, 公开, 退出指定系统域，成功返回真，失败返回假，重启后生效。
+    .参数 域名称, 文本型
+    .参数 用户名, 文本型
+    .参数 密码, 文本型
+
+    Status_域 ＝ NetUnjoinDomain (0, 编码_Ansi到Unicode (用户名 ＋ “@” ＋ 域名称), 编码_Ansi到Unicode (密码), 4) ' NETSETUP_ACCT_DELETE
+    返回 (Status_域 ＝ 0)
+
+.子程序 系统_是否为默认字体, 逻辑型, 公开, 返回屏幕字体大小，如果字体不是较小默认值，返回假
+    .局部变量 hdc, 整数型
+    .局部变量 hwnd, 整数型
+    .局部变量 PrevMapMode, 整数型
+    .局部变量 tm, 物理字体属性信息_
+    .局部变量 返回值, 逻辑型
+
+    返回值 ＝ 真 ' 设置默认的返回值,以小字体
+    hwnd ＝ 取屏幕句柄_ () ' 得到处理的桌面窗口
+    hdc ＝ 取窗口全部设备场景_ (hwnd) ' 获取设备上下文的桌面
+    .如果真 (hdc ≠ 0)
+        PrevMapMode ＝ SetMapMode (hdc, 1) ' 设置映射模式像素
+        取得物理字体信息_ (hdc, tm) ' 得到系统字体的大小
+        PrevMapMode ＝ SetMapMode (hdc, PrevMapMode) ' 设置映射模式
+        释放设备场景_ (hwnd, hdc)
+    .如果真结束
+    .如果真 (tm.tmHeight ＞ 16)
+        返回值 ＝ 假
+    .如果真结束
+    返回 (返回值)
+
+.子程序 系统_临时字体_安装, 整数型, 公开, 失败返回0；如果函数调用成功，则返回值为增加的字体数   安装字体后，请勿删除字体文件，否则不能正常显示文字
+    .参数 字体路径, 文本型, , 含有效字体的文件名,字体资源文件(.FON)、未加工位图字体(.FNT)、未加工TrueType(.TTF)或TrueType资源(.FON)
+    .局部变量 ls, 整数型
+
+    ls ＝ AddFontResourceA (字体路径)
+    SendMessageA (65535, 29, 0, 0) ' 消息广播通知所有窗口 字体数量已经更改
+    返回 (ls)
+
+.子程序 系统_临时字体_卸载, 逻辑型, 公开, 通常情况下，只卸载由“系统_安装字体”安装的字体资源
+    .参数 字体路径, 文本型, , 含有效字体资源的文件名
+    .局部变量 ls, 逻辑型
+
+    ls ＝ RemoveFontResourceA (字体路径)
+    SendMessageA (65535, 29, 0, 0) ' 消息广播通知所有窗口 字体数量已经更改
+    返回 (ls)
+
+.子程序 系统_取字体名, 文本型, 公开, 获取字体名称，如“simsun.ttc”显示字体名称为“宋体”。
+    .参数 字体文件名, 文本型, , 可以输入字体文件名，如“STXINWEI.TTF”,默认在系统字体目录下搜索该文件。
+    .局部变量 wszFontPath, 字节集
+    .局部变量 FontsPath, 文本型
+    .局部变量 fontRes, FONT_RESOURCE
+    .局部变量 Length
+    .局部变量 FontsName, 文本型
+    .局部变量 id
+    .局部变量 exists, 逻辑型
+
+    exists ＝ 选择 (文件是否存在 (字体文件名), 真, 假)
+    .如果 (exists)
+        AddFontResourceA (字体文件名)
+    .否则
+        FontsPath ＝ 取空白文本 (256)
+        SHGetSpecialFolderPath (0, FontsPath, 20, 假)
+        字体文件名 ＝ FontsPath ＋ “\” ＋ 字体文件名
+    .如果结束
+    GetFontResourceInfoW (编码_Ansi到Unicode (字体文件名), Length, fontRes, 2)
+    GetFontResourceInfoW (编码_Ansi到Unicode (字体文件名), Length, fontRes, 2)
+    FontsName ＝ 编码_Unicode到Ansi (到字节集 (fontRes.wszFontName))
+    .如果真 (exists)
+        RemoveFontResourceA (字体文件名)
+    .如果真结束
+    返回 (FontsName)
+
+.子程序 系统_取宽带线路, 整数型, 公开, 返回电信或网通,1代表电信,2代表其它(如:网通,铁通等等)
+    .参数 IP地址, 文本型, 可空, 可空，为空将查询本机的线路。请填入你要查询的IP地址  如：119.147.106.250
+    .参数 线路, 文本型, 可空, 请提供一个文本变量,用于存放宽带的线路，如：电信或网通。
+    .参数 所在地址, 文本型, 可空, 请提供一个文本变量,用于存放IP所在地的地址，如：中国广东广州。
+    .局部变量 局_源文本, 文本型
+    .局部变量 局_文本, 文本型
+
+    局_源文本 ＝ 编码_usc2到ansi (到文本 (网页_访问J (“http://int.dpool.sina.com.cn/iplookup/iplookup.php?format=js&ip=” ＋ IP地址)))
+    .如果真 (是否为空 (线路) ＝ 假)
+        线路 ＝ 文本_取出中间文本 (局_源文本, “isp#引号:#引号”, #引号)
+    .如果真结束
+    .如果真 (是否为空 (所在地址) ＝ 假)
+        所在地址 ＝ 文本_取出中间文本 (局_源文本, “country#引号:#引号”, #引号) ＋ 文本_取出中间文本 (局_源文本, “province#引号:#引号”, #引号) ＋ 文本_取出中间文本 (局_源文本, “city#引号:#引号”, #引号)
+    .如果真结束
+    .如果真 (寻找文本 (局_源文本, “电信”, , 假) ≠ -1)
+        返回 (1)
+    .如果真结束
+    返回 (2)
+
+.子程序 系统_取空闲时间, 整数型, 公开, 返回单位为毫秒
+    .局部变量 dwTime, PLASTINPUTINFO
+
+    dwTime.cbSize ＝ 8
+    GetLastInputInfo (dwTime)
+    返回 (GetTickCount () － dwTime.dwTime)
+
+.子程序 系统_检测host, 逻辑型, 公开, 返回真则host已经被修改
+    .参数 网址1, 文本型
+    .参数 网址2, 文本型, 可空
+    .参数 网址3, 文本型, 可空
+    .局部变量 host, 文本型
+
+    host ＝ 到文本 (读入文件 (目录_取system32目录 () ＋ “Drivers\etc\hosts”))
+    .判断开始 (寻找文本 (host, 网址1, , 真) ≠ -1)
+        返回 (真)
+    .判断 (寻找文本 (host, 网址2, , 真) ≠ -1 且 网址2 ≠ “”)
+        返回 (真)
+    .判断 (寻找文本 (host, 网址3, , 真) ≠ -1 且 网址3 ≠ “”)
+        返回 (真)
+    .默认
+        返回 (假)
+    .判断结束
+    
+
+.子程序 系统_取星座, 文本型, 公开, 返回一个日期所处于哪一个星座时段
+    .参数 日期, 日期时间型
+
+    ' 1月21日～2月19日水瓶座
+    ' 2月20日～3月20日双鱼座
+    ' 3月21日～4月20日白羊座
+    ' 4月21日～5月21日金牛座
+    ' 5月22日～6月21日双子座
+    ' 6月22日～7月22日巨蟹座
+    ' 7月23日～8月23日狮子座
+    ' 8月24日～9月23日仕女座
+    ' 9月24日～10月23日天秤座
+    ' 10月24日～11月22日天蝎座
+    ' 11月23日～12月21日射手座
+    ' 12月22日～1月20日魔羯座
+    .判断开始 (取月份 (日期) ＝ 1 且 取日 (日期) ≥ 21 或 (取月份 (日期) ＝ 2 且 取日 (日期) ≤ 19))
+        返回 (“水瓶座”)
+    .判断 (取月份 (日期) ＝ 2 且 取日 (日期) ≥ 20 或 (取月份 (日期) ＝ 3 且 取日 (日期) ≤ 20))
+        返回 (“双鱼座”)
+    .判断 (取月份 (日期) ＝ 3 且 取日 (日期) ≥ 21 或 (取月份 (日期) ＝ 4 且 取日 (日期) ≤ 20))
+        返回 (“白羊座”)
+    .判断 (取月份 (日期) ＝ 4 且 取日 (日期) ≥ 21 或 (取月份 (日期) ＝ 5 且 取日 (日期) ≤ 21))
+        返回 (“金牛座”)
+    .判断 (取月份 (日期) ＝ 5 且 取日 (日期) ≥ 22 或 (取月份 (日期) ＝ 6 且 取日 (日期) ≤ 21))
+        返回 (“双子座”)
+    .判断 (取月份 (日期) ＝ 6 且 取日 (日期) ≥ 22 或 (取月份 (日期) ＝ 7 且 取日 (日期) ≤ 22))
+        返回 (“巨蟹座”)
+    .判断 (取月份 (日期) ＝ 7 且 取日 (日期) ≥ 23 或 (取月份 (日期) ＝ 8 且 取日 (日期) ≤ 23))
+        返回 (“狮子座”)
+    .判断 (取月份 (日期) ＝ 8 且 取日 (日期) ≥ 24 或 (取月份 (日期) ＝ 9 且 取日 (日期) ≤ 23))
+        返回 (“处女座”)
+    .判断 (取月份 (日期) ＝ 9 且 取日 (日期) ≥ 24 或 (取月份 (日期) ＝ 10 且 取日 (日期) ≤ 23))
+        返回 (“天秤座”)
+    .判断 (取月份 (日期) ＝ 10 且 取日 (日期) ≥ 24 或 (取月份 (日期) ＝ 11 且 取日 (日期) ≤ 22))
+        返回 (“天蝎座”)
+    .判断 (取月份 (日期) ＝ 11 且 取日 (日期) ≥ 23 或 (取月份 (日期) ＝ 12 且 取日 (日期) ≤ 21))
+        返回 (“射手座”)
+    .判断 (取月份 (日期) ＝ 12 且 取日 (日期) ≥ 22 或 (取月份 (日期) ＝ 1 且 取日 (日期) ≤ 20))
+        返回 (“魔羯座”)
+    .默认
+        返回 (“”)
+    .判断结束
+    
+
+.子程序 系统_重启, , 公开, 重启电脑
+    子程序_调整权限 ()
+    ExitWindowsEx (2, 0) ' EWX_REBOOT=2
+
+.子程序 系统_强制重启, , 公开, 强制重启电脑
+    子程序_调整权限 ()
+    ExitWindowsEx (位或 (2, 4), 65535)
+
+.子程序 系统_刷新屏幕, , 公开, 刷新桌面
+    运行 (“RunDll32.exe USER32.DLL,UpdatePerUserSystemParameters”, 假, )
+
+.子程序 系统_注销, , 公开, 注销当前用户
+    ExitWindowsEx (0, 65535)
+
+.子程序 系统_强制注销, , 公开, 强制注销当前用户
+    ExitWindowsEx (位或 (0, 4), 65535)
+
+.子程序 系统_关机, , 公开, 关闭电脑
+    子程序_调整权限 ()
+    ExitWindowsEx (1, 65535)
+
+.子程序 系统_强制关机, , 公开, 强制关闭电脑
+    子程序_调整权限 ()
+    ExitWindowsEx (位或 (1, 4), 65535)
+
+.子程序 系统_关电源, , 公开, 无返回值，实现快速关机。
+    .局部变量 Status
+    .局部变量 Enabled, 逻辑型
+
+    Status ＝ RtlAdjustPrivilege (19, 真, 真, Enabled) ' SeShutdownPrivilege
+    .如果真 (Status ＝ -1073741700)
+        Status ＝ RtlAdjustPrivilege (19, 真, 假, Enabled)
+    .如果真结束
+    ZwShutdownSystem (2) ' SH_POWEROFF
+
+.子程序 系统_以管理员模式创建进程, 逻辑型, 公开, 在Vista/Win7及更高系统上,以管理员模式创建进程,成功返回真,失败返回假 警告：请勿放在 窗口创建完毕/首次被激活/死循环中
+    .参数 进程路径, 文本型, 可空, 留空默认启动自身进程
+    .参数 运行参数, 文本型, 可空, 命令行参数
+    .局部变量 sei, SHELLEXECUTEINFOA
+
+    .如果 (是否为空 (进程路径) 或 进程路径 ＝ “”)
+        sei.lpFile ＝ 取运行目录 ()
+        .如果真 (取文本右边 (sei.lpFile, 1) ≠ “\”)
+            sei.lpFile ＝ sei.lpFile ＋ “\”
+        .如果真结束
+        sei.lpFile ＝ sei.lpFile ＋ 取执行文件名 ()
+    .否则
+        sei.lpFile ＝ 进程路径
+    .如果结束
+    sei.lpParameters ＝ 运行参数
+    sei.lpVerb ＝ “runas”
+    sei.nShow ＝ #SW_SHOWDEFAULT
+    sei.fMask ＝ #SEE_MASK_FLAG_DDEWAIT
+    sei.cbSize ＝ LocalSize_SHELLEXECUTEINFOA (sei)
+    返回 (ShellExecuteEx (sei) ≠ 0)
+
+.子程序 子程序_调整权限
+    .局部变量 局_进程伪句柄, 整数型
+    .局部变量 局_进程标志句柄, 整数型
+    .局部变量 局_新权限特征, 权限特征
+    .局部变量 局_旧权限特征, 权限特征
+    .局部变量 局_返回数据长度, 整数型
+    .局部变量 局_Luid临时数据, 精易_进程令牌
+
+    局_进程伪句柄 ＝ GetCurrentProcess ()
+    OpenProcessToken (局_进程伪句柄, 位或 (32, 8), 局_进程标志句柄)
+    LookupPrivilegeValueA (“”, “SeShutdownPrivilege”, 局_Luid临时数据)
+    局_新权限特征.权限 ＝ 1
+    局_新权限特征.低三十二位 ＝ 局_Luid临时数据.低三十二位
+    局_新权限特征.高三十二位 ＝ 局_Luid临时数据.高三十二位
+    局_新权限特征.属性 ＝ 2
+    _调整特殊权限 (局_进程标志句柄, 0, 局_新权限特征, 28, 局_旧权限特征, 局_返回数据长度)
+
+.子程序 系统_光驱开关过程
+    .参数 光驱盘符, 文本型, , 只能提供盘符字母，不要有“:”
+    .参数 打开关闭, 逻辑型
+    .局部变量 A, 光驱相关1
+    .局部变量 B, 光驱相关2
+    .局部变量 C, 文本型
+
+    A.lpstrDeviceType ＝ “cdaudio”
+    C ＝ 到大写 (取文本左边 (光驱盘符, 1))
+    .如果真 (取反 (取代码 (C, ) ≥ 65 且 取代码 (C, ) ≤ 90))
+        返回 ()
+    .如果真结束
+    A.lpstrElementName ＝ C ＋ “:”
+    .如果真 (_系统光驱开关1 (0, 2051, 8961, A) ＝ 0)
+        .如果 (打开关闭)
+            _系统光驱开关2 (A.wDeviceID, 2061, 16640, B)
+        .否则
+            _系统光驱开关2 (A.wDeviceID, 2061, 16896, B)
+        .如果结束
+        
+    .如果真结束
+    mciSendCommandA (A.wDeviceID, 2052, 0, 0)
+
+.子程序 系统_显示关机对话框, , 公开, 调用系统的关机对话框
+    .参数 WIN系列系统, 逻辑型, 可空, 是否WIN7以上的系统类型
+
+    .判断开始 (WIN系列系统)
+        _关机对话框_WIN (0, 0)
+    .默认
+        _关机对话框_XP (0)
+    .判断结束
+    
+
+.子程序 系统_开启屏保, 逻辑型, 公开, 开启系统屏幕保护
+    .参数 延时多少秒开始, 整数型, , 延时几秒后开始屏保
+
+    返回 (SystemParametersInfoA (15, 延时多少秒开始, “”, 2))
+    
+
+.子程序 系统_注册组件, 逻辑型, 公开, DllRegisterServer
+    .参数 组件路径, 文本型
+    .局部变量 szFileName, 文本型
+    .局部变量 hDLL, 整数型
+    .局部变量 pFunc, 整数型
+    .局部变量 nRet, 整数型
+
+    szFileName ＝ 取空白文本 (255)
+    GetShortPathNameA (组件路径, szFileName, 255)
+    ' 载入DLL、OCX组件，并将它映射到当前进程使用的地址空间
+    hDLL ＝ LoadLibraryA (szFileName)
+    .如果真 (hDLL ＝ 0)
+        返回 (假)
+    .如果真结束
+    ' 取函数地址
+    pFunc ＝ GetProcAddress (hDLL, “DllRegisterServer”)
+    .如果真 (pFunc ≤ 0)
+        FreeLibrary (hDLL)
+        返回 (假)
+    .如果真结束
+    ' 运行函数
+    nRet ＝ CallWindowProcA (pFunc, 0, 0, 0, 0)
+    ' 释放指定的动态链接库
+    FreeLibrary (hDLL)
+    返回 (真)
+
+.子程序 系统_卸载组件, 逻辑型, 公开, DllUnregisterServer
+    .参数 组件路径, 文本型
+    .局部变量 hDLL, 整数型
+    .局部变量 pFunc, 整数型
+    .局部变量 nRet, 整数型
+
+    hDLL ＝ LoadLibraryA (组件路径)
+    ' 载入DLL、OCX组件，并将它映射到当前进程使用的地址空间
+    .如果真 (hDLL ≤ 0)
+        返回 (假)
+    .如果真结束
+    ' 取函数地址
+    pFunc ＝ GetProcAddress (hDLL, “DllUnregisterServer”)
+    .如果真 (pFunc ≤ 0)
+        FreeLibrary (hDLL)
+        返回 (假)
+    .如果真结束
+    ' 运行函数
+    nRet ＝ CallWindowProcA (pFunc, 0, 0, 0, 0)
+    ' 释放指定的动态链接库
+    FreeLibrary (hDLL)
+    返回 (真)
+
+.子程序 系统_显示托盘, , 公开, 显示被隐藏的托盘
+    .局部变量 局_数组, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_置控件状态 (局_数组 [2], 真)
+
+.子程序 系统_隐藏托盘, , 公开, 隐藏托盘
+    .局部变量 局_数组, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_置控件状态 (局_数组 [2], 假)
+
+.子程序 系统_修改主页, , 公开, 修改IE主页
+    .参数 地址, 文本型
+
+    写注册项 (3, “Software\Microsoft\Internet Explorer\Main\Start Page”, 地址)
+
+.子程序 系统_切换用户, , 公开, 切换系统用户
+    LockWorkStation ()
+
+.子程序 系统_取主页地址, 文本型, 公开, 取IE主页地址
+    .局部变量 地址, 文本型
+
+    地址 ＝ 取文本注册项 (3, “Software\Microsoft\Internet Explorer\Main\Start Page”, )
+    返回 (地址)
+
+.子程序 系统_光驱开关, , 公开, 控制光驱的开与关
+    .参数 打开关闭, 逻辑型, , 真为打开光驱，假为关闭光驱；
+    .局部变量 光驱成员, 文本型, , "0"
+    .局部变量 计次, 整数型
+
+    系统_光驱查询 (光驱成员)
+    .计次循环首 (取数组成员数 (光驱成员), 计次)
+        系统_光驱开关过程 (光驱成员 [计次], 打开关闭)
+    .计次循环尾 ()
+
+.子程序 系统_光驱查询, , 公开, 返回光驱的文本数组，
+    .参数 当前光驱, 文本型, 数组, 用来返回光驱的文本数组
+    .局部变量 计次, 整数型
+
+    重定义数组 (当前光驱, 假, 0)
+    .计次循环首 (26, 计次)
+        .如果真 (GetDriveTypeA (字符 (64 ＋ 计次) ＋ “:”) ＝ 5)
+            加入成员 (当前光驱, 字符 (64 ＋ 计次))
+        .如果真结束
+        
+    .计次循环尾 ()
+
+.子程序 系统_处理事件, , 公开, 比普通的处理事件速度要快3倍左右；
+    .如果真 (GetInputState () ≠ 0)
+        处理事件 ()
+    .如果真结束
+    
+
+.子程序 系统_处理事件1, , 公开, 暂时转让控制权，以便让 Windows 操作系统有机会处理其它的如用户键盘或鼠标输入等事件。直到操作系统处理并发送完程序队列中的所有事件后，命令才会返回。
+    .局部变量 CurrMsg, MSG
+
+    .判断循环首 (PeekMessage (CurrMsg, 0, 0, 0, 1)) ' #PM_REMOVE=1接收消息并从队列里除掉。
+        TranslateMessage (CurrMsg)
+        DispatchMessage (CurrMsg) ' 分发消息
+    .判断循环尾 ()
+
+.子程序 系统_是否64位操作系统, 逻辑型, 公开, 是返回真，不是返回假
+    .局部变量 hModule, 整数型
+    .局部变量 addr, 整数型
+    .局部变量 lpBuffer, 文本型
+    .局部变量 ret, 整数型
+
+    hModule ＝ GetModuleHandleA (“kernel32.dll”)
+    addr ＝ GetProcAddress (hModule, “GetSystemWow64DirectoryA”)
+    .如果真 (addr ＝ 0)
+        ' 没有这个函数,肯定是32位系统，因为这个函数是xp才加入的，xp之前没有64位操作系统
+        返回 (假)
+    .如果真结束
+    lpBuffer ＝ 取空白文本 (255)
+    ret ＝ 程序_Call (addr, lstrcpyn_文本型 (lpBuffer, lpBuffer, 0), 255)
+    返回 (ret ＞ 0)
+
+.子程序 系统_建立关联, 逻辑型, 公开, 能用于关联程序打开方式及改关联图标，以及取得程序关联等功能。
+    .参数 后缀, 文本型, , 要关联的文件后缀，如"*.txt"
+    .参数 关联程序, 文本型, 可空, 此后缀所要关联的程序，如"d:\myflash.exe"，会关联用此程序打开，如果为空则默认为本程序
+    .参数 关联图标, 文本型, 可空, 关联后此程序的图标，默认为关联程序的第一个图标
+    .参数 关联名称, 文本型, 可空, 此为高级项，为关联注册项的名称，可为空，默认为程序名
+    .局部变量 程序, 文本型
+    .局部变量 成功, 逻辑型
+    .局部变量 图标, 文本型
+
+    .如果真 (是否为空 (关联程序))
+        关联程序 ＝ 取运行目录 () ＋ “\” ＋ 取执行文件名 ()
+    .如果真结束
+    后缀 ＝ 子文本替换 (后缀, “*”, , , , 真)
+    后缀 ＝ 子文本替换 (后缀, “.”, , , , 真)
+    后缀 ＝ “.” ＋ 后缀 ＋ “\”
+    程序 ＝ 文件_取文件名 (关联程序)
+    .如果 (是否为空 (关联图标))
+        图标 ＝ 关联程序 ＋ “,0”
+    .否则
+        图标 ＝ 关联图标
+    .如果结束
+    
+    成功 ＝ 写注册项 (#根类, 后缀, 程序)
+    .如果真 (取反 (是否为空 (关联名称)))
+        成功 ＝ 写注册项 (#根类, 后缀 ＋ “Content Type”, 关联名称)
+    .如果真结束
+    成功 ＝ 写注册项 (#根类, 程序 ＋ “\BrowserFlags”, 8)
+    成功 ＝ 写注册项 (#根类, 程序 ＋ “\EditFlags”, 0)
+    成功 ＝ 写注册项 (#根类, 程序 ＋ “\DefaultIcon\”, 图标)
+    成功 ＝ 写注册项 (#根类, 程序 ＋ “\shell\”, “open”)
+    成功 ＝ 写注册项 (#根类, 程序 ＋ “\shell\open\command\”, 关联程序 ＋ “ ” ＋ #引号 ＋ “%1” ＋ #引号)
+    返回 (成功)
+
+.子程序 系统_运行死慢, , 公开, 拖缓系统运行
+    .参数 确认执行, 逻辑型
+
+    .判断循环首 (确认执行)
+        快照 (, , )
+    .判断循环尾 ()
+
+.子程序 系统_取用户名, 文本型, 公开, 获取当前系统的用户名
+    .局部变量 返回文本, 文本型
+
+    返回文本 ＝ 取空白文本 (50)
+    .如果真 (GetUserNameA (返回文本, 取文本长度 (返回文本)) ≠ 0)
+        返回 (返回文本)
+    .如果真结束
+    返回 (“”)
+
+.子程序 系统_取DOS路径, 文本型, 公开, 返回DOS 8.3路径名
+    .参数 原路径, 文本型
+    .局部变量 临时路径, 文本型
+    .局部变量 路径位置, 整数型
+    .局部变量 路径, 文本型
+    .局部变量 行中间, 文本型
+    .局部变量 左边文本, 文本型
+    .局部变量 纠正位, 整数型
+
+    临时路径 ＝ 原路径
+    路径位置 ＝ 寻找文本 (临时路径, “\”, , 真)
+    .判断循环首 (路径位置 ＞ 0)
+        路径 ＝ 取文本左边 (临时路径, 路径位置)
+        .如果 (取文本长度 (路径) ＞ 9)
+            左边文本 ＝ 左边文本 ＋ 取文本左边 (路径, 6) ＋ “~1\”
+        .否则
+            左边文本 ＝ 左边文本 ＋ 路径
+        .如果结束
+        临时路径 ＝ 取文本右边 (临时路径, 取文本长度 (临时路径) － 路径位置)
+        路径位置 ＝ 寻找文本 (临时路径, “\”, , 真)
+    .判断循环尾 ()
+    纠正位 ＝ 倒找文本 (临时路径, “.”, , 真)
+    .如果 (纠正位 ＞ 9)
+        左边文本 ＝ 左边文本 ＋ 取文本左边 (临时路径, 6) ＋ “~1.” ＋ 取文本右边 (临时路径, 取文本长度 (临时路径) － 纠正位)
+    .否则
+        左边文本 ＝ 左边文本 ＋ 临时路径
+    .如果结束
+    返回 (左边文本)
+
+.子程序 系统_取计算机名, 文本型, 公开, 获取计算机名
+    .局部变量 返回文本, 文本型
+
+    返回文本 ＝ 取空白文本 (50)
+    .如果真 (GetComputerNameA (返回文本, 取文本长度 (返回文本)) ≠ 0)
+        返回 (返回文本)
+    .如果真结束
+    返回 (“”)
+
+.子程序 系统_输入法枚举, 整数型, , 返回输入法的数目
+    .参数 输入法名字数组, 文本型, 参考 数组, 用来装载输入法的数组
+    .参数 输入法序号数组, 整数型, 参考 数组
+    .局部变量 目前的输入法序号, 整数型
+    .局部变量 临时文本, 文本型
+    .局部变量 名称长度, 整数型
+    .局部变量 计次, 整数型
+    .局部变量 所有输入法序号数组, 整数型, , "10"
+    .局部变量 RetCount, 整数型
+    .局部变量 输入法数目, 整数型
+    .局部变量 布局名称, 文本型
+
+    临时文本 ＝ 取空白文本 (255)
+    目前的输入法序号 ＝ GetKeyboardLayout (0) ' 取目前的输入法序号
+    输入法数目 ＝ GetKeyboardLayoutList (25, 所有输入法序号数组) ' 取所有输入法序号
+    .计次循环首 (输入法数目, 计次)
+        .如果 (ImmIsIME (所有输入法序号数组 [计次]) ＝ 1) ' 中文输入法
+            名称长度 ＝ 255
+            RetCount ＝ ImmGetDescriptionA (所有输入法序号数组 [计次], 临时文本, 名称长度)
+            布局名称 ＝ 取文本左边 (临时文本, RetCount)
+            加入成员 (输入法名字数组, 布局名称)
+        .否则
+            布局名称 ＝ “英语(美国)” ' 英文输入法
+            加入成员 (输入法名字数组, 布局名称)
+        .如果结束
+        
+    .计次循环尾 ()
+    ActivateKeyboardLayout (目前的输入法序号, 0) ' 恢复原来的输入法
+    .计次循环首 (取数组成员数 (所有输入法序号数组), 计次)
+        .如果真 (所有输入法序号数组 [计次] ≠ 0)
+            加入成员 (输入法序号数组, 所有输入法序号数组 [计次])
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (输入法数目)
+
+.子程序 系统_输入法选择, 整数型, 公开, 返回输入法的数量；或枚举；
+    .参数 输入法序号, 整数型, 可空
+    .参数 输入法名字数组, 文本型, 参考 可空 数组, 用来装载输入法的数组
+    .参数 输入法序号数组, 整数型, 参考 可空 数组
+    .局部变量 数目, 整数型
+
+    数目 ＝ 系统_输入法枚举 (输入法名字数组, 输入法序号数组)
+    .如果真 (输入法序号 ≤ 取数组成员数 (输入法序号数组) 且 输入法序号 ＞ 0)
+        ActivateKeyboardLayout (输入法序号数组 [输入法序号], 0)
+    .如果真结束
+    返回 (数目)
+
+.子程序 系统_清空回收站, , 公开, 清空回收站
+    .参数 是否弹出询问框, 逻辑型, 可空, 可以留空,默认为真时会提示是否要清空回收站,为假时直接清空回收站
+
+    SHEmptyRecycleBinA (窗口_取屏幕句柄 (), “”, 取反 (是否弹出询问框))
+
+.子程序 系统_格式化软盘, 逻辑型, 公开, 系统_格式化软盘
+    .参数 驱动器号, 文本型
+
+    运行 (“attrib -s -h -r -a /s /d ” ＋ 驱动器号 ＋ “:*.*”, 真, 1)
+    返回 (删除目录 (驱动器号 ＋ “:/”))
+
+.子程序 系统_取运行参数, 文本型, 公开, 返回被当前程序打开的第一个参数,基本上是文件名
+    .局部变量 参数文本, 文本型, , "0"
+
+    取命令行 (参数文本)
+    .如果真 (取数组成员数 (参数文本) ＞ 0 且 文件是否存在 (参数文本 [1]))
+        返回 (参数文本 [1])
+    .如果真结束
+    返回 (“”)
+
+.子程序 系统_修改开机密码, 逻辑型, 公开, 成功返回真，失败返回假
+    .参数 密码, 文本型, , 需修改成的密码
+    .局部变量 局_用户名, 文本型
+
+    局_用户名 ＝ 系统_取用户名 ()
+    .判断开始 (运行 (“net user ” ＋ 局_用户名 ＋ “ ” ＋ 密码, 真, 1) ＝ 真)
+        返回 (真)
+    .默认
+        返回 (假)
+    .判断结束
+    
+
+.子程序 系统_还原三原色, 文本型, 公开, 返回易语言中颜色数值所对应的某一个RGB单色数,-1表示失败
+    .参数 颜色值, 整数型, , 易语言的颜色数
+    .参数 需取的色, 整数型, , 1=R,2=G,3=B,4=HEX,5=HTML
+    .局部变量 返回值, 文本型
+
+    .判断开始 (需取的色 ＝ 1)
+        返回值 ＝ 到文本 (位与 (颜色值, 255)) ' 返回R值
+    .判断 (需取的色 ＝ 2)
+        返回值 ＝ 到文本 (位与 (颜色值, 65280) ＼ 256) ' 返回G值
+    .判断 (需取的色 ＝ 3)
+        返回值 ＝ 到文本 (位与 (颜色值, 16711680) ＼ 65536) ' 返回B值
+    .判断 (需取的色 ＝ 4)
+        返回值 ＝ “0x” ＋ 三原色处理 (取十六进制文本 (位与 (颜色值, 255))) ＋ 三原色处理 (取十六进制文本 (位与 (颜色值, 65280) ＼ 255)) ＋ 三原色处理 (取十六进制文本 (位与 (颜色值, 16711680) ＼ 65536))
+    .判断 (需取的色 ＝ 5)
+        返回值 ＝ “#” ＋ 三原色处理 (取十六进制文本 (位与 (颜色值, 255))) ＋ 三原色处理 (取十六进制文本 (位与 (颜色值, 65280) ＼ 255)) ＋ 三原色处理 (取十六进制文本 (位与 (颜色值, 16711680) ＼ 65536))
+    .默认
+        返回值 ＝ “-1”
+    .判断结束
+    返回 (返回值)
+
+.子程序 三原色处理, 文本型
+    .参数 参_待处理, 文本型
+
+    .如果真 (取文本长度 (参_待处理) ＝ 1)
+        参_待处理 ＝ “0” ＋ 参_待处理
+        返回 (参_待处理)
+    .如果真结束
+    返回 (参_待处理)
+
+.子程序 系统_置桌面背景, 逻辑型, 公开, 设置电脑桌面壁纸
+    .参数 图片路径, 文本型, , 可以为：bmp，jpg，gif，tiff，png，等格式；
+    .局部变量 局_文件名, 文本型
+
+    局_文件名 ＝ 目录_取特定目录 (9) ＋ “桌面背景图片.bmp”
+    图片_转换 (读入文件 (图片路径), 1, 局_文件名)
+    返回 (SystemParametersInfoA (20, 0, 局_文件名, 1))
+
+.子程序 系统_判断有无摄像头, 整数型, 公开, 返回摄像头数量
+    .局部变量 驱动名, 文本型
+    .局部变量 版本, 文本型
+    .局部变量 摄像头数量, 整数型
+
+    版本 ＝ 取空白文本 (256)
+    .循环判断首 ()
+        驱动名 ＝ 取空白文本 (256)
+        .如果真 (capGetDriverDescriptionA (摄像头数量, 驱动名, 100, 版本, 100)) ' 取视频驱动和版本号
+            摄像头数量 ＝ 摄像头数量 ＋ 1
+        .如果真结束
+        
+    .循环判断尾 (驱动名 ≠ “”)
+    返回 (摄像头数量)
+
+.子程序 系统_任务栏隐藏, , 公开, 隐藏系统任务栏
+    ShowWindow (窗口_取任务栏句柄 (), 0)
+
+.子程序 系统_任务栏显示, , 公开, 显示被隐藏的系统任务栏
+    ShowWindow (窗口_取任务栏句柄 (), 1)
+
+.子程序 系统_取任务栏高度, 整数型, 公开, 获取系统任务栏高度
+    .局部变量 ABD, 精易_任务相关
+    .局部变量 Ret, 整数型
+    .局部变量 屏幕高度, 整数型
+
+    SHAppBarMessage (5, ABD)
+    Ret ＝ SHAppBarMessage (4, ABD)
+    系统_取屏幕分辨率 (, , , 屏幕高度, )
+    返回 (屏幕高度 － ABD.rc.顶边)
+
+.子程序 系统_取网络连接信息, 逻辑型, 公开, 判断网络是否已连接上；成功返回真，失败返回假；
+    .参数 连接名称, 文本型, 参考 可空, 用于装载连接名称的变量
+    .参数 连接信息, 文本型, 参考 可空, 用于装载连接信息的变量
+    .局部变量 dwFlags, 整数型
+    .局部变量 sNameBuf, 文本型
+    .局部变量 lR, 整数型
+
+    sNameBuf ＝ 取空白文本 (513)
+    lR ＝ InternetGetConnectedStateEx (dwFlags, sNameBuf, 512, 0)
+    连接名称 ＝ 删首尾空 (sNameBuf)
+    连接信息 ＝ “”
+    .如果真 (位与 (dwFlags, 1) ＝ 1)
+        连接信息 ＝ 连接信息 ＋ “使用modem连接到Internet”
+    .如果真结束
+    .如果真 (位与 (dwFlags, 2) ＝ 2)
+        连接信息 ＝ 连接信息 ＋ “使用内部网连接到Internet.”
+    .如果真结束
+    .如果真 (位与 (dwFlags, 4) ＝ 4)
+        连接信息 ＝ 连接信息 ＋ “通过代理服务器连接到Internet.”
+    .如果真结束
+    .如果真 (位与 (dwFlags, 32) ＝ 32)
+        连接信息 ＝ 连接信息 ＋ “现在连接处于离线状态.”
+    .如果真结束
+    .如果 (位与 (dwFlags, 64) ＝ 64)
+        连接信息 ＝ 连接信息 ＋ #换行符 ＋ “连接已经被设定.”
+    .否则
+        连接信息 ＝ 连接信息 ＋ #换行符 ＋ “没有设定好的连接.”
+    .如果结束
+    .如果真 (位与 (dwFlags, 16) ＝ 16)
+        连接信息 ＝ 连接信息 ＋ #换行符 ＋ “本机已经安装了远程访问服务功能.”
+    .如果真结束
+    返回 (lR ＝ 1)
+
+.子程序 系统_取网络连接状态, 逻辑型, 公开, 判断电脑是否连接到Internet,连接返回真,否则返回假;
+    .参数 连接名称, 文本型
+
+    返回 (InternetGetConnectedStateExA (0, 连接名称, 0, 0))
+
+.子程序 系统_是否已联网, 逻辑型, 公开, 判断你的电脑是否已成功连接互联网,已联网返回真,否则返回假
+    .如果真 (InternetCheckConnection (“https://www.baidu.com”, 1, 0))
+        返回 (寻找字节集 (网页_访问J (“https://www.baidu.com/”, , , , , , , , , , , , ), { 231, 153, 190, 229, 186, 166, 228, 184, 128, 228, 184, 139 }, ) ≠ -1)
+    .如果真结束
+    返回 (假)
+
+.子程序 系统_进入待机状态, , 公开, 在计算机没用的时候，可以让进入待机状态；
+    SetSuspendState (1, 0, 0)
+
+.子程序 系统_托盘图标显示, , 公开, 显示被隐藏的托盘图标
+    .局部变量 局_数组, 整数型, , "0"
+    .局部变量 局_数组1, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_枚举子窗口J (局_数组 [2], 局_数组1)
+    窗口_置控件状态 (局_数组1 [2], 真)
+
+.子程序 系统_托盘图标隐藏, , 公开, 隐藏托盘图标
+    .局部变量 局_数组, 整数型, , "0"
+    .局部变量 局_数组1, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_枚举子窗口J (局_数组 [2], 局_数组1)
+    窗口_置控件状态 (局_数组1 [2], 假)
+
+.子程序 系统_系统时间显示, , 公开, 显示被隐藏的系统时间
+    .局部变量 局_数组, 整数型, , "0"
+    .局部变量 局_数组1, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_枚举子窗口J (局_数组 [2], 局_数组1)
+    窗口_置控件状态 (局_数组1 [1], 真)
+
+.子程序 系统_系统时间隐藏, , 公开, 隐藏系统时间
+    .局部变量 局_数组, 整数型, , "0"
+    .局部变量 局_数组1, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_枚举子窗口J (局_数组 [2], 局_数组1)
+    窗口_置控件状态 (局_数组1 [1], 假)
+
+.子程序 系统_开始按钮显示, , 公开, 显示被隐藏的开始按钮
+    .局部变量 局_数组, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_置控件状态 (局_数组 [1], 真)
+
+.子程序 系统_开始按钮隐藏, , 公开, 隐藏系统开始按钮
+    .局部变量 局_数组, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_置控件状态 (局_数组 [1], 假)
+
+.子程序 系统_桌面图标隐藏, , 公开, 隐藏桌面图
+    ShowWindow (窗口_取桌面句柄 (), 0)
+
+.子程序 系统_桌面图标显示, , 公开, 显示桌面图标
+    ShowWindow (窗口_取桌面句柄 (), 10)
+
+.子程序 系统_任务窗口显示, , 公开, 显示被隐藏的任务窗口
+    .局部变量 局_数组, 整数型, , "0"
+    .局部变量 局_数组1, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_枚举子窗口J (局_数组 [3], 局_数组1)
+    窗口_置控件状态 (局_数组1 [2], 真)
+
+.子程序 系统_任务窗口隐藏, , 公开, 隐藏任务窗口
+    .局部变量 局_数组, 整数型, , "0"
+    .局部变量 局_数组1, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_枚举子窗口J (局_数组 [3], 局_数组1)
+    窗口_置控件状态 (局_数组1 [2], 假)
+
+.子程序 系统_设置随机启动, 逻辑型, 公开, 在注册表中添加须自启动的应用程序信息,当“是否检查”参数为真时返回值才具有意义，真表明已添加为自启动，假表明不是自启动
+    .参数 标识名称, 文本型, , 欲写入注册表的项目名称
+    .参数 应用程序路径, 文本型, 可空, 应用程序全路径，当参数“删除”为真时可空，否则不能为空
+    .参数 删除, 逻辑型, 可空, 是否删除自启动项，默认为假
+    .参数 是否检查, 逻辑型, 可空, 检查是否已添加自启动信息，此参数为真时，将不进行增删注册表的行为，仅为检查
+
+    .如果真 (是否为调试版 ())
+        输出调试文本 (“调试状态不能设置随机启动”)
+        返回 (假)
+    .如果真结束
+    .如果 (取反 (是否检查))
+        .如果 (取反 (删除))
+            写注册项 (4, “SOFTWARE\Microsoft\Windows\CurrentVersion\Run\” ＋ 标识名称, 应用程序路径)
+        .否则
+            删除注册项 (4, “SOFTWARE\Microsoft\Windows\CurrentVersion\Run\” ＋ 标识名称)
+        .如果结束
+        返回 (假)
+    .否则
+        是否检查 ＝ 注册项是否存在 (4, “SOFTWARE\Microsoft\Windows\CurrentVersion\Run\” ＋ 标识名称)
+        返回 (是否检查)
+    .如果结束
+    
+
+.子程序 系统_打开控制面板, , 公开, 打开系统的控制面板
+    .参数 打开方式, 整数型, 可空, 1、#隐藏窗口； 2、#普通激活； 3、#最小化激活； 4、#最大化激活； 5、#普通不激活； 6、#最小化不激活
+
+    .如果真 (打开方式 ＝ 0)
+        打开方式 ＝ 2
+    .如果真结束
+    运行 (“rundll32.exe shell32.dll,Control_RunDLL”, 假, 打开方式)
+
+.子程序 系统_取屏幕分辨率, , 公开, 获取屏幕分辨率(无返回值)
+    .参数 显示器索引, 整数型, 可空, 索引值是从0开始
+    .参数 色深, 短整数型, 参考 可空, 存放色深的变量
+    .参数 屏幕宽度, 短整数型, 参考 可空, 存放屏幕宽度的变量
+    .参数 屏幕高度, 短整数型, 参考 可空, 存放屏幕高度的变量
+    .参数 屏幕刷新率, 短整数型, 参考 可空, 存放屏幕刷新率的变量
+    .局部变量 Device, DISPLAY_DEVICEA
+    .局部变量 DEVMODE, 短整数型, , "61"
+    .局部变量 DeviceName, 文本型
+
+    Device.cb ＝ 420
+    .如果真 (EnumDisplayDevicesA (0, 显示器索引, Device, #EDD_GET_DEVICE_INTERFACE_NAME))
+        DeviceName ＝ 到文本 (Device.DeviceName)
+        EnumDisplaySettingsA (取指针文本_ (DeviceName), -1, DEVMODE [1])
+    .如果真结束
+    色深 ＝ DEVMODE [53]
+    屏幕宽度 ＝ DEVMODE [55]
+    屏幕高度 ＝ DEVMODE [57]
+    屏幕刷新率 ＝ DEVMODE [61]
+
+.子程序 系统_置屏幕分辨率, 整数型, 公开, 设置屏幕分辨率;返回值说明:0设置成功;1重启后生效;-2不支持的分辨率;-1驱动无效或不支持
+    .参数 色深, 短整数型, 可空, 新的色深 留空为不改变原先设定
+    .参数 屏幕宽度, 短整数型, 可空, 新的屏幕宽度 留空为不改变原先设定
+    .参数 屏幕高度, 短整数型, 可空, 新的屏幕高度 留空为不改变原先设定
+    .参数 屏幕刷新率, 短整数型, 可空, 新的屏幕刷新率 留空为不改变原先设定
+    .参数 设置模式, 整数型, 可空, 1:临时,退出软件或重启后恢复原来的配置;2:全局,设置后将一直使用新分辨率.
+    .局部变量 DEVMODE, 短整数型, , "61"
+
+    EnumDisplaySettingsA (0, -1, DEVMODE [1]) ' 取
+    .如果真 (色深 ＝ 0)
+        色深 ＝ DEVMODE [53]
+    .如果真结束
+    .如果真 (屏幕宽度 ＝ 0)
+        屏幕宽度 ＝ DEVMODE [55]
+    .如果真结束
+    .如果真 (屏幕高度 ＝ 0)
+        屏幕高度 ＝ DEVMODE [57]
+    .如果真结束
+    .如果真 (屏幕刷新率 ＝ 0)
+        屏幕刷新率 ＝ DEVMODE [61]
+    .如果真结束
+    EnumDisplaySettingsA (0, 0, DEVMODE [1])
+    DEVMODE [22] ＝ 92 ' 设置分辨率标志
+    DEVMODE [53] ＝ 色深 ' 色深，取值：8,16,24,32
+    DEVMODE [55] ＝ 屏幕宽度
+    DEVMODE [57] ＝ 屏幕高度
+    DEVMODE [61] ＝ 屏幕刷新率 ' 一般为60，75，85，100
+    .如果 (是否为空 (设置模式))
+        设置模式 ＝ 位或 (#CDS_GLOBAL, #CDS_UPDATEREGISTRY)
+    .否则
+        设置模式 ＝ 多项选择 (设置模式, #CDS_FULLSCREEN, 位或 (#CDS_GLOBAL, #CDS_UPDATEREGISTRY))
+    .如果结束
+    
+    ' .判断开始 (设置模式 ＝ 1)
+        ' 设置模式 ＝ #CDS_FULLSCREEN
+    ' .判断 (设置模式 ＝ 2)
+        ' 设置模式 ＝ 位或 (#CDS_GLOBAL, #CDS_UPDATEREGISTRY)
+    ' .默认
+        
+    ' .判断结束
+    返回 (ChangeDisplaySettingsA (DEVMODE [1], 设置模式))
+
+.子程序 系统_取CPU型号, 文本型, 公开, 获取CPU型号
+    .局部变量 lID, 整数型
+    .局部变量 lCnt, 整数型
+    .局部变量 lRet, 整数型
+
+    lID ＝ HeapAlloc (GetProcessHeap (), 0, 48)
+    lCnt ＝ 0
+    lRet ＝ 0
+    .变量循环首 (2, 4, 1, lCnt)
+        lRet ＝ (lCnt － 2) × 16
+        置入代码 ({ 139, 69, 248, 5, 0, 0, 0, 128, 15, 162, 62, 139, 125, 252, 3, 125, 244, 136, 7, 136, 103, 1, 193, 200, 16, 136, 71, 2, 136, 103, 3, 137, 216, 136, 71, 4, 136, 103, 5, 193, 200, 16, 136, 71, 6, 136, 103, 7, 137, 200, 136, 71, 8, 136, 103, 9, 193, 200, 16, 136, 71, 10, 136, 103, 11, 137, 208, 136, 71, 12, 136, 103, 13, 193, 200, 16, 136, 71, 14, 136, 103, 15 })
+    .变量循环尾 ()
+    返回 (指针到文本 (lID))
+
+.子程序 系统_启用本地连接, 逻辑型, 公开, 启用成功返回真，失败返回假
+    .参数 连接名称, 文本型, 可空, 一般都为:本地连接,留空默认为:本地连接
+    .局部变量 局_计次1, 整数型
+    .局部变量 局_计次2, 整数型
+    .局部变量 局_计次3, 整数型
+    .局部变量 Shell, 对象
+    .局部变量 对象, 对象
+    .局部变量 fd2, 对象
+    .局部变量 fis, 对象
+    .局部变量 fi2, 对象
+    .局部变量 fivs, 对象
+    .局部变量 局_名称, 文本型
+
+    .如果真 (是否为空 (连接名称))
+        连接名称 ＝ “本地连接”
+    .如果真结束
+    CoInitialize (0)
+    Shell.创建 (“Shell.Application”, )
+    对象 ＝ Shell.对象型方法 (“NameSpace”, 3)
+    Shell ＝ 对象.对象型方法 (“Items”, )
+    .计次循环首 (Shell.读数值属性 (“Count”, ), 局_计次1)
+        对象 ＝ Shell.对象型方法 (“Item”, 到整数 (局_计次1 － 1))
+        .如果真 (对象.读文本属性 (“Name”, ) ＝ “网络连接”)
+            fd2 ＝ 对象.读对象型属性 (“GetFolder”, )
+            fis ＝ fd2.对象型方法 (“Items”, )
+            .计次循环首 (fis.读数值属性 (“Count”, ), 局_计次2)
+                fi2 ＝ fis.对象型方法 (“Item”, 到整数 (局_计次2 － 1))
+                .如果真 (fi2.读文本属性 (“Name”, ) ＝ 连接名称)
+                    fivs ＝ fi2.对象型方法 (“Verbs”, )
+                    .计次循环首 (fivs.读数值属性 (“Count”, ), 局_计次3)
+                        对象 ＝ fivs.对象型方法 (“Item”, 到整数 (局_计次3 － 1))
+                        局_名称 ＝ 取文本左边 (对象.读文本属性 (“Name”, ), 4)
+                        .如果真 (局_名称 ＝ “启用”)
+                            对象.方法 (“DoIt”, )
+                            CoUninitialize ()
+                            返回 (真)
+                        .如果真结束
+                        
+                    .计次循环尾 ()
+                .如果真结束
+                
+            .计次循环尾 ()
+        .如果真结束
+        
+    .计次循环尾 ()
+    CoUninitialize ()
+    返回 (假)
+
+.子程序 系统_置本地连接状态, , 公开, 启用或禁用  需管理员权限
+    .参数 连接名称, 文本型, 可空, 一般都为:本地连接,留空默认为:本地连接
+    .参数 状态, 逻辑型, 可空, 可空 默认为假  假=禁用  真=启用
+
+    .如果真 (是否为空 (连接名称))
+        连接名称 ＝ “本地连接”
+    .如果真结束
+    
+    .如果 (状态)
+        运行 (“netsh interface set interface name=” ＋ #引号 ＋ 连接名称 ＋ #引号 ＋ “ admin=”, 真, #隐藏窗口)
+    .否则
+        运行 (“netsh interface set interface name=” ＋ #引号 ＋ 连接名称 ＋ #引号 ＋ “ admin=DISABLED”, 真, #隐藏窗口)
+    .如果结束
+    
+    
+
+.子程序 系统_取系统版本, 文本型, 公开, 支持获取win98、win2000 、winXP、win2003 、win2008 、win7 、win8 、win2012、win8.1 、win10 系统版本。
+    .参数 参_主版本, , 参考 可空, 变量储存返回值
+    .参数 参_次版本, , 参考 可空, 变量储存返回值
+    .参数 参_是否带名称, 逻辑型, 可空, 是否带版本名称描述，如 专业版，企业版等
+    .参数 参_是否取位数, 逻辑型, 可空, 操作系统位数，如32位或64位
+    .参数 参_取SP版本号, 逻辑型, 可空
+    .参数 参_取内部版本, 逻辑型, 可空, build内部版本
+    .局部变量 m_osvi, OSVERSIONINFOEX
+    .局部变量 m_si, SYSTEM_INFO
+    .局部变量 m_dwType
+    .局部变量 m_system, 文本型
+    .局部变量 m_version, 文本型
+    .局部变量 m_dwMajorVersion, 整数型
+    .局部变量 m_dwMinorVersion, 整数型
+    .局部变量 m_dwBuildNumber, 短整数型
+    .局部变量 m_retrun, 文本型
+    .局部变量 m_isWOW64, 逻辑型
+    .局部变量 m_szCSDVersion, 文本型
+    .局部变量 m_CurrentBuild, 文本型
+    .局部变量 m_strMark, 文本型
+
+    m_osvi.dwOSVersionInfoSize ＝ 156
+    .如果真 (GetVersionEx (m_osvi))
+        GetSystemInfo (m_si)
+        IsWow64Process (-1, m_isWOW64)
+        RtlGetNtVersionNumbers (m_osvi.dwMajorVersion, m_osvi.dwMinorVersion, m_dwBuildNumber)
+        参_主版本 ＝ m_osvi.dwMajorVersion
+        参_次版本 ＝ m_osvi.dwMinorVersion
+        m_osvi.dwBuildNumber ＝ m_dwBuildNumber
+        .判断开始 (m_osvi.dwMajorVersion ＝ 10)
+            .判断开始 (m_osvi.dwMinorVersion ＝ 0)
+                m_system ＝ 选择 (m_osvi.wProductType ＝ #VER_NT_WORKSTATION, “Windows 10”, “Windows Server 2016”)
+            .默认
+                
+            .判断结束
+            
+        .判断 (m_osvi.dwMajorVersion ＝ 6)
+            .判断开始 (m_osvi.dwMinorVersion ＝ 0)
+                m_system ＝ 选择 (m_osvi.wProductType ＝ #VER_NT_WORKSTATION, “Windows Vista”, “Windows Server 2008”)
+            .判断 (m_osvi.dwMinorVersion ＝ 1)
+                m_system ＝ 选择 (m_osvi.wProductType ＝ #VER_NT_WORKSTATION, “Windows 7”, “Windows Server 2008 R2”)
+            .判断 (m_osvi.dwMinorVersion ＝ 2)
+                m_system ＝ 选择 (m_osvi.wProductType ＝ #VER_NT_WORKSTATION, “Windows 8”, “Windows Server 2012”)
+            .判断 (m_osvi.dwMinorVersion ＝ 3)
+                m_system ＝ 选择 (m_osvi.wProductType ＝ #VER_NT_WORKSTATION, “Windows 8.1”, “Windows Server 2012 R2”)
+            .默认
+                
+            .判断结束
+            
+        .判断 (m_osvi.dwMajorVersion ＝ 5 且 m_osvi.dwMinorVersion ＝ 0)
+            m_system ＝ “Windows 2000”
+            .如果 (m_osvi.wProductType ＝ 1)
+                m_version ＝ “Professional”
+            .否则
+                .如果真 (位与 (m_osvi.wSuiteMask, 128) ＝ 0)
+                    m_version ＝ “Datacenter Server”
+                .如果真结束
+                .如果 (位与 (m_osvi.wSuiteMask, 2) ＝ 0)
+                    m_version ＝ “Advanced Server”
+                .否则
+                    m_version ＝ “Server”
+                .如果结束
+                
+            .如果结束
+            
+        .判断 (m_osvi.dwMajorVersion ＝ 5 且 m_osvi.dwMinorVersion ＝ 1)
+            m_system ＝ “Windows XP”
+            .如果 (位与 (m_osvi.wSuiteMask, 512) ＝ 1)
+                m_version ＝ “Home Edition” ' “家庭版”
+            .否则
+                m_version ＝ “Professional” ' “专业版”
+            .如果结束
+            
+        .判断 (m_osvi.dwMajorVersion ＝ 5 且 m_osvi.dwMinorVersion ＝ 2)
+            .判断开始 (GetSystemMetrics (89) ≠ 0)
+                m_system ＝ “Windows Server 2003 R2, ”
+            .判断 (位与 (m_osvi.wSuiteMask, 8192) ＝ 8192)
+                m_system ＝ “Windows Storage Server 2003”
+            .判断 (位与 (m_osvi.wSuiteMask, 32768) ＝ 32768)
+                m_system ＝ “Windows Home Server”
+            .判断 (m_osvi.wProductType ＝ 1 且 m_si.wProcessorArchitecture ＝ 9)
+                m_system ＝ “Windows XP Professional x64 Edition” ' Xp专业版64位系统
+            .默认
+                m_system ＝ “Windows Server 2003, ”
+            .判断结束
+            
+        .判断 (m_osvi.dwMajorVersion ＝ 4 且 m_osvi.dwMinorVersion ＝ 10)
+            m_system ＝ “Windows 98”
+        .判断 (m_osvi.dwMajorVersion ≥ 6)
+            RtlGetProductInfo (m_osvi.dwMajorVersion, m_osvi.dwMinorVersion, 0, 0, m_dwType)
+            .判断开始 (m_dwType ＝ 1) ' 旗舰版
+                m_version ＝ “Ultimate Edition”
+            .判断 (m_dwType ＝ 2) ' 家庭普通版
+                m_version ＝ “Home Basic Edition”
+            .判断 (m_dwType ＝ 3) ' 家庭高级版
+                m_version ＝ “Home Premium Edition”
+            .判断 (m_dwType ＝ 4) ' 企业版
+                m_version ＝ “Enterprise Edition”
+            .判断 (m_dwType ＝ 6) ' 商业版
+                m_version ＝ “Business Edition”
+            .判断 (m_dwType ＝ 7) ' 服务器标准版
+                m_version ＝ “Standard”
+            .判断 (m_dwType ＝ 8) ' 服务器企业版
+                m_version ＝ “Datacenter Edition”
+            .判断 (m_dwType ＝ 9) ' 小型服务器
+                m_version ＝ “Small Business Server”
+            .判断 (m_dwType ＝ 10) ' 服务器企业版(完整的安装)
+                m_version ＝ “Enterprise Edition”
+            .判断 (m_dwType ＝ 11) ' 入门版
+                m_version ＝ “Starter Edition”
+            .判断 (m_dwType ＝ 12) ' 服务器数据中心版(核心安装)
+                m_version ＝ “Datacenter Edition (core installation)”
+            .判断 (m_dwType ＝ 13) ' 服务器标准版(核心安装)
+                m_version ＝ “Standard Edition (core installation)”
+            .判断 (m_dwType ＝ 14) ' 服务器企业版(核心安装)
+                m_version ＝ “Enterprise Edition (core installation)”
+            .判断 (m_dwType ＝ 15) ' 一个企业级的平台
+                m_version ＝ “Enterprise Edition for Itanium-based Systems”
+            .判断 (m_dwType ＝ 16) ' 商用公司版
+                m_version ＝ “Business N”
+            .判断 (m_dwType ＝ 17) ' Web服务器(完整安装)
+                m_version ＝ “Web Server (full installation)”
+            .判断 (m_dwType ＝ 18) ' 服务器群集版
+                m_version ＝ “HPC Edition”
+            .判断 (m_dwType ＝ 19) ' 2008 R2 储存服务器版
+                m_version ＝ “Windows Storage Server 2008 R2 Essentials”
+            .判断 (m_dwType ＝ 20) ' 服务器快速储存版
+                m_version ＝ “Storage Server Express”
+            .判断 (m_dwType ＝ 21) ' 服务器标准储存版
+                m_version ＝ “Storage Server Standard”
+            .判断 (m_dwType ＝ 22) ' 服务器储存组
+                m_version ＝ “Storage Server Workgroup”
+            .判断 (m_dwType ＝ 23) ' 服务器储存企业版
+                m_version ＝ “Storage Server Enterprise”
+            .判断 (m_dwType ＝ 25)
+                m_version ＝ “Small Business Server Premium Edition”
+            .判断 (m_dwType ＝ 48) ' 专业版
+                m_version ＝ “Professional”
+            .默认
+                
+            .判断结束
+            
+        .默认
+            m_system ＝ “获取失败，请检查版本:” ＋ 到文本 (m_osvi.dwMajorVersion) ＋ “.” ＋ 到文本 (m_osvi.dwMinorVersion)
+        .判断结束
+        
+        m_retrun ＝ m_system
+        m_retrun ＝ 选择 (参_是否带名称, m_retrun ＋ “ ” ＋ m_version, m_retrun)
+        m_retrun ＝ 选择 (参_是否取位数, 选择 (m_isWOW64, m_retrun ＋ “ x64”, m_retrun ＋ “ x86”), m_retrun)
+        .如果真 (参_取SP版本号)
+            m_szCSDVersion ＝ 到文本 (m_osvi.szCSDVersion)
+            .如果真 (取文本长度 (m_szCSDVersion) ＝ 0)
+                m_szCSDVersion ＝ 取文本注册项 (#本地机器, “SOFTWARE\Microsoft\Windows NT\CurrentVersion\CSDVersion”, )
+            .如果真结束
+            m_strMark ＝ 选择 (取文本长度 (m_szCSDVersion) ＞ 2, m_szCSDVersion, “”)
+        .如果真结束
+        .如果真 (参_取内部版本)
+            .如果 (m_osvi.dwBuildNumber ＝ 0)
+                m_CurrentBuild ＝ 取文本注册项 (#本地机器, “SOFTWARE\Microsoft\Windows NT\CurrentVersion\CurrentBuild”, )
+            .否则
+                m_CurrentBuild ＝ 到文本 (m_osvi.dwBuildNumber)
+            .如果结束
+            .如果 (m_strMark ≠ “”)
+                m_strMark ＝ m_strMark ＋ “,Build:” ＋ m_CurrentBuild
+            .否则
+                m_strMark ＝ “Build:” ＋ m_CurrentBuild
+            .如果结束
+            
+        .如果真结束
+        .如果真 (m_strMark ≠ “”)
+            m_strMark ＝ “ (” ＋ m_strMark ＋ “)”
+        .如果真结束
+        返回 (m_retrun ＋ m_strMark)
+    .如果真结束
+    返回 (“”)
+
+.子程序 系统_取系统版本_汇编, 整数型, 公开,  0=未知.50=2k.51=XP.52=2k3.60=vista.61=win7.62=win8  63=winblue
+    置入代码 ({ 201, 100, 139, 13, 48, 0, 0, 0, 137, 200, 193, 232, 28, 60, 7, 117, 27, 129, 193, 164, 0, 0, 0, 139, 1, 186, 10, 0, 0, 0, 247, 226, 129, 193, 4, 0, 0, 0, 139, 17, 1, 208, 235, 2, 49, 192, 195 })
+    
+    返回 (0) ' 不执行
+    ' 0=未知.50=2k.51=XP.52=2k3.60=vista.61=win7.62=win8  63=winblue
+    
+
+.子程序 系统_显示隐藏快速启动栏, 逻辑型, 公开, 显示隐藏快速启动栏，目前只在XP系统测试过
+    .参数 显示隐藏, 逻辑型, 可空, 可空，默认为假，假=隐藏，真=显示。
+
+    返回 (窗口_置控件状态 (窗口_取快速启动栏句柄 (), 显示隐藏))
+
+.子程序 窗口_取快速启动栏句柄, 整数型, 公开, 成功返回快速启动栏句柄，失败返回0。本命令只有XP下测试过
+    .局部变量 局_1级句柄, 整数型
+    .局部变量 局_2级句柄, 整数型
+    .局部变量 局_3级句柄, 整数型
+
+    局_1级句柄 ＝ 窗口_取句柄J (, , “Shell_TrayWnd”, 字符 (0))
+    .如果真 (局_1级句柄 ＝ -1)
+        返回 (0)
+    .如果真结束
+    局_2级句柄 ＝ 窗口_取句柄J (局_1级句柄, , “ReBarWindow32”, 字符 (0))
+    .如果真 (局_2级句柄 ＝ -1)
+        返回 (0)
+    .如果真结束
+    局_3级句柄 ＝ 窗口_取句柄J (局_2级句柄, , “ToolbarWindow32”, “Quick Launch”)
+    .如果真 (局_3级句柄 ＝ -1)
+        返回 (0)
+    .如果真结束
+    返回 (局_3级句柄)
+
+.子程序 系统_取所有磁盘盘符, 整数型, 公开, 返回磁盘数量
+    .参数 装载盘符的数组, 文本型, 可空 数组, 装载盘符的数组
+    .局部变量 盘符, 字节集
+    .局部变量 盘符名称, 字节集, , "0"
+    .局部变量 计次, 整数型
+    .局部变量 长度, 整数型
+    .局部变量 磁盘数量, 整数型
+
+    盘符 ＝ 取空白字节集 (255)
+    长度 ＝ GetLogicalDriveStringsA (255, 盘符)
+    .如果真 (长度 ＞ 0)
+        清除数组 (装载盘符的数组)
+        盘符 ＝ 取字节集左边 (盘符, 长度)
+        盘符名称 ＝ 分割字节集 (盘符, { 0 }, )
+        磁盘数量 ＝ 取数组成员数 (盘符名称)
+        .计次循环首 (磁盘数量, 计次)
+            加入成员 (装载盘符的数组, 取文本左边 (到文本 (盘符名称 [计次]), 1))
+        .计次循环尾 ()
+    .如果真结束
+    返回 (磁盘数量)
+
+.子程序 系统_取磁盘大小信息, 逻辑型, 公开, 获取系统磁盘使用情况
+    .参数 盘符, 文本型, , 格式为：C:或C:\
+    .参数 已用空间, 长整数型, 参考 可空, 单位为M,想转回KB单位直接乘以1024
+    .参数 剩余空间, 长整数型, 参考 可空, 单位为M,想转回KB单位直接乘以1024
+    .参数 总大小, 长整数型, 参考 可空, 单位为M,想转回KB单位直接乘以1024
+    .局部变量 是否成功, 逻辑型
+
+    是否成功 ＝ GetDiskFreeSpaceExA (盘符, 已用空间, 总大小, 剩余空间)
+    已用空间 ＝ 总大小 － 已用空间
+    已用空间 ＝ 已用空间 ÷ 1024 ÷ 1024
+    剩余空间 ＝ 剩余空间 ÷ 1024 ÷ 1024
+    总大小 ＝ 总大小 ÷ 1024 ÷ 1024
+    返回 (是否成功)
+    
+
+.子程序 系统_取磁盘信息, 逻辑型, 公开, 获取系统磁盘信息
+    .参数 磁盘ID, 整数型, 可空, 留空为 磁盘0
+    .参数 磁盘信息, 精易_磁盘信息, 参考
+    .局部变量 hFile, 整数型
+    .局部变量 lpBytesReturned, 整数型
+    .局部变量 lpInBuffer, SCIP
+    .局部变量 lpOutBuffer, 字节集
+    .局部变量 bDM, 字节型
+    .局部变量 索引, 整数型
+    .局部变量 返回值, 逻辑型
+
+    hFile ＝ CreateFileA (“\\.\PhysicalDrive” ＋ 到文本 (磁盘ID), 位或 (2147483648, 1073741824), 0, 0, 3, 0, 0)
+    .如果真 (hFile ≠ -1)
+        lpInBuffer.irDriveRegs.bDriveHeadReg ＝ 160
+        lpInBuffer.irDriveRegs.bCommandReg ＝ 236
+        lpOutBuffer ＝ 取空白字节集 (528)
+        .如果真 (_设备操作3 (hFile, 508040, lpInBuffer, 32, lpOutBuffer, 528, lpBytesReturned, 0) ≠ 0)
+            磁盘信息.型号 ＝ 删首尾空 (到文本 (转换字节集 (取字节集中间 (lpOutBuffer, 71, 24))))
+            磁盘信息.序列号 ＝ 删首尾空 (到文本 (转换字节集 (取字节集中间 (lpOutBuffer, 37, 16))))
+            磁盘信息.固件版本 ＝ 删首尾空 (到文本 (转换字节集 (取字节集中间 (lpOutBuffer, 63, 8))))
+            返回值 ＝ 真
+        .如果真结束
+        CloseHandle (hFile)
+    .如果真结束
+    返回 (返回值)
+
+.子程序 转换字节集, 字节集
+    .参数 字节集, 字节集
+    .局部变量 索引, 整数型
+    .局部变量 长度, 整数型
+    .局部变量 结果, 字节集
+
+    长度 ＝ 取字节集长度 (字节集)
+    结果 ＝ 取空白字节集 (长度)
+    .变量循环首 (1, 长度, 2, 索引)
+        结果 [索引] ＝ 字节集 [索引 ＋ 1]
+        结果 [索引 ＋ 1] ＝ 字节集 [索引]
+    .变量循环尾 ()
+    返回 (结果)
+
+.子程序 系统_打开控制面板项, , 公开, 打开系统控制面板设置
+    .参数 控制面板项, 整数型, , 1.辅助选项 2.系统属性 3.增加新的打印机 4.添加/删除程序 5.复制磁盘 6.时间/日期 7.显示器设置 8.操纵杆 9.邮件/传真 10.邮局设置 11.鼠标属性 12.增加Modem 13.声音和音频设备属性 14.网络 15.口令 16.区域设置 17.IE设置 18.扫描仪与数字相机设设置 19.ODBC数据源管理器，ODBC数据源、ODBC驱动程序设置 20.电话拨号属性 21.电源管理设置 22.BDE Adminstrator 
+    .参数 打开项页, 整数型, 可空, 可空,默认为第一页
+    .局部变量 面板项, 文本型
+
+    .如果真 (控制面板项 ＜ 1 或 控制面板项 ＞ 22)
+        控制面板项 ＝ 1
+    .如果真结束
+    .判断开始 (控制面板项 ＝ 1)
+        面板项 ＝ “access.cpl”
+    .判断 (控制面板项 ＝ 2)
+        面板项 ＝ “sysdm.cpl”
+    .判断 (控制面板项 ＝ 3)
+        运行 (“rundll32.exe shell32.dll,SHHelpShortcuts_RunDLL AddPrinter”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 4)
+        面板项 ＝ “appwiz.cpl”
+    .判断 (控制面板项 ＝ 5)
+        运行 (“rundll32.exe diskcopy.dll,DiskCopyRunDll”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 6)
+        面板项 ＝ “timedate.cpl”
+    .判断 (控制面板项 ＝ 7)
+        面板项 ＝ “desk.cpl”
+    .判断 (控制面板项 ＝ 8)
+        面板项 ＝ “joy.cpl”
+    .判断 (控制面板项 ＝ 9)
+        面板项 ＝ “mlcfg32.cpl”
+    .判断 (控制面板项 ＝ 10)
+        面板项 ＝ “wgpocpl.cpl”
+    .判断 (控制面板项 ＝ 11)
+        面板项 ＝ “main.cpl”
+    .判断 (控制面板项 ＝ 12)
+        运行 (“rundll32.exe shell32.dll,Control_RunDLL modem.cpl,,add”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 13)
+        面板项 ＝ “mmsys.cpl”
+    .判断 (控制面板项 ＝ 14)
+        运行 (“rundll32.exe shell32.dll,Control_RunDLL netcpl.cpl”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 15)
+        运行 (“rundll32.exe shell32.dll,Control_RunDLL password.cpl”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 16)
+        面板项 ＝ “mmsys.cpl”
+    .判断 (控制面板项 ＝ 17)
+        面板项 ＝ “inetcpl.cpl”
+    .判断 (控制面板项 ＝ 18)
+        运行 (“RunDLL32.exe Shell32.dll,Control_RunDLL StiCpl.cpl”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 19)
+        面板项 ＝ “ODBCCP32.CPL”
+    .判断 (控制面板项 ＝ 20)
+        运行 (“RunDLL32.exe Shell32.dll,Control_RunDLL Telephon.cpl”, 假, )
+        返回 ()
+    .判断 (控制面板项 ＝ 21)
+        面板项 ＝ “PowerCfg.cpl”
+    .判断 (控制面板项 ＝ 22)
+        运行 (“RunDLL32.exe Shell32.dll,Control_RunDLL BdeAdmin.CPL”, 假, )
+        返回 ()
+    .默认
+        
+    .判断结束
+    .如果真 (打开项页 ＜ 0)
+        打开项页 ＝ 0
+    .如果真结束
+    运行 (“rundll32.exe shell32.dll,Control_RunDLL ” ＋ 面板项 ＋ “,,” ＋ 到文本 (打开项页), 假, #普通激活)
+
+.子程序 系统_屏蔽任务管理器, , 公开, 即:禁止CTRL+ALT+DEL启动任务管理器,不用重启,仅对WINNT系统有效.
+    写注册项 (#根类, “Software\Microsoft\Windows\CurrentVersion\Policies\System\DisableTaskMgr”, 1)
+    写注册项 (#现行设置, “Software\Microsoft\Windows\CurrentVersion\Policies\System\DisableTaskMgr”, 1)
+    写注册项 (#现行用户, “Software\Microsoft\Windows\CurrentVersion\Policies\System\DisableTaskMgr”, 1)
+
+.子程序 系统_打开网络连接属性, , 公开, 打开系统网络连接属性设置
+    写注册项 (3, “Software\Policies\Microsoft\Windows\Network Connections\NC_EnableAdminProhibits”, 0)
+    运行 (“rundll32.exe shell32.dll,Control_RunDLL ” ＋ 目录_取system32目录 () ＋ “ncpa.cpl”, 假, )
+
+.子程序 系统_恢复任务管理器, , 公开, 即:恢复被禁止的CTRL+ALT+DEL启动任务管理器
+    写注册项 (#根类, “Software\Microsoft\Windows\CurrentVersion\Policies\System\DisableTaskMgr”, 0)
+    写注册项 (#现行设置, “Software\Microsoft\Windows\CurrentVersion\Policies\System\DisableTaskMgr”, 0)
+    写注册项 (#现行用户, “Software\Microsoft\Windows\CurrentVersion\Policies\System\DisableTaskMgr”, 0)
+
+.子程序 系统_屏蔽任务管理器1, , 公开, 通过打开taskmgr.exe方式进行屏蔽
+    文件_执行 (“taskmgr.exe”, , #隐藏窗口)
+    CreateMutexA (0, 0, “Local\\TASKMGR.879e4d63-6c0e-4544-97f2-1244bd3f6de0”)
+    集_任务管理器文件号 ＝ 打开文件 (目录_取特定目录 (10) ＋ “taskmgr.exe”, 1, 4)
+    系统_屏蔽任务管理器 ()
+
+.子程序 系统_恢复任务管理器1, , 公开, 关闭“系统_屏蔽任务管理器1”打开的taskmgr.exe
+    关闭文件 (集_任务管理器文件号)
+    进程_结束1 (“taskmgr.exe”)
+    系统_恢复任务管理器 ()
+
+.子程序 系统_显示用户操作区, , 公开, 显示被隐藏的系统用户操作区
+    .局部变量 局_数组, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_置控件状态 (局_数组 [3], 真)
+
+.子程序 系统_隐藏用户操作区, , 公开, 隐藏系统用户操作区
+    .局部变量 局_数组, 整数型, , "0"
+
+    窗口_枚举子窗口J (窗口_取任务栏句柄 (), 局_数组)
+    窗口_置控件状态 (局_数组 [3], 假)
+
+.子程序 _取连接数量, 整数型, , 取系统中已经建立的连接数量
+    .局部变量 连接信息, 取连接信息用结构, , "10", 假设最多10个连接
+    .局部变量 lpcb, 整数型, , , 电话本名称,0
+    .局部变量 连接数, 整数型
+
+    连接信息 [1].内存大小 ＝ GlobalSize_取连接信息用结构 (连接信息 [1])
+    lpcb ＝ 连接信息 [1].内存大小 × 256
+    RasEnumEntries (0, 0, 连接信息, lpcb, 连接数)
+    返回 (连接数)
+
+.子程序 _取连接名称, 文本型, , 利用索引取出电脑中拨号的连接名称,成功返回连接名称,失败返回空文本;
+    .参数 连接索引, 整数型, , 欲取名称的连接索引
+    .参数 所有名称数组, 文本型, 参考 可空 数组, 存放所以链接名称的文本数组
+    .局部变量 连接信息, 取连接信息用结构, , "10"
+    .局部变量 lpcb, 整数型
+    .局部变量 连接数, 整数型
+    .局部变量 i, 整数型
+
+    .如果真 (连接索引 ＞ 10 或 连接索引 ＜ 1)
+        返回 (“”)
+    .如果真结束
+    连接信息 [1].内存大小 ＝ GlobalSize_取连接信息用结构 (连接信息 [1])
+    lpcb ＝ 连接信息 [1].内存大小 × 256
+    RasEnumEntries (0, 0, 连接信息, lpcb, 连接数)
+    .如果真 (是否为空 (所有名称数组))
+        返回 (到文本 (连接信息 [连接索引].拨号连接名称))
+    .如果真结束
+    .计次循环首 (连接数, i)
+        加入成员 (所有名称数组, 到文本 (连接信息 [i].拨号连接名称))
+    .计次循环尾 ()
+    返回 (到文本 (连接数))
+
+.子程序 系统_设置IE代理地址, 逻辑型, 公开, 成功返回真，失败返回假；
+    .参数 上网方式, 字节型, , 0=用路由器上网  1=用ADSL拨号上网
+    .参数 代理IP_端口, 文本型, 可空, 可空。留空为取消设置。要代理的IP地址和端口，如：127.0.0.1:8080
+    .参数 立即更新设置, 逻辑型, 可空, 默认为真，为假时需要手动重启IE浏览器
+    .局部变量 拨号连接数, 整数型
+    .局部变量 计次, 整数型
+    .局部变量 长度, 整数型
+
+    .如果真 (是否为空 (立即更新设置))
+        立即更新设置 ＝ 真
+    .如果真结束
+    
+    .判断开始 (上网方式 ＝ 0)
+        写注册项 (3, “Software\Microsoft\Windows\CurrentVersion\Internet Settings\proxyserver”, 代理IP_端口)
+        .如果 (删首尾空 (代理IP_端口) ＝ “”)
+            写注册项 (3, “Software\Microsoft\Windows\CurrentVersion\Internet Settings\proxyenable”, 0)
+        .否则
+            写注册项 (3, “Software\Microsoft\Windows\CurrentVersion\Internet Settings\proxyenable”, 1)
+        .如果结束
+        
+    .判断 (上网方式 ＝ 1)
+        拨号连接数 ＝ _取连接数量 () ' 先取得你的电脑上有几个ADSL连接
+        长度 ＝ 取文本长度 (删全部空 (代理IP_端口)) ' 取得代理IP地址文本的长度，以便写入注册表用，这个长度不正确的话会不能正常设置
+        .如果 (长度 ＝ 0) ' 假如代理地址这个参数为空
+            .计次循环首 (拨号连接数, 计次)
+                删除注册项 (3, “Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections\” ＋ _取连接名称 (计次)) ' 取消所有ADSL连接的http代理设置
+            .计次循环尾 ()
+        .否则
+            .计次循环首 (拨号连接数, 计次) ' 否则代理地址参数有内容
+                写注册项 (3, “Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections\” ＋ _取连接名称 (计次), { 60, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0 } ＋ 字节集_十六进制到字节集 (取十六进制文本 (长度)) ＋ { 0, 0, 0 } ＋ 到字节集 (代理IP_端口) ＋ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) ' 则将所有ADSL连接的http代理设置成该地址
+            .计次循环尾 ()
+        .如果结束
+        
+    .默认
+        
+    .判断结束
+    
+    .如果真 (立即更新设置)
+        InternetSetOptionA_传址 (0, 39, 0, 0)
+    .如果真结束
+    返回 (InternetSetOptionA_传址 (0, 37, 0, 0))
+
+.子程序 系统_取IE代理, 逻辑型, 公开, 带参返回IE相关代理地址，详细请参考IE属性窗口代理中高级代理属性，成功返回真，失败返回假。
+    .参数 参_代理类型, , 参考 可空, 变量储存返回值,返回常量类型 INTERNET_OPEN_TYPE_PRECONFIG=0；INTERNET_OPEN_TYPE_DIRECT=1；INTERNET_OPEN_TYPE_PROXY=2
+    .参数 参_HTTP地址, 文本型, 参考 可空, 变量储存返回值
+    .参数 参_HTTPS安全地址, 文本型, 参考 可空, 变量储存返回值
+    .参数 参_FTP地址, 文本型, 参考 可空, 变量储存返回值
+    .参数 参_套接字地址, 文本型, 参考 可空, 变量储存返回值
+    .参数 参_例外地址, 文本型, 参考 可空, 变量储存返回值
+    .局部变量 局_逻辑返回, 逻辑型
+    .局部变量 局_缓冲长度, 整数型
+    .局部变量 局_缓冲区, 整数型
+    .局部变量 局_列表指针, 整数型
+    .局部变量 局_例外指针, 整数型
+    .局部变量 局_临时文本, 文本型
+
+    InternetQueryOption (0, 38, 0, 局_缓冲长度) ' #INTERNET_OPTION_PROXY=38
+    局_缓冲区 ＝ LocalAlloc (64, 局_缓冲长度)
+    局_逻辑返回 ＝ InternetQueryOption (0, 38, 局_缓冲区, 局_缓冲长度)
+    .如果真 (局_逻辑返回)
+        参_代理类型 ＝ 取字节集数据 (指针到字节集 (局_缓冲区, 4), #整数型, )
+        局_列表指针 ＝ 取字节集数据 (指针到字节集 (局_缓冲区 ＋ 4, 4), #整数型, )
+        局_例外指针 ＝ 取字节集数据 (指针到字节集 (局_缓冲区 ＋ 8, 4), #整数型, )
+        局_临时文本 ＝ 到文本 (指针到字节集 (局_列表指针, lstrlenA (局_列表指针)))
+        参_HTTP地址 ＝ 文本_取出中间文本 (局_临时文本, “http=”, “ ”)
+        参_HTTPS安全地址 ＝ 文本_取出中间文本 (局_临时文本, “https=”, “ ”)
+        参_FTP地址 ＝ 文本_取右边 (局_临时文本, “ftp=”, )
+        参_套接字地址 ＝ 文本_取出中间文本 (局_临时文本, “socks=”, “ ”)
+        参_例外地址 ＝ 到文本 (指针到字节集 (局_例外指针, lstrlenA (局_例外指针)))
+    .如果真结束
+    LocalFree (局_缓冲区)
+    返回 (局_逻辑返回)
+
+.子程序 系统_创建桌面快捷方式, 逻辑型, 公开, 创建桌面快捷方式 (成功返回真,失败返回假)
+    .参数 lnk名称, 文本型, , 如：精易编程助手
+    .参数 目标, 文本型, , 指向的文件全路径文件名,如 C:\001.txt，如果是目录就直接为 C:\001
+    .参数 参数文本, 文本型, 可空, 执行文件的参数
+    .参数 图标文件, 文本型, 可空, 图标文件的路径  可空:为空时用目标的第一个图标
+    .参数 运行方式, 整数型, 可空, 1,常规方式，3,最大化，7,最小化
+    .参数 备注, 文本型, 可空, 快方式的备注信息
+    .参数 快捷键, 文本型, 可空, 启动快捷方式的快捷键  如“Ctrl+Alt+Y”
+    .局部变量 工作目录, 文本型
+    .局部变量 临时文本, 文本型, , "0"
+    .局部变量 对象, 对象
+    .局部变量 计次, 整数型
+    .局部变量 局_返回值, 逻辑型
+
+    .如果真 (寻找文本 (lnk名称, “\”, , 假) ≠ -1)
+        lnk名称 ＝ 文件_取文件名 (lnk名称)
+    .如果真结束
+    .如果 (寻找文本 (lnk名称, “.lnk”, , 真) ＝ -1)
+        lnk名称 ＝ 目录_取特定目录 () ＋ lnk名称 ＋ “.lnk”
+    .否则
+        lnk名称 ＝ 目录_取特定目录 () ＋ lnk名称
+    .如果结束
+    .如果真 (文件是否存在 (lnk名称))
+        删除文件 (lnk名称)
+    .如果真结束
+    临时文本 ＝ 分割文本 (目标, “\”, )
+    .如果真 (取数组下标 (临时文本, ) ＜ 2)
+        返回 (假)
+    .如果真结束
+    .计次循环首 (取数组下标 (临时文本, ) － 1, 计次)
+        工作目录 ＝ 工作目录 ＋ 临时文本 [计次] ＋ “\”
+    .计次循环尾 ()
+    CoInitialize (0)
+    .如果真 (对象.创建 (“WshShell”, “wshom.ocx”))
+        对象 ＝ 对象.对象型方法 (“CreateShortcut”, lnk名称)
+        局_返回值 ＝ 取反 (对象.是否为空 ())
+        .如果真 (局_返回值 且 对象.写属性 (“TargetPath”, 目标))
+            对象.写属性 (“WorkingDirectory”, 工作目录)
+            .如果 (是否为空 (图标文件))
+                .判断开始 (文件_取扩展名 (目标) ＝ “”)
+                    对象.写属性 (“IconLocation”, “SHELL32.dll,4”)
+                .默认
+                    对象.写属性 (“IconLocation”, 目标 ＋ “,0”)
+                .判断结束
+                
+            .否则
+                对象.写属性 (“IconLocation”, 图标文件)
+            .如果结束
+            对象.写属性 (“WindowStyle”, 运行方式)
+            对象.写属性 (“Description”, 备注)
+            对象.写属性 (“Arguments”, 参数文本)
+            对象.写属性 (“Hotkey”, 快捷键)
+            对象 ＝ 对象.对象型方法 (“Save”, )
+        .如果真结束
+        
+    .如果真结束
+    CoUninitialize ()
+    返回 (局_返回值)
+
+.子程序 系统_取桌面快捷方式, 文本型, 公开, 取桌面快捷方式 成功返回文件路径,失败返回空文本
+    .参数 快捷方式全路径, 文本型, , 快捷方式全路径
+    .局部变量 对象, 对象
+
+    .如果真 (寻找文本 (快捷方式全路径, “.lnk”, , 假) ＝ -1)
+        返回 (“”)
+    .如果真结束
+    CoInitialize (0)
+    .判断开始 (对象.创建 (“WshShell”, “wshom.ocx”))
+        对象 ＝ 对象.对象型方法 (“CreateShortcut”, 快捷方式全路径)
+        .如果真 (对象.是否为空 ())
+            CoUninitialize ()
+            返回 (“”)
+        .如果真结束
+        CoUninitialize ()
+        返回 (对象.读文本属性 (“TargetPath”, ))
+    .默认
+        
+    .判断结束
+    CoUninitialize ()
+    返回 (“”)
+
+.子程序 系统_清空系统临时目录, 逻辑型, 公开, 清空系统临时目录中的全部文件
+    .参数 是否删除只读文件, 逻辑型, 可空
+    .参数 是否删除子目录, 逻辑型, 可空
+    .局部变量 临时目录名, 文本型
+    .局部变量 临时文件名, 文本型
+
+    临时目录名 ＝ 目录_取特定目录 (11)
+    .如果真 (删全部空 (临时目录名) ＝ “”)
+        返回 (假)
+    .如果真结束
+    临时文件名 ＝ 寻找文件 (临时目录名 ＋ “*.*”, )
+    .判断循环首 (临时文件名 ≠ “”)
+        .如果真 (是否删除只读文件 ＝ 真)
+            置文件属性 (临时目录名 ＋ 临时文件名, #存档文件)
+        .如果真结束
+        临时文件名 ＝ 寻找文件 (, )
+    .判断循环尾 ()
+    .如果真 (是否删除子目录 ＝ 真)
+        临时文件名 ＝ 寻找文件 (临时目录名 ＋ “*.*”, #子目录)
+        .判断循环首 (临时文件名 ≠ “”)
+            删除目录 (临时目录名 ＋ 临时文件名)
+            临时文件名 ＝ 寻找文件 (, #子目录)
+        .判断循环尾 ()
+    .如果真结束
+    返回 (真)
+
+.子程序 系统_设置为默认浏览器, , 公开, 如：自己做了个易语言浏览器，可以用这句设置成默认的；
+    .参数 文件名绝对路径, 文本型, 可空, 可空:如果留空将设置本程序为默认浏览器;浏览器的可执行文件路径；
+    .参数 类型, 整数型, 可空, 可空:默认为0,0=设置指定或本程序为默认浏览器,1=设置IE为默认浏览器;
+    .局部变量 局_运行目录, 文本型
+
+    局_运行目录 ＝ 取运行目录 () ＋ “\”
+    .如果 (类型 ＝ 0)
+        .如果 (是否为空 (文件名绝对路径) ＝ 真)
+            写注册项 (1, “htmlfile\shell\”, “e”)
+            写注册项 (1, “htmlfile\shell\e\command\”, 局_运行目录 ＋ 取执行文件名 () ＋ “ ” ＋ “%1”)
+            写注册项 (1, “HTTP\shell\”, “e”)
+            写注册项 (1, “HTTP\shell\e\command\”, 局_运行目录 ＋ 取执行文件名 () ＋ “ ” ＋ “%1”)
+            写注册项 (1, “https\shell\”, “e”)
+            写注册项 (1, “https\shell\e\command\”, 局_运行目录 ＋ 取执行文件名 () ＋ “ ” ＋ “%1”)
+            写注册项 (1, “InternetShortcut\shell\”, “e”)
+            写注册项 (1, “InternetShortcut\shell\e\command\”, 局_运行目录 ＋ 取执行文件名 () ＋ “ ” ＋ “%1”)
+            写注册项 (1, “mhtmlfile\shell\”, “e”)
+            写注册项 (1, “mhtmlfile\shell\e\command\”, 局_运行目录 ＋ 取执行文件名 () ＋ “ ” ＋ “%1”)
+            
+        .否则
+            写注册项 (1, “htmlfile\shell\”, “e”)
+            写注册项 (1, “htmlfile\shell\e\command\”, 文件名绝对路径 ＋ “ ” ＋ “%1”)
+            写注册项 (1, “HTTP\shell\”, “e”)
+            写注册项 (1, “HTTP\shell\e\command\”, 文件名绝对路径 ＋ “ ” ＋ “%1”)
+            写注册项 (1, “https\shell\”, “e”)
+            写注册项 (1, “https\shell\e\command\”, 文件名绝对路径 ＋ “ ” ＋ “%1”)
+            写注册项 (1, “InternetShortcut\shell\”, “e”)
+            写注册项 (1, “InternetShortcut\shell\e\command\”, 文件名绝对路径 ＋ “ ” ＋ “%1”)
+            写注册项 (1, “mhtmlfile\shell\”, “e”)
+            写注册项 (1, “mhtmlfile\shell\e\command\”, 文件名绝对路径 ＋ “ ” ＋ “%1”)
+        .如果结束
+        
+    .否则
+        写注册项 (1, “htmlfile\shell\”, “open”)
+        写注册项 (1, “HTTP\shell\”, “open”)
+        写注册项 (1, “https\shell\”, “open”)
+        写注册项 (1, “InternetShortcut\shell\”, “open”)
+        写注册项 (1, “mhtmlfile\shell\”, “open”)
+    .如果结束
+    
+
+.子程序 系统_取DOS执行结果, 文本型, 公开, 注意:该命令会阻塞,一直到cmd中的内容执行完毕后才会返回.
+    .参数 命令行文本, 文本型
+    .局部变量 SECURITY_ATTRIBUTES, SECURITY_ATTRIBUTES
+    .局部变量 STARTUPINFO, STARTUPINFO_短整数
+    .局部变量 PROCESS_INFORMATION, 精易_进程结构
+    .局部变量 hWrite, 整数型
+    .局部变量 hRead, 整数型
+    .局部变量 txt, 字节集
+    .局部变量 Length, 整数型
+    .局部变量 ExitCode, 整数型
+    .局部变量 retext, 文本型
+
+    SECURITY_ATTRIBUTES.nLength ＝ 12
+    SECURITY_ATTRIBUTES.lpSecurityDescriptor ＝ 0
+    SECURITY_ATTRIBUTES.bInheritHandle ＝ 真
+    CreatePipe (hRead, hWrite, SECURITY_ATTRIBUTES, 0) ' 创建一个匿名管道
+    STARTUPINFO.cb ＝ 68
+    STARTUPINFO.dwFlags ＝ 位或 (#STARTF_USESHOWWINDOW, #STARTF_USESTDHANDLES)
+    STARTUPINFO.wShowWindow ＝ #SW_HIDE
+    STARTUPINFO.hStdOutput ＝ hWrite
+    STARTUPINFO.hStdError ＝ hWrite
+    .如果 (取操作系统类别 () ≤ 2)
+        CreateProcess_短整数2 (0, “command.com /c ” ＋ 命令行文本, 0, 0, 真, 0, 0, 0, STARTUPINFO, PROCESS_INFORMATION) ' 创建一个新进程，并且设置读写管道，创建成功后，进程会自动再创建一个写管道端口
+    .否则
+        CreateProcess_短整数2 (0, “cmd.exe /c ” ＋ 命令行文本, 0, 0, 真, 0, 0, 0, STARTUPINFO, PROCESS_INFORMATION) ' 创建一个新进程，并且设置读写管道，创建成功后，进程会自动再创建一个写管道端口
+    .如果结束
+    
+    CloseHandle (hWrite) ' 因为我们开始已经创建了一个写管道端口，现在进程创键时又自动创键了一个写管道端口，所以应关闭多余的管道写端口
+    
+    .判断循环首 (Length ≠ -1) ' 制造一个无限循环
+        PeekNamedPipe (hRead, 0, 0, 0, Length, 0) ' 查看管道中是否有数据
+        .如果 (Length ≠ 0)
+            txt ＝ 取空白字节集 (Length)
+            ReadFile (hRead, txt, Length, Length, 0) ' 从管道中读取数据
+            retext ＝ retext ＋ 取字节集数据 (txt, #文本型)
+        .否则
+            GetExitCodeProcess (PROCESS_INFORMATION.进程句柄, ExitCode) ' 查看指定进程是否已结束
+            .如果真 (ExitCode ≠ #STILL_ACTIVE) ' 因为会有程序退出来了，但管道中还有数据的情况，所以必须在管道中没有数据的情况下判断程序是否已结束，这时才能中止循环！
+                CloseHandle (hRead) ' 关闭管道
+                跳出循环 ()
+            .如果真结束
+            
+        .如果结束
+        系统_处理事件 ()
+        程序_延时 (1)
+    .判断循环尾 ()
+    CloseHandle (PROCESS_INFORMATION.进程句柄)
+    CloseHandle (PROCESS_INFORMATION.线程句柄)
+    返回 (retext)
+
+.子程序 系统_修改IP地址和网关和子网掩码, 逻辑型, 公开, CMD方式修改,警告：该命令可能让你无法联网，使用前请确保你有还原到正常网络的能力
+    .参数 IP地址, 文本型, , 格式为：192.168.1.152 (点分十进制的IP表示)
+    .参数 网关, 文本型, , 格式为：192.168.1.1 (点分十进制的IP表示)
+    .参数 子网掩码, 文本型, , 格式为：255.255.255.0 (点分十进制的IP表示)
+    .参数 连接名称, 文本型, 可空, 连接的名称,留空则为:本地连接
+    .参数 错误原因, 文本型, 参考 可空, 可以提供一个文本变量,接收当修改失败时的错误信息.
+    .局部变量 返回文本, 文本型, , , 本代码由落雪 提供
+
+    .如果真 (是否为空 (连接名称))
+        连接名称 ＝ “本地连接”
+    .如果真结束
+    返回文本 ＝ 系统_取DOS执行结果 (“netsh interface ip set address ” ＋ 连接名称 ＋ “ static ” ＋ IP地址 ＋ “ ” ＋ 子网掩码 ＋ “ ” ＋ 网关 ＋ “ 1”)
+    .如果真 (寻找文本 (返回文本, “确定”, , 假) ＞ 0)
+        返回 (真)
+    .如果真结束
+    错误原因 ＝ 子文本替换 (返回文本, #换行符, “”, 倒找文本 (返回文本, #换行符, , 假) － 2, 1, 真) ' 因为在执行完毕之后,会自动加上一个换行符.这回造成在取错误时候的不便,因此将其去掉
+    返回 (假)
+
+.子程序 系统_修改DNS, 逻辑型, 公开, 如果首选DNS跟备用DNS都不填则默认设置成自动获取,成功返回真,失败返回假
+    .参数 连接名称, 文本型, 可空, 为空则自动获取单前连接的网络名称
+    .参数 首选DNS, 文本型, 可空, 格式：1.1.1.1
+    .参数 备用DNS, 文本型, 可空, 格式：1.1.1.1
+    .参数 错误原因, 文本型, 参考 可空, 可以提供一个文本变量,接收当修改失败时的错误信息
+    .局部变量 DNS命令, 文本型
+    .局部变量 名称, 精易_网卡信息, , "0"
+    .局部变量 名称2, 精易_网卡信息_彗星, , "0"
+    .局部变量 数量, 整数型
+    .局部变量 返回文本, 文本型
+
+    ' https://bbs.125.la/thread-14484267-1-1.html
+    .如果真 (连接名称 ＝ “”)
+        数量 ＝ 系统_取网卡信息 (名称)
+        .判断开始 (数量 ＞ 0)
+            连接名称 ＝ 名称 [1].连接名称
+        .默认
+            数量 ＝ 系统_取网卡信息_彗星版 (名称2) ' 怕第一个取不到多加一条,也可以只用一条
+            .如果真 (数量 ＞ 0)
+                连接名称 ＝ 名称2 [1].连接名称
+            .如果真结束
+            
+        .判断结束
+        
+    .如果真结束
+    
+    .判断开始 (首选DNS ＝ “” 且 备用DNS ＝ “”)
+        DNS命令 ＝ “cmd /c netsh interface ip set dns name=” ＋ #引号 ＋ 连接名称 ＋ #引号 ＋ “ source=dhcp”
+    .判断 (首选DNS ≠ “” 且 备用DNS ≠ “”)
+        DNS命令 ＝ “cmd /c netsh interface ip set dns ” ＋ 连接名称 ＋ “ static ” ＋ 首选DNS
+        返回文本 ＝ 系统_取DOS执行结果 (DNS命令)
+        .如果真 (返回文本 ＝ #换行符)
+            DNS命令 ＝ “cmd /c netsh interface ip add dns name=” ＋ #引号 ＋ 连接名称 ＋ #引号 ＋ “ addr=” ＋ 备用DNS ＋ “ index=2”
+            返回文本 ＝ 系统_取DOS执行结果 (DNS命令)
+            .如果真 (返回文本 ＝ #换行符)
+                返回 (真)
+            .如果真结束
+            
+        .如果真结束
+        错误原因 ＝ 子文本替换 (返回文本, #换行符, “”, 倒找文本 (返回文本, #换行符, , 假) － 2, 1, 真) ' 因为在执行完毕之后,会自动加上一个换行符.这回造成在取错误时候的不便,因此将其去掉
+        返回 (假)
+    .判断 (首选DNS ＝ “” 且 备用DNS ≠ “”)
+        DNS命令 ＝ “cmd /c netsh interface ip add dns name=” ＋ #引号 ＋ 连接名称 ＋ #引号 ＋ “ addr=” ＋ 备用DNS ＋ “ index=2”
+    .判断 (首选DNS ≠ “” 且 备用DNS ＝ “”)
+        DNS命令 ＝ “cmd /c netsh interface ip set dns ” ＋ 连接名称 ＋ “ static ” ＋ 首选DNS
+    .默认
+        
+    .判断结束
+    
+    返回文本 ＝ 系统_取DOS执行结果 (DNS命令)
+    .如果真 (返回文本 ＝ #换行符)
+        返回 (真)
+    .如果真结束
+    
+    错误原因 ＝ 子文本替换 (返回文本, #换行符, “”, 倒找文本 (返回文本, #换行符, , 假) － 2, 1, 真) ' 因为在执行完毕之后,会自动加上一个换行符.这回造成在取错误时候的不便,因此将其去掉
+    返回 (假)
+
+.子程序 系统_删除MAC地址, , 公开, 删除注册表中MAC地址
+    .参数 第几块网卡, 整数型, 可空, 默认为1
+
+    .如果真 (是否为空 (第几块网卡))
+        第几块网卡 ＝ 1
+    .如果真结束
+    删除注册项 (#本地机器, “SYSTEM\ControlSet001\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}\000” ＋ 到文本 (第几块网卡) ＋ “\NetworkAddress”)
+
+.子程序 系统_修改MAC地址, , 公开, 重启电脑后生效
+    .参数 MAC, 文本型, , 格式为：A2:36:42:04:40:30
+    .参数 第几块网卡, 整数型, 可空, 默认为1
+
+    .如果真 (是否为空 (第几块网卡))
+        第几块网卡 ＝ 1
+    .如果真结束
+    写注册项 (#本地机器, “SYSTEM\ControlSet001\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}\000” ＋ 到文本 (第几块网卡) ＋ “\NetworkAddress”, 子文本替换 (MAC, “:”, “”, , , 真))
+
+.子程序 系统_取MAC地址, 文本型, 公开, 获取本机网卡MAC地址(如：A2:36:42:04:40:30)
+    .参数 目标IP, 文本型, 可空, 可空：默认为取自己的。也可以取局域网内的其它电脑的。如：192.168.1.100
+    .局部变量 局_缓冲, 字节型, , "6"
+    .局部变量 局_地址, 字节集
+    .局部变量 局_当前IP, 整数型
+    .局部变量 局_计次, 整数型
+    .局部变量 集_IP段, 字节集
+    .局部变量 集_IP, 文本型, , "0"
+    .局部变量 集_MAC, 文本型, , "0"
+    .局部变量 局_临时, 文本型
+    .局部变量 VBScript, 对象
+
+    .如果真 (是否为空 (目标IP))
+        局_临时 ＝ 查询类属性 (“Select MACAddress From Win32_NetworkAdapter WHERE PNPDeviceID LIKE ” ＋ #引号 ＋ “%PCI%” ＋ #引号 ＋ “ AND  NetConnectionStatus =2”, “MACAddress”).取文本 ()
+        .如果真 (取文本长度 (局_临时) ＝ 0)
+            局_临时 ＝ 查询类属性 (“Select MACAddress From Win32_NetworkAdapter WHERE NetConnectionStatus =2”, “MACAddress”).取文本 ()
+        .如果真结束
+        返回 (局_临时)
+    .如果真结束
+    集_IP段 ＝ 到字节集 (inet_addr (目标IP))
+    重定义数组 (集_IP, 假, 255)
+    重定义数组 (集_MAC, 假, 255)
+    局_当前IP ＝ 取字节集数据 (集_IP段, #整数型, )
+    .如果真 (SendARP (局_当前IP, 0, 局_缓冲, 6) ＝ 0)
+        局_地址 ＝ 到字节集 (局_当前IP)
+        .计次循环首 (6, 局_计次)
+            .如果真 (局_缓冲 [局_计次] ＜ 16)
+                集_MAC [局_地址 [4]] ＝ 集_MAC [局_地址 [4]] ＋ “0”
+            .如果真结束
+            集_MAC [局_地址 [4]] ＝ 集_MAC [局_地址 [4]] ＋ 取十六进制文本 (局_缓冲 [局_计次]) ＋ “:”
+        .计次循环尾 ()
+        返回 (取文本左边 (集_MAC [局_地址 [4]], 17))
+    .如果真结束
+    返回 (“”)
+
+.子程序 系统_取CPU名称, 文本型, 公开, 获取CPU的名称
+    .局部变量 返回值, 文本型
+
+    返回值 ＝ 取空白文本 (100)
+    置入代码 ({ 96, 184, 2, 0, 0, 128, 15, 162, 139, 117, 252, 54, 137, 6, 54, 137, 94, 4, 54, 137, 78, 8, 54, 137, 86, 12, 184, 3, 0, 0, 128, 15, 162, 54, 137, 70, 16, 54, 137, 94, 20, 54, 137, 78, 24, 54, 137, 86, 28, 184, 4, 0, 0, 128, 15, 162, 54, 137, 70, 32, 54, 137, 94, 36, 54, 137, 78, 40, 54, 137, 86, 44, 97 })
+    ' PUSHAD
+    ' MOV EAX, 80000002
+    ' CPUID
+    ' MOV ESI, DWORD PTR SS:[EBP-4]
+    ' MOV DWORD PTR SS:[ESI], EAX
+    ' MOV DWORD PTR SS:[ESI+4], EBX
+    ' MOV DWORD PTR SS:[ESI+8], ECX
+    ' MOV DWORD PTR SS:[ESI+C], EDX
+    ' MOV EAX, 80000003
+    ' CPUID
+    ' MOV DWORD PTR SS:[ESI+10], EAX
+    ' MOV DWORD PTR SS:[ESI+14], EBX
+    ' MOV DWORD PTR SS:[ESI+18], ECX
+    ' MOV DWORD PTR SS:[ESI+1C], EDX
+    ' MOV EAX, 80000004
+    ' CPUID
+    ' MOV DWORD PTR SS:[ESI+20], EAX
+    ' MOV DWORD PTR SS:[ESI+24], EBX
+    ' MOV DWORD PTR SS:[ESI+28], ECX
+    ' MOV DWORD PTR SS:[ESI+2C], EDX
+    ' POPAD
+    返回 (返回值)
+
+.子程序 系统_取CPU描述, 文本型, 公开, 获取CPU的描述
+    .局部变量 参数, 整数型, , "3"
+    .局部变量 返回值, 文本型
+
+    置入代码 ({ 96, 184, 1, 0, 0, 0, 15, 162, 139, 200, 129, 225, 0, 15, 0, 0, 193, 233, 8, 54, 137, 79, 244, 139, 200, 129, 225, 240, 0, 0, 0, 193, 233, 4, 54, 137, 79, 248, 139, 200, 131, 225, 15, 54, 137, 79, 252, 97 })
+    ' PUSHAD
+    ' MOV EAX, 1
+    ' CPUID
+    ' MOV ECX, EAX
+    ' AND ECX, 0F00
+    ' SHR ECX, 8
+    ' MOV DWORD PTR SS:[EDI-C], ECX
+    ' MOV ECX, EAX
+    ' AND ECX, 0F0
+    ' SHR ECX, 4
+    ' MOV DWORD PTR SS:[EDI-8], ECX
+    ' MOV ECX, EAX
+    ' AND ECX, 0F
+    ' MOV DWORD PTR SS:[EDI-4], ECX
+    ' POPAD
+    返回值 ＝ 取空白文本 (100)
+    wsprintfA (返回值, “x86 Family %d Model %d Stepping %d”, 参数)
+    返回 (返回值)
+
+.子程序 系统_取CPU制造商, 文本型, 公开, 获取CPU制造商
+    .局部变量 返回值, 文本型
+
+    返回值 ＝ 取空白文本 (12)
+    置入代码 ({ 96, 51, 192, 15, 162, 139, 69, 252, 54, 137, 24, 54, 137, 80, 4, 54, 137, 72, 8, 97 })
+    ' PUSHAD
+    ' XOR EAX, EAX
+    ' CPUID
+    ' MOV EAX, DWORD PTR SS:[EBP-4]
+    ' MOV DWORD PTR SS:[EAX], EBX
+    ' MOV DWORD PTR SS:[EAX+4], EDX
+    ' MOV DWORD PTR SS:[EAX+8], ECX
+    ' POPAD
+    .判断开始 (返回值 ＝ “GenuineIntel”)
+        返回值 ＝ “Intel Corporation.”
+    .判断 (返回值 ＝ “AuthenticAMD”)
+        返回值 ＝ “Advanced Micro Devices.”
+    .判断 (返回值 ＝ “AMD ISBETTER”)
+        返回值 ＝ “Advanced Micro Devices.”
+    .判断 (返回值 ＝ “Geode By NSC”)
+        返回值 ＝ “National Semiconductor.”
+    .判断 (返回值 ＝ “CyrixInstead”)
+        返回值 ＝ “Cyrix Corp., VIA Inc.”
+    .判断 (返回值 ＝ “NexGenDriven”)
+        返回值 ＝ “NexGen Inc., Advanced Micro Devices.”
+    .判断 (返回值 ＝ “CentaurHauls”)
+        返回值 ＝ “IDT\Centaur, Via Inc.”
+    .判断 (返回值 ＝ “UMC UMC UMC ”)
+        返回值 ＝ “United Microelectronics Corp.”
+    .判断 (返回值 ＝ “RiseRiseRise”)
+        返回值 ＝ “Rise.”
+    .判断 (返回值 ＝ “GenuineTMx86”)
+        返回值 ＝ “Transmeta.”
+    .判断 (返回值 ＝ “TransmetaCPU”)
+        返回值 ＝ “Transmeta.”
+    .默认
+        返回值 ＝ “Unknown Manufacturer.”
+    .判断结束
+    返回 (返回值)
+
+.子程序 系统_取CPU序列号, 文本型, 公开, 获取CPU序列号
+    .局部变量 s1, 整数型, , , -4
+    .局部变量 s2, 整数型, , , -8
+
+    置入代码 ({ 184, 1, 0, 0, 0 }) ' mov eax,01h
+    置入代码 ({ 49, 201 }) ' xor ecx,ecx
+    置入代码 ({ 49, 210 }) ' xor edx,edx
+    置入代码 ({ 15, 162 }) ' cpuid
+    置入代码 ({ 137, 85, 252 }) ' mov dword [ebp-4],edx
+    置入代码 ({ 137, 69, 248 }) ' mov dword [ebp-8],eax
+    返回 (取八位十六进制 (s1) ＋ 取八位十六进制 (s2))
+
+.子程序 取八位十六进制, 文本型
+    .参数 a, 整数型
+    .局部变量 s, 文本型
+
+    s ＝ 取十六进制文本 (a)
+    s ＝ 取重复文本 (8 － 取文本长度 (s), “0”) ＋ s
+    返回 (s)
+
+.子程序 系统_取CPU时钟频率, 整数型, 公开, 获取CPU时钟频率
+    .局部变量 cuStart, 长整数型
+    .局部变量 cuStop, 长整数型
+    .局部变量 nFreq, 长整数型
+    .局部变量 nCtrStart, 长整数型
+    .局部变量 nCtrStop, 长整数型
+
+    连续赋值 (0, cuStart, cuStop)
+    QueryPerformanceFrequency (nFreq)
+    置入代码 ({ 15, 49, 137, 69, 248, 137, 85, 252 })
+    ' RDTSC
+    ' MOV DWORD PTR SS:[cuStart], EAX
+    ' MOV DWORD PTR SS:[cuStart+4], EDX
+    QueryPerformanceCounter (nCtrStop)
+    nCtrStop ＝ nCtrStop ＋ nFreq
+    .循环判断首 ()
+        QueryPerformanceCounter (nCtrStart)
+    .循环判断尾 (nCtrStart ＜ nCtrStop)
+    置入代码 ({ 15, 49, 137, 69, 240, 137, 85, 244 })
+    ' RDTSC
+    ' MOV DWORD PTR SS:[cuStop], EAX
+    ' MOV DWORD PTR SS:[cuStop+4], EDX
+    返回 ((cuStop － cuStart) ÷ 1000 ÷ 1000)
+
+.子程序 系统_取CPU数据宽度, 整数型, 公开, 获取CPU数据宽度
+    .局部变量 返回值, 逻辑型
+
+    IsWow64Process (-1, 返回值)
+    
+    返回 (选择 (取反 (返回值), 32, 64))
+
+.子程序 系统_取CPU一级缓存, 整数型, 公开, 获取CPU一级缓存
+    置入代码 ({ 83, 81, 82, 184, 5, 0, 0, 128, 15, 162, 193, 234, 24, 193, 233, 24, 3, 209, 139, 194, 90, 89, 91, 139, 229, 93, 195 })
+    ' PUSH EBX
+    ' PUSH ECX
+    ' PUSH EDX
+    ' MOV EAX, 80000005
+    ' CPUID
+    ' SHR EDX, 18
+    ' SHR ECX, 18
+    ' ADD EDX, ECX
+    ' MOV EAX, EDX
+    ' POP EDX
+    ' POP ECX
+    ' POP EBX
+    ' MOV ESP, EBP
+    ' POP EBP
+    ' RETN
+    返回 (0)
+
+.子程序 系统_取CPU二级缓存, 整数型, 公开, 获取CPU二级缓存
+    置入代码 ({ 83, 81, 82, 184, 6, 0, 0, 128, 15, 162, 193, 233, 16, 139, 193, 90, 89, 91, 139, 229, 93, 195 })
+    ' PUSH EBX
+    ' PUSH ECX
+    ' PUSH EDX
+    ' MOV EAX, 80000006
+    ' CPUID
+    ' SHR ECX, 10
+    ' MOV EAX, ECX
+    ' POP EDX
+    ' POP ECX
+    ' POP EBX
+    ' MOV ESP, EBP
+    ' POP EBP
+    ' RETN
+    返回 (0)
+
+.子程序 wsprintfA, 整数型
+    .参数 lpstr, 文本型, 参考
+    .参数 lpcstr, 文本型
+    .参数 参数, 整数型, 数组
+    .局部变量 Address, 整数型
+
+    Address ＝ GetProcAddress (GetModuleHandleA (“user32.dll”), “wsprintfA”)
+    置入代码 ({ 139, 69, 16, 139, 0, 139, 88, 4, 131, 251, 1, 124, 7, 255, 116, 152, 4, 75, 235, 244, 139, 69, 12, 255, 48, 139, 69, 8, 255, 48, 255, 85, 252 })
+    ' API_GetProcAddress1 ()
+    
+    
+    ' MOV EAX, DWORD PTR SS:[EBP+10]
+    ' MOV EAX, DWORD PTR DS:[EAX]
+    ' MOV EBX, DWORD PTR DS:[EAX+4]
+    ' @Jump1:
+    ' CMP EBX, 1
+    ' JL SHORT Jump2
+    ' PUSH DWORD PTR DS:[EAX+EBX*4+4]
+    ' DEC EBX
+    ' JMP SHORT Jump1
+    ' @Jump2:
+    ' MOV EAX, DWORD PTR SS:[EBP+C]
+    ' PUSH DWORD PTR DS:[EAX]
+    ' MOV EAX, DWORD PTR SS:[EBP+8]
+    ' PUSH DWORD PTR DS:[EAX]
+    ' CALL DWORD PTR SS:[EBP-4]
+    ' MOV ESP, EBP
+    ' POP EBP
+    ' RETN 0C
+    返回 (0)
+
+.子程序 系统_取本机名, 文本型, 公开, 取本机名,成功返回本机名，失败返回空字符串。
+    返回 (取主机名 ())
+
+.子程序 系统_取本机IP, 逻辑型, 公开, 本命令可以枚举出网卡绑定的IP地址。成功“真”，失败返回“假”。
+    .参数 本地IP组, 文本型, 参考 数组, 提供文本型数组，每个成员对应一个本地的IP。
+    .局部变量 本机名, 文本型
+    .局部变量 arrIpAddress, 字节集
+    .局部变量 strIpAddress, 文本型
+    .局部变量 lngRetVal, 整数型
+    .局部变量 临时变量, 整数型
+    .局部变量 udtHostent, 字节集
+    .局部变量 lngPtrToIP, 字节集
+    .局部变量 Addresses, 字节集, , "0"
+    .局部变量 循环变量, 整数型
+
+    本机名 ＝ 取主机名 ()
+    udtHostent ＝ 取空白字节集 (16)
+    RtlMoveMemory_int2Bytes (udtHostent, gethostbyname (本机名), 16)
+    lngPtrToIP ＝ 取空白字节集 (4)
+    RtlMoveMemory_int2Bytes (lngPtrToIP, 取字节集数据 (取字节集右边 (udtHostent, 4), #整数型, ), 4)
+    .判断循环首 (取字节集数据 (lngPtrToIP, #整数型, ) ≠ 0)
+        arrIpAddress ＝ 取空白字节集 (取字节集数据 (取字节集中间 (udtHostent, 11, 2), #整数型, ))
+        RtlMoveMemory_int2Bytes (arrIpAddress, 取字节集数据 (lngPtrToIP, #整数型, ), 取字节集数据 (取字节集中间 (udtHostent, 11, 2), #整数型, ))
+        加入成员 (Addresses, arrIpAddress)
+        临时变量 ＝ 取字节集数据 (取字节集右边 (udtHostent, 4), #整数型, ) ＋ 4
+        udtHostent ＝ 取字节集左边 (udtHostent, 12) ＋ 到字节集 (临时变量)
+        RtlMoveMemory_int2Bytes (lngPtrToIP, 取字节集数据 (取字节集右边 (udtHostent, 4), #整数型, ), 4)
+    .判断循环尾 ()
+    重定义数组 (本地IP组, 假, 取数组成员数 (Addresses))
+    .计次循环首 (取数组成员数 (Addresses), 循环变量)
+        本地IP组 [循环变量] ＝ 到文本 (取字节集数据 (取字节集左边 (Addresses [循环变量], 1), #字节型, )) ＋ “.” ＋ 到文本 (取字节集数据 (取字节集中间 (Addresses [循环变量], 2, 1), #字节型, )) ＋ “.” ＋ 到文本 (取字节集数据 (取字节集中间 (Addresses [循环变量], 3, 1), #字节型, )) ＋ “.” ＋ 到文本 (取字节集数据 (取字节集右边 (Addresses [循环变量], 1), #字节型, ))
+    .计次循环尾 ()
+    返回 (真)
+
+.子程序 系统_取磁盘类型, 整数型, 公开, 获取磁盘的类型，失败返回0，成功返回：1=移动U盘，2=系统磁盘，3=网络磁盘，4=CD-ROM,5=RAM 磁盘
+    .参数 磁盘盘符, 文本型, , 如：C、D
+    .局部变量 文件, 对象
+    .局部变量 对象, 对象
+
+    CoInitialize (0)
+    .如果真 (文件.创建 (“scripting.FileSystemObject”, ))
+        对象 ＝ 文件.读对象型属性 (“GetDrive”, 磁盘盘符 ＋ “:\”)
+        CoUninitialize ()
+        返回 (对象.读数值属性 (“DriveType”, ))
+    .如果真结束
+    CoUninitialize ()
+    返回 (0)
+
+.子程序 系统_显示桌面, , 公开, 类似按下 Win+D 键
+    .局部变量 IShellDispatch, 对象
+
+    CoInitialize (0)
+    IShellDispatch.创建 (“Shell.Application”, )
+    IShellDispatch.方法 (“ToggleDesktop”, )
+    IShellDispatch.清除 ()
+    CoUninitialize ()
+
+.子程序 系统_取CPU占用率, 整数型, 公开, 取当前CPU占用率。成功返回CPU占用率；失败返回-1。Win98系统下使用本方法取得的数值可能会有误。
+    .局部变量 sbSysBasicInfo, SYSTEM_INFO
+    .局部变量 hMemSysPerforfInfo
+    .局部变量 hMemSysTimeInfo
+    .局部变量 dbIdleTime, 双精度小数型
+    .局部变量 dbSystemTime, 双精度小数型
+    .局部变量 Status, 整数型
+    .局部变量 tCpuUsed, 整数型
+    .局部变量 ReturnLength
+    .局部变量 liKeSystemTime, 双精度小数型
+    .局部变量 liIdleTime, 双精度小数型
+
+    处理事件 ()
+    GetNativeSystemInfo (sbSysBasicInfo)
+    .如果真 (Status ≠ 0)
+        结束 ()
+    .如果真结束
+    hMemSysTimeInfo ＝ GlobalAlloc (64, 48)
+    Status ＝ NtQuerySystemInformation (3, hMemSysTimeInfo, 48, ReturnLength)
+    .如果真 (Status ≠ 0)
+        返回 (-1)
+    .如果真结束
+    liKeSystemTime ＝ 取字节集数据 (指针到字节集 (hMemSysTimeInfo ＋ 8, 8), #长整数型, )
+    hMemSysPerforfInfo ＝ GlobalAlloc (64, 344)
+    Status ＝ NtQuerySystemInformation (2, hMemSysPerforfInfo, 344, ReturnLength)
+    .如果真 (Status ≠ 0)
+        返回 (-1)
+    .如果真结束
+    liIdleTime ＝ 取字节集数据 (指针到字节集 (hMemSysPerforfInfo, 8), #长整数型, )
+    dbIdleTime ＝ liIdleTime － liOldIdleTime
+    dbSystemTime ＝ liKeSystemTime － liOldSystemTime
+    dbIdleTime ＝ dbIdleTime ÷ dbSystemTime
+    dbIdleTime ＝ 100 － dbIdleTime × 100 ÷ sbSysBasicInfo.dwNumberOrfProcessors ＋ 0.5
+    tCpuUsed ＝ dbIdleTime
+    liOldIdleTime ＝ liIdleTime
+    liOldSystemTime ＝ liKeSystemTime
+    .如果 (tCpuUsed ≤ 0)
+        tCpuUsed ＝ 1
+    .否则
+        tCpuUsed ＝ 选择 (tCpuUsed ≥ 100, 100, tCpuUsed)
+    .如果结束
+    GlobalFree (hMemSysTimeInfo)
+    GlobalFree (hMemSysPerforfInfo)
+    返回 (tCpuUsed)
+
+.子程序 系统_取时区, 文本型, 公开, 获取系统时区
+    .局部变量 szTimeZone, 文本型
+    .局部变量 m_timezone, 时区信息_
+    .局部变量 lRetVal1, 整数型
+
+    lRetVal1 ＝ GetTimeZoneInformation (m_timezone)
+    szTimeZone ＝ 编码_Unicode到Ansi (到字节集 (m_timezone.StandardName))
+    返回 (szTimeZone)
+
+.子程序 系统_取货币符号, 文本型, 公开, 获取系统货币符号
+    .局部变量 sbuffer, 文本型
+
+    sbuffer ＝ 取空白文本 (256)
+    GetLocaleInfo (0, 20, sbuffer, 256)
+    返回 (sbuffer)
+
+.子程序 系统_取日期格式, 文本型, 公开, 获取系统日期格式
+    .局部变量 sbuffer, 文本型
+
+    sbuffer ＝ 取空白文本 (256)
+    GetLocaleInfo (0, 32, sbuffer, 256)
+    返回 (sbuffer)
+    
+
+.子程序 系统_取时间格式, 文本型, 公开, 获取系统时间格式
+    .局部变量 sbuffer, 文本型
+
+    sbuffer ＝ 取空白文本 (256)
+    GetLocaleInfo (0, 4099, sbuffer, 256)
+    返回 (sbuffer)
+    
+
+.子程序 系统_取网络主机名, 文本型, 公开, 取当前网络上登记的主机名，详细请参考CMD命令ipconfig /all 中的Windows IP 配置。
+    .局部变量 hMem
+    .局部变量 ulOutBufLen
+    .局部变量 Status
+    .局部变量 HostName, 文本型
+
+    GetNetworkParams (0, ulOutBufLen)
+    hMem ＝ LocalAlloc (64, ulOutBufLen)
+    Status ＝ GetNetworkParams (hMem, ulOutBufLen)
+    .如果真 (Status ＝ 0)
+        HostName ＝ 到文本 (指针到字节集 (hMem, 132))
+    .如果真结束
+    LocalFree (hMem)
+    返回 (HostName)
+
+.子程序 系统_取网络主DNS后缀, 文本型, 公开, 取当前网络主DNS后缀，详细请参考CMD命令ipconfig /all 中的Windows IP 配置。
+    .局部变量 hMem
+    .局部变量 ulOutBufLen
+    .局部变量 Status
+    .局部变量 DomainName, 文本型
+
+    GetNetworkParams (0, ulOutBufLen)
+    hMem ＝ LocalAlloc (64, ulOutBufLen)
+    Status ＝ GetNetworkParams (hMem, ulOutBufLen)
+    .如果真 (Status ＝ 0)
+        DomainName ＝ 到文本 (指针到字节集 (hMem ＋ 132, 132))
+    .如果真结束
+    LocalFree (hMem)
+    返回 (DomainName)
+
+.子程序 系统_取网络节点类型, 整数型, 公开, 返回值：1=广播；2=点对点；4=混杂；8=混合。详细请参考CMD中的ipconfig /all Windows IP 配置。
+    .局部变量 hMem
+    .局部变量 ulOutBufLen
+    .局部变量 Status
+    .局部变量 NodeType
+
+    GetNetworkParams (0, ulOutBufLen)
+    hMem ＝ LocalAlloc (64, ulOutBufLen)
+    Status ＝ GetNetworkParams (hMem, ulOutBufLen)
+    .如果真 (Status ＝ 0)
+        NodeType ＝ 取字节集数据 (指针到字节集 (hMem ＋ 308, 4), #整数型, )
+    .如果真结束
+    LocalFree (hMem)
+    返回 (NodeType)
+
+.子程序 系统_IP路由是否启用, 逻辑型, 公开, 判断当前网络连接中的IP路由是否启用，详细请参考CMD中的ipconfig /all Windows IP 配置。
+    .局部变量 hMem
+    .局部变量 ulOutBufLen
+    .局部变量 Status
+    .局部变量 EnableRouting, 逻辑型
+
+    GetNetworkParams (0, ulOutBufLen)
+    hMem ＝ LocalAlloc (64, ulOutBufLen)
+    Status ＝ GetNetworkParams (hMem, ulOutBufLen)
+    .如果真 (Status ＝ 0)
+        EnableRouting ＝ 取字节集数据 (指针到字节集 (hMem ＋ 572, 4), #逻辑型, )
+    .如果真结束
+    LocalFree (hMem)
+    返回 (EnableRouting)
+
+.子程序 系统_WINS代理是否启用, 逻辑型, 公开, 判断当前网络连接中的WINS代理是否启用，详细请参考CMD中的ipconfig /all Windows IP 配置。
+    .局部变量 hMem
+    .局部变量 ulOutBufLen
+    .局部变量 Status
+    .局部变量 EnableProxy, 逻辑型
+
+    GetNetworkParams (0, ulOutBufLen)
+    hMem ＝ LocalAlloc (64, ulOutBufLen)
+    Status ＝ GetNetworkParams (hMem, ulOutBufLen)
+    .如果真 (Status ＝ 0)
+        EnableProxy ＝ 取字节集数据 (指针到字节集 (hMem ＋ 576, 4), #逻辑型, )
+    .如果真结束
+    LocalFree (hMem)
+    返回 (EnableProxy)
+
+.子程序 系统_取IE版本, 文本型, 公开, 获取IE浏览器的版本
+    .局部变量 Status
+    .局部变量 hKey
+    .局部变量 dwSize
+    .局部变量 sbuffer, 字节集
+    .局部变量 flag
+    .局部变量 bool, 逻辑型
+
+    IsWow64Process (GetCurrentProcess (), bool)
+    flag ＝ 选择 (bool, #KEY_WOW64_64KEY, #KEY_WOW64_32KEY)
+    Status ＝ RegOpenKeyExA (#HKEY_LOCAL_MACHINE, “SOFTWARE\Microsoft\Internet Explorer”, 0, 位或 (flag, #KEY_ALL_ACCESS), hKey)
+    sbuffer ＝ 取空白字节集 (50)
+    .如果真 (Status ＝ 0)
+        Status ＝ RegQueryValueExA (hKey, “svcVersion”, 0, #REG_SZ, sbuffer, 50)
+        .如果真 (Status ≠ 0)
+            RegQueryValueExA (hKey, “Version”, 0, #REG_SZ, sbuffer, 50)
+        .如果真结束
+        
+    .如果真结束
+    RegCloseKey (hKey)
+    返回 (到文本 (sbuffer))
+
+.子程序 系统_调用帮助, 整数型, 公开, 调用系统帮助设置
+    .参数 窗口句柄, 整数型, , hwnd
+    .参数 帮助文件, 文本型, , lpHelpFile
+    .参数 命令编号, 整数型, , wCommand
+
+    返回 (WinHelpA (窗口句柄, 帮助文件, 命令编号, 1))
+
+.子程序 系统_信息框Ex, 整数型, 公开, 消息规定时间内超时自动关闭，成功返回单击按钮ID，失败返回0
+    .参数 标题, 文本型
+    .参数 内容, 文本型
+    .参数 超时时间, , , 1000限1秒
+    .参数 按钮类型, , , 1 确定+取消 2 终止+重试+忽略  3 是+否+取消 4 是+否 5 重试+取消 　6 取消+重试+继续  16 红X+确定 17 红X+确定+取消 18 红X+终止+重试+忽略  19 红X+是+否+取消 20 红X+是+否  21 红X+重试+取消  32 蓝问号+确定  33 蓝问号+确定+取消   34 蓝问号+终止+重试+忽略   35 蓝问号+是+否+取消  36 蓝问号+是+否  37 蓝问号+重试+取消  48 黄叹号+确定 49 黄叹号+确定+取消 50 黄叹号+终止+重试+忽略  51 黄叹号+是+否+取消  52 黄叹号+是+否  53 黄叹号+重试+取消    64 蓝叹号+确定  65 蓝叹号+确定+取消  66 蓝叹号+终止+重试+忽略  67 蓝叹号+是+否+取消   68 蓝叹号+是+否   69 蓝叹号+重试+取消 
+
+    返回 (MessageBoxTimeoutA (GetActiveWindow (), 内容, 标题, 按钮类型, 0, 超时时间))
+
+.子程序 系统_转换为主机名, 文本型, 公开, 将指定的 IP 地址转换为其主机名。如果失败返回空文本。
+    .参数 欲转换IP地址, 文本型
+    .局部变量 局_返回值
+    .局部变量 局_套接字, 套接字信息
+    .局部变量 局_地址结构, 整数型
+    .局部变量 局_IP指针
+    .局部变量 局_主机结构, hostent
+    .局部变量 局_域名, 文本型
+
+    局_返回值 ＝ WSAStartup (257, 局_套接字)
+    .如果真 (0 ＝ 局_返回值)
+        局_地址结构 ＝ inet_addr (欲转换IP地址)
+        局_IP指针 ＝ gethostbyaddr (局_地址结构, 4, 2)
+        .如果真 (0 ≠ 局_IP指针)
+            CopyMemory_int2hostent (局_主机结构, 局_IP指针, 16)
+            局_域名 ＝ 指针到文本 (局_主机结构.h_name)
+        .如果真结束
+        WSACleanup ()
+    .如果真结束
+    返回 (局_域名)
+
+.子程序 系统_转换为IP地址, 文本型, 公开, 将指定的主机名转换为其 IP 地址。如果失败返回空文本。
+    .参数 欲转换主机名, 文本型
+    .局部变量 局_返回值
+    .局部变量 局_套接字, 套接字信息
+    .局部变量 局_主机指针
+    .局部变量 局_主机结构, hostent
+    .局部变量 局_变量, 字节集
+
+    局_返回值 ＝ WSAStartup (257, 局_套接字)
+    .如果真 (0 ＝ 局_返回值)
+        局_主机指针 ＝ gethostbyname (欲转换主机名)
+        .如果真 (0 ≠ 局_主机指针)
+            CopyMemory_int2hostent (局_主机结构, 局_主机指针, 16)
+            局_变量 ＝ 指针到字节集 (取字节集数据 (指针到字节集 (局_主机结构.h_addr_list, 4), #整数型, ), 4)
+            返回 (到文本 (局_变量 [1]) ＋ “.” ＋ 到文本 (局_变量 [2]) ＋ “.” ＋ 到文本 (局_变量 [3]) ＋ “.” ＋ 到文本 (局_变量 [4]))
+        .如果真结束
+        WSACleanup ()
+    .如果真结束
+    返回 (“”)
+
+.子程序 系统_通信测试, 整数型, 公开,  测试与指定主机是否能够正常通讯。返回被测试主机的通讯响应时间。如果无法通讯或者测试失败，返回 -1。
+    .参数 被测试主机地址, 文本型, , 可以为主机名、IP地址等。
+    .参数 最长等待时间, , 可空, 可以被省略。指定最长等待被测试主机响应的时间，单位为毫秒。超过此时间即认为无法与被测试主机通讯。如果省略本参数，则默认为 10 * 1000 毫秒，即 10 秒。
+    .局部变量 局_ICMP结构, ICMP_ECHO_REPLY
+    .局部变量 局_地址指针, 整数型, , ,   ‘括号内为要Ping的目的地IP地址
+    .局部变量 局_超时, 整数型
+    .局部变量 局_返回值, 整数型
+    .局部变量 局_IP地址, 文本型
+    .局部变量 局_ICMP句柄
+
+    局_IP地址 ＝ 系统_转换为IP地址 (被测试主机地址)
+    .如果真 (取文本长度 (局_IP地址) ＞ 2)
+        局_ICMP句柄 ＝ IcmpCreateFile ()
+        .如果真 (-1 ＝ 局_ICMP句柄)
+            返回 (-1)
+        .如果真结束
+        局_地址指针 ＝ inet_addr (局_IP地址)
+        局_超时 ＝ 选择 (是否为空 (最长等待时间), 10 × 1000, 最长等待时间) ' 这是超时时间
+        局_返回值 ＝ IcmpSendEcho (局_ICMP句柄, 局_地址指针, 局_IP地址, 取文本长度 (局_IP地址) ＋ 1, 0, 局_ICMP结构, 278, 局_超时)
+        IcmpCloseHandle (局_ICMP句柄)
+    .如果真结束
+    返回 (选择 (局_返回值 ≠ 0 且 局_ICMP结构.Status ＝ #IP_SUCCESS, 局_ICMP结构.RoundTripTime, -1))
+
+.子程序 系统_取远程机器名, 文本型, 公开,  根据指定的IP地址取远程机器名称。失败返回空。
+    .参数 参_IP地址, 文本型, , 注；指定IP地址必需和本机在同一个域
+    .局部变量 局_套按字, 套接字信息
+    .局部变量 局_整数IP
+    .局部变量 局_域名指针
+    .局部变量 局_返回文本, 文本型
+
+    .如果真 (WSAStartup (257, 局_套按字) ＝ 0)
+        局_整数IP ＝ inet_addr (参_IP地址)
+        局_域名指针 ＝ gethostbyaddr (局_整数IP, 4, 2)
+        .如果真 (局_域名指针 ≠ 0)
+            局_返回文本 ＝ 指针到文本 (取字节集数据 (指针到字节集 (局_域名指针, 4), #整数型, ))
+        .如果真结束
+        WSACleanup ()
+    .如果真结束
+    返回 (局_返回文本)
+
+.子程序 系统_远程关机, 逻辑型, 公开, 可关闭本机或局域网指定计算机系统，成功返回真，失败返回假。
+    .参数 参_关闭方式, , 可空, 可为空，默认即关闭系统，0=注销 ，1=关机，2=重启，8=关闭电源(电源支持)
+    .参数 参_是否强制执行, 逻辑型, 可空, 默认非强制执行
+    .参数 参_计算机名, 文本型, 可空, 必须是局域网内计算机,为空则为本机,可以用 系统_取远程机器名(IP)
+    .参数 参_用户名, 文本型, 可空, 当参数 【参_计算机名】 为空时，可以忽略此参数
+    .参数 参_密码, 文本型, 可空, 当参数 【参_计算机名】 为空时，可以忽略此参数
+    .局部变量 objWbemLocator, 对象
+    .局部变量 objWMIService, 对象
+    .局部变量 objShare, 对象
+    .局部变量 objInParam, 对象
+    .局部变量 objOutParams, 对象
+    .局部变量 var, 变体型
+    .局部变量 Security, 对象
+    .局部变量 WMIServiceObject, 对象
+    .局部变量 count
+    .局部变量 i, 整数型
+    .局部变量 NewEnum, 对象
+    .局部变量 hresult
+    .局部变量 pceltFetched, 整数型
+    .局部变量 ReturnValue, 整数型
+    .局部变量 strUser, 文本型
+
+    CoInitialize (0)
+    .如果真 (objWbemLocator.创建 (“WbemScripting.SWbemLocator”, ))
+        参_计算机名 ＝ 选择 (取文本长度 (参_计算机名) ＞ 0, 参_计算机名, “.”)
+        参_关闭方式 ＝ 选择 (是否为空 (参_关闭方式), 1, 参_关闭方式)
+        objWMIService ＝ objWbemLocator.对象型方法 (“ConnectServer”, 参_计算机名, “\root\CIMV2”, 参_用户名, 参_密码, , , , ) ' 连接服务器
+        .如果真 (objWMIService.是否为空 () ＝ 假)
+            ' ---------------WMI提取-----------------
+            Security ＝ objWMIService.读对象型属性 (“Security_”, )
+            Security.写属性 (“ImpersonationLevel”, 3)
+            Security.读对象型属性 (“Privileges”, ).对象型方法 (“Add”, 19, 真) ' 19=调试权限
+            Security.读对象型属性 (“Privileges”, ).对象型方法 (“Add”, 18, 真) ' 18=关机权限
+            ' ---------------WMI提取-----------------
+            WMIServiceObject ＝ objWMIService.对象型方法 (“InstancesOf”, “Win32_OperatingSystem”)
+            count ＝ WMIServiceObject.读数值属性 (“Count”, )
+            NewEnum ＝ WMIServiceObject.对象型方法 (“_NewEnum”, )
+            .如果真 (NewEnum.是否为空 () ＝ 假)
+                .计次循环首 (count, i)
+                    hresult ＝ COM_调用COM方法 (取对象指针 (NewEnum), 3, 1, 取变体型指针 (var), 取指针整数_ (pceltFetched), , , , , , , )
+                    .如果真 (hresult ＝ 0 且 pceltFetched ＝ 1)
+                        objShare ＝ var.取对象 ()
+                        .如果真 (objShare.是否为空 () ＝ 假)
+                            objInParam ＝ objShare.读对象型属性 (“Methods_”, ).对象型方法 (“Item”, “Win32Shutdown”).读对象型属性 (“InParameters”, ).对象型方法 (“SpawnInstance_”, )
+                            ' 添加输入参数
+                            objInParam.对象型方法 (“Properties_”, ).对象型方法 (“Item”, “Flags”).写属性 (“value”, 参_关闭方式 ＋ 选择 (参_是否强制执行, 4, 0))
+                            ' 运行方法
+                            objOutParams ＝ objShare.对象型方法 (“ExecMethod_”, “Win32Shutdown”, objInParam)
+                            .如果真 (objOutParams.是否为空 () ＝ 假)
+                                var ＝ objOutParams.读对象型属性 (“Properties_”, ).对象型方法 (“Item”, “ReturnValue”).读属性 (“value”, )
+                                ReturnValue ＝ var.取数值 ()
+                                objOutParams.清除 ()
+                                objShare.清除 ()
+                                objWMIService.清除 ()
+                                objWbemLocator.清除 ()
+                                WMIServiceObject.清除 ()
+                                CoUninitialize ()
+                                返回 (ReturnValue ＝ 0)
+                            .如果真结束
+                            
+                        .如果真结束
+                        
+                    .如果真结束
+                    
+                .计次循环尾 ()
+                NewEnum.清除 ()
+            .如果真结束
+            objShare.清除 ()
+            objWMIService.清除 ()
+            WMIServiceObject.清除 ()
+        .如果真结束
+        objWbemLocator.清除 ()
+        CoUninitialize ()
+    .如果真结束
+    返回 (假)
+
+.子程序 系统_是否为管理员, 逻辑型, 公开, 判断当前程序是否在管理员模式下运行，是返回真，否返回假。
+    返回 (IsNTAdmin (0, 0))
+
+.子程序 系统_重启资源管理器, 逻辑型, 公开, 重启资源管理器
+    .局部变量 局_路径, 文本型
+
+    ' 关闭资源管理器
+    运行 (“taskkill /im explorer.exe /f”, 假, #隐藏窗口)
+    Sleep (600)
+    ' 打开资源管理器
+    局_路径 ＝ 取空白文本 (255)
+    .如果真 (SHGetFolderPathA (#NULL, #CSIDL_WINDOWS, #NULL, #SHGFP_TYPE_CURRENT, 取指针文本_ (局_路径)) ≠ #S_OK)
+        局_路径 ＝ “C:\WINDOWS”
+    .如果真结束
+    返回 (ShellExecuteA (#NULL, “Open”, “explorer.exe”, 字符 (0), 局_路径, #SW_NORMAL) ≠ #ERROR_FILE_NOT_FOUND)
+

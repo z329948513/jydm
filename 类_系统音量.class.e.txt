@@ -1,0 +1,93 @@
+﻿.版本 2
+
+.程序集 类_系统音量, , 公开
+.程序集变量 endpointVolume, 整数型
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    .如果真 (endpointVolume ≠ 0)
+        COM_Release (endpointVolume)
+        endpointVolume ＝ 0
+    .如果真结束
+    CoUninitialize ()
+
+.子程序 初始化, 整数型
+    .局部变量 CLSID_MMDeviceEnumerator, GUID
+    .局部变量 IID_IMMDeviceEnumerator, GUID
+    .局部变量 hr, 整数型
+    .局部变量 IMMDeviceEnumerator, 整数型
+    .局部变量 defaultDevice, 整数型
+    .局部变量 CLSID_IAudioEndpointVolume, 字节集
+
+    .如果真 (endpointVolume ≠ 0)
+        返回 (0)
+    .如果真结束
+    
+    CoInitialize (#NULL)
+    CLSID_MMDeviceEnumerator ＝ COM_StringToCLSID (“{BCDE0395-E52F-467C-8E3D-C4579291692E}”)
+    IID_IMMDeviceEnumerator ＝ COM_StringToCLSID (“{A95664D2-9614-4F35-A746-DE8DB63617E6}”)
+    
+    hr ＝ CoCreateInstance (CLSID_MMDeviceEnumerator, 0, 1, IID_IMMDeviceEnumerator, IMMDeviceEnumerator) ' CLSCTX_INPROC_SERVER = 1
+    .如果真 (hr ≠ #S_OK)
+        输出调试文本 (“CoCreateInstance失败！”)
+        返回 (hr)
+    .如果真结束
+    
+    hr ＝ COM_调用COM方法 (IMMDeviceEnumerator, 4, 0, 0, 取指针_通用型 (defaultDevice), , , , , , , )
+    COM_Release (IMMDeviceEnumerator)
+    IMMDeviceEnumerator ＝ 0
+    
+    .如果真 (defaultDevice ＝ 0)
+        输出调试文本 (“调用COM方法，IMMDeviceEnumerator失败！”)
+        返回 (hr)
+    .如果真结束
+    
+    CLSID_IAudioEndpointVolume ＝ 取空白字节集 (16)
+    CLSIDFromString_字节集传址2 (编码_Ansi到Unicode (“{5CDF2C82-841E-4546-9722-0CF74078229A}”, ), CLSID_IAudioEndpointVolume)
+    
+    hr ＝ COM_调用COM方法 (defaultDevice, 3, 取指针字节集_ (CLSID_IAudioEndpointVolume), 1, 0, 取指针_通用型 (endpointVolume), , , , , , )
+    COM_Release (defaultDevice)
+    defaultDevice ＝ 0
+    
+    .如果真 (endpointVolume ＝ 0)
+        输出调试文本 (“调用COM方法，defaultDevice失败！”)
+        返回 (hr)
+    .如果真结束
+    
+    返回 (0)
+
+.子程序 获取音量, 整数型, 公开, 返回-1表示获取音量失败，返回0-100表示成功。
+    .局部变量 返回音量值, 小数型
+    .局部变量 真实音量值, 整数型
+
+    .如果真 (初始化 () ≠ 0)
+        返回 (-1)
+    .如果真结束
+    
+    COM_调用COM方法 (endpointVolume, 9, 取指针_通用型 (返回音量值), , , , , , , , , )
+    真实音量值 ＝ 到整数 (四舍五入 (返回音量值 × 100, 0))
+    返回 (真实音量值)
+
+.子程序 设置音量, 整数型, 公开, 返回0表示成功，返回非零为错误代码。
+    .参数 音量大小, 整数型, , 0-100
+    .局部变量 真实音量值, 小数型
+    .局部变量 hr, 整数型
+
+    .如果真 (初始化 () ≠ 0)
+        返回 (-1)
+    .如果真结束
+    
+    .判断开始 (音量大小 ＜ 0)
+        音量大小 ＝ 0
+    .判断 (音量大小 ＞ 100)
+        音量大小 ＝ 100
+    .默认
+        
+    .判断结束
+    
+    真实音量值 ＝ 音量大小 ÷ 100
+    hr ＝ COM_调用COM方法 (endpointVolume, 7, 指针_到整数 (取指针_通用型 (真实音量值)), 0, , , , , , , , )
+    返回 (hr)
+

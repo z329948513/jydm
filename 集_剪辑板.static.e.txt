@@ -1,0 +1,400 @@
+﻿.版本 2
+
+.程序集 集_剪辑板
+.子程序 剪辑板_置文本, , 公开, 设置指定文本到系统剪辑板
+    .参数 要置的文本, 文本型
+    .局部变量 dwLength, 整数型
+    .局部变量 hGlobalMemory, 整数型
+    .局部变量 GHND, 整数型
+    .局部变量 lpGlobalMemory, 整数型
+    .局部变量 hWnd, 整数型
+    .局部变量 i, 整数型
+
+    dwLength ＝ 取文本长度 (要置的文本)
+    GHND ＝ 2
+    hGlobalMemory ＝ GlobalAlloc (GHND, dwLength ＋ 1)
+    lpGlobalMemory ＝ GlobalLock (hGlobalMemory)
+    RtlMoveMemory_文本型 (lpGlobalMemory, 要置的文本, dwLength)
+    GlobalUnlock (hGlobalMemory)
+    hWnd ＝ 窗口_取顶端窗口句柄 ()
+    OpenClipboard (hWnd)
+    EmptyClipboard ()
+    SetClipboardData (1, hGlobalMemory) ' #CF_TEXT=1
+    CloseClipboard ()
+
+.子程序 剪辑板_置字节集, , 公开, 设置指定宽字符到系统剪辑板
+    .参数 欲置剪辑版的数据, 字节集, , Unicode文本格式
+    .局部变量 dwLength, 整数型
+    .局部变量 hGlobalMemory, 整数型
+    .局部变量 GHND, 整数型
+    .局部变量 lpGlobalMemory, 整数型
+    .局部变量 hWnd, 整数型
+    .局部变量 i, 整数型
+
+    dwLength ＝ 取字节集长度 (欲置剪辑版的数据)
+    GHND ＝ 2
+    hGlobalMemory ＝ GlobalAlloc (GHND, dwLength ＋ 1)
+    lpGlobalMemory ＝ GlobalLock (hGlobalMemory)
+    RtlMoveMemory_字节集 (lpGlobalMemory, 欲置剪辑版的数据, dwLength)
+    GlobalUnlock (hGlobalMemory)
+    OpenClipboard (0)
+    EmptyClipboard ()
+    SetClipboardData (#CF_UNICODETEXT, hGlobalMemory)
+    CloseClipboard ()
+
+.子程序 剪辑板_取文本, 文本型, 公开, 取出系统剪辑板中存放的文本
+    .局部变量 hwnd, 整数型
+    .局部变量 lpData, 整数型
+    .局部变量 nSize, 整数型
+    .局部变量 hMem, 整数型
+    .局部变量 s, 字节集
+    .局部变量 返回值, 文本型
+
+    OpenClipboard (0)
+    .如果真 (IsClipboardFormatAvailable (#CF_UNICODETEXT) ≠ 0)
+        hMem ＝ GetClipboardData (#CF_UNICODETEXT)
+        lpData ＝ GlobalLock (hMem)
+        nSize ＝ GlobalSize (hMem)
+        s ＝ API_取空白字节集 (nSize)
+        RtlMoveMemory_整数型 (取指针_字节集型 (s), lpData, nSize)
+        GlobalUnlock (hMem)
+        返回值 ＝ 编码_Unicode到Ansi (s) ' 系统底层是unicode和ansi编码
+    .如果真结束
+    CloseClipboard ()
+    返回 (返回值)
+
+.子程序 剪辑板_置图片, , 公开, 设置指定图片到系统剪辑板
+    .参数 图片数据, 字节集, , 要置入剪辑板的图片数据
+    .局部变量 图片, 对象
+    .局部变量 图片句柄, 整数型
+
+    CoInitialize (0)
+    图片.创建图片对象 (图片数据)
+    图片句柄 ＝ 图片.读数值属性 (“Handle”, )
+    CoUninitialize ()
+    OpenClipboard (窗口_取焦点句柄 ())
+    EmptyClipboard ()
+    SetClipboardData (2, 图片句柄)
+    CloseClipboard ()
+
+.子程序 剪辑板_取图片, 字节集, 公开, 获取系统剪辑板中的图片
+    .参数 窗口句柄, 整数型
+    .局部变量 剪辑板数据句柄, 整数型
+    .局部变量 全局内存块大小, 整数型
+    .局部变量 全局内存块, 整数型
+    .局部变量 大小, 整数型
+    .局部变量 图片, 字节集
+    .局部变量 文件头, 字节集
+
+    OpenClipboard (窗口句柄)
+    剪辑板数据句柄 ＝ GetClipboardData (8)
+    .如果真 (剪辑板数据句柄 ≠ 0)
+        全局内存块大小 ＝ GlobalSize (剪辑板数据句柄)
+        全局内存块 ＝ GlobalLock (剪辑板数据句柄)
+        .如果真 (全局内存块大小 ≠ 0 且 全局内存块 ≠ 0)
+            图片 ＝ 指针到字节集 (全局内存块, 全局内存块大小)
+        .如果真结束
+        
+    .如果真结束
+    CloseClipboard ()
+    .如果真 (取字节集长度 (图片) ＝ 0)
+        返回 ({ })
+    .如果真结束
+    文件头 ＝ 到字节集 (“BM”) ＋ 整数_到字节集 (取字节集长度 (图片) ＋ 2) ＋ 取空白字节集 (4) ＋ 整数_到字节集 (54) ＋ 取字节集左边 (图片, 16) ＋ 取空白字节集 (4) ＋ 整数_到字节集 (取字节集长度 (图片) － 52) ＋ 取空白字节集 (16)
+    返回 (文件头 ＋ 取字节集右边 (图片, 取字节集长度 (图片) － 52))
+
+.子程序 剪辑板_取位图数据A, 字节集, 公开, 获取系统剪辑板中的图片，支持QQ截图
+    .参数 窗口句柄, 整数型, , 当前程序的窗口句柄
+    .局部变量 图片句柄, 整数型
+    .局部变量 信息, BITMAPINFOHEADER
+    .局部变量 文件, BITMAPFILEHEADER
+    .局部变量 hMem, 整数型
+    .局部变量 lpData, 整数型
+    .局部变量 hBitmap, 整数型
+    .局部变量 指针, 整数型
+    .局部变量 位图, 字节集
+    .局部变量 bmp, 位图结构_
+    .局部变量 hdc, 整数型
+    .局部变量 私画布句柄, 整数型
+
+    OpenClipboard (窗口句柄)
+    图片句柄 ＝ GetClipboardData (2)
+    CloseClipboard ()
+    .如果真 (图片句柄 ＝ 0)
+        返回 ({ })
+    .如果真结束
+    .如果真 (取对象属性_ (图片句柄, 28, bmp) ＝ 0)
+        返回 ({ })
+    .如果真结束
+    信息.biSize ＝ 40
+    信息.biWidth ＝ bmp.位图宽度
+    信息.biHeight ＝ bmp.位图高度
+    信息.biPlanes ＝ 1
+    信息.biBitCount ＝ 24
+    信息.biCompression ＝ 0
+    信息.biSizeImage ＝ (bmp.位图宽度 × 24 ＋ 31) ÷ 8 × bmp.位图高度
+    信息.biXPelsPerMeter ＝ 0
+    信息.biYPelsPerMeter ＝ 0
+    信息.biClrUsed ＝ 0
+    信息.biClrImportant ＝ 0
+    hdc ＝ GetDC (0)
+    私画布句柄 ＝ CreateCompatibleDC (hdc)
+    hMem ＝ GlobalAlloc (位或 (0, 64), 信息.biSizeImage)
+    lpData ＝ GlobalLock (hMem)
+    GetDIBits_x (私画布句柄, 图片句柄, 0, 信息.biHeight, lpData, 信息, 0)
+    文件.bfType ＝ 19778
+    文件.bfReserved1 ＝ 0
+    文件.bfReserved2 ＝ 0
+    文件.bfSize ＝ 14 ＋ 40 ＋ 信息.biSizeImage
+    文件.bfOffBits ＝ 14 ＋ 40
+    指针 ＝ VirtualAlloc (0, 54 ＋ 信息.biSizeImage, 4096, 4)
+    RtlMoveMemory_BITMAPFILEHEADER_整数1 (指针, 文件, 14)
+    RtlMoveMemory_BITMAPINFOHEADER_整数 (指针 ＋ 14, 信息, 40)
+    RtlMoveMemory_整数型 (指针 ＋ 54, lpData, 信息.biSizeImage)
+    位图 ＝ 指针到字节集 (指针, 54 ＋ 信息.biSizeImage)
+    VirtualFree (指针, 0, 32768)
+    DeleteDC (私画布句柄)
+    返回 (位图)
+
+.子程序 剪辑板_取位图数据B, 字节集, 公开, 获取系统剪辑板中的图片，支持QQ截图
+    .参数 窗口句柄, 整数型, , 当前程序的窗口句柄
+    .局部变量 图片句柄, 整数型
+    .局部变量 信息, BITMAPINFOHEADER
+    .局部变量 lpData, 整数型
+    .局部变量 指针, 整数型
+    .局部变量 位图, 字节集
+    .局部变量 bmp, 位图结构_
+    .局部变量 私画布句柄, 整数型
+    .局部变量 文件头, 字节集
+
+    OpenClipboard (窗口句柄)
+    图片句柄 ＝ GetClipboardData (2)
+    CloseClipboard ()
+    .如果真 (图片句柄 ＝ 0)
+        返回 ({ })
+    .如果真结束
+    .如果真 (取对象属性_ (图片句柄, 28, bmp) ＝ 0)
+        返回 ({ })
+    .如果真结束
+    信息.biSize ＝ 40
+    信息.biWidth ＝ bmp.位图宽度
+    信息.biHeight ＝ bmp.位图高度
+    信息.biPlanes ＝ 1
+    信息.biBitCount ＝ 24
+    信息.biCompression ＝ 0
+    信息.biSizeImage ＝ (bmp.位图宽度 × 24 ＋ 31) ÷ 8 × bmp.位图高度
+    信息.biXPelsPerMeter ＝ 0
+    信息.biYPelsPerMeter ＝ 0
+    信息.biClrUsed ＝ 0
+    信息.biClrImportant ＝ 0
+    私画布句柄 ＝ CreateCompatibleDC (0)
+    位图 ＝ 取空白字节集 (信息.biSizeImage)
+    lpData ＝ lstrcpyn_字节集 (位图, 位图, 0)
+    GetDIBits_x (私画布句柄, 图片句柄, 0, 信息.biHeight, lpData, 信息, 0)
+    文件头 ＝ 到字节集 (“BM”) ＋ 整数_到字节集 (信息.biSizeImage ＋ 54) ＋ 取空白字节集 (4) ＋ { 54, 0, 0, 0, 40, 0, 0, 0 } ＋ 整数_到字节集 (bmp.位图宽度) ＋ 整数_到字节集 (bmp.位图高度) ＋ { 1, 0, 24, 0 } ＋ 取空白字节集 (4) ＋ 整数_到字节集 (信息.biSizeImage) ＋ 取空白字节集 (16)
+    位图 ＝ 文件头 ＋ 指针到字节集 (lpData, 信息.biSizeImage)
+    DeleteDC (私画布句柄)
+    返回 (位图)
+
+.子程序 剪辑板_置文件, 逻辑型, 公开, 将指定文件复制到剪贴板，成功返回真，失败返回假。
+    .参数 文件数组, 文本型, 数组, 欲复制到剪贴板的文件数组路径;
+    .参数 状态, 逻辑型, 可空, 默认为假。真=对文件执行了剪切操作；假=对文件执行了复制操作
+    .局部变量 sTmp, 字节集
+    .局部变量 dfs, 剪贴板_置文件
+    .局部变量 hGlobal, 整数型
+    .局部变量 i, 整数型
+    .局部变量 ret, 整数型
+    .局部变量 lngFormat, 整数型
+    .局部变量 lpGlobal, 整数型
+
+    .如果真 (OpenClipboard (0) ＝ 0)
+        返回 (假)
+    .如果真结束
+    EmptyClipboard ()
+    .计次循环首 (取数组成员数 (文件数组), i)
+        sTmp ＝ sTmp ＋ 到字节集 (文件数组 [i]) ＋ { 0 }
+    .计次循环尾 ()
+    sTmp ＝ sTmp ＋ { 0 }
+    hGlobal ＝ GlobalAlloc (66, 20 ＋ 字节集_取长度 (sTmp))
+    .如果真 (hGlobal ＝ 0)
+        CloseClipboard ()
+        返回 (假)
+    .如果真结束
+    lpGlobal ＝ GlobalLock (hGlobal)
+    dfs.pFiles ＝ 20
+    RtlMoveMemory_剪贴板_置文件 (lpGlobal, dfs, 20)
+    RtlMoveMemory_字节集 (lpGlobal ＋ 20, sTmp, 字节集_取长度 (sTmp))
+    GlobalUnlock (hGlobal)
+    ret ＝ SetClipboardData (#CF_HDROP, hGlobal)
+    GlobalFree (hGlobal)
+    .如果真 (状态 且 ret ＞ 0)
+        lngFormat ＝ RegisterClipboardFormatA (“Preferred DropEffect”)
+        hGlobal ＝ GlobalAlloc (66, 4)
+        RtlMoveMemory_整数型 (GlobalLock (hGlobal), 2, 4)
+        GlobalUnlock (hGlobal)
+        SetClipboardData (lngFormat, hGlobal)
+        GlobalFree (hGlobal)
+    .如果真结束
+    CloseClipboard ()
+    返回 (ret ＞ 0)
+
+.子程序 剪辑板_取文件, 整数型, 公开, 取已经复制到剪贴板的文件名，返回文件个数。
+    .参数 文件数组, 文本型, 可空 数组, 用于存放文件路径的数组,留空则只返回文件数量。
+    .参数 状态, 逻辑型, 参考 可空, 返回=真,对文件执行了剪切操作；返回=假,对文件执行了复制操作
+    .局部变量 hDrop, 整数型
+    .局部变量 sTmp, 文本型
+    .局部变量 null, 文本型
+    .局部变量 lngFormat, 整数型
+    .局部变量 lngEffect, 整数型
+    .局部变量 lcount, 整数型
+    .局部变量 i, 整数型
+
+    清除数组 (文件数组)
+    .如果真 (IsClipboardFormatAvailable (#CF_HDROP) ＝ 0 或 OpenClipboard (0) ＝ 0)
+        返回 (0)
+    .如果真结束
+    hDrop ＝ GetClipboardData (#CF_HDROP)
+    lcount ＝ DragQueryFileA (hDrop, -1, null, 0)
+    sTmp ＝ 取空白文本 (260)
+    .计次循环首 (lcount, i)
+        DragQueryFileA (hDrop, i － 1, sTmp, 260)
+        加入成员 (文件数组, sTmp)
+    .计次循环尾 ()
+    .如果真 (是否为空 (状态) ＝ 假)
+        lngFormat ＝ RegisterClipboardFormatA (“Preferred DropEffect”)
+        hDrop ＝ GetClipboardData (lngFormat)
+        RtlMoveMemory_整数传址1 (lngEffect, hDrop, 4)
+        状态 ＝ lngEffect ＝ 2
+        GlobalFree (hDrop)
+    .如果真结束
+    CloseClipboard ()
+    返回 (lcount)
+
+.子程序 剪辑板_取数据权窗口句柄, 整数型, 公开, 返回复制该数据的窗口句柄；如：一段文字是在记事本复制的，则返回记事本的窗口句柄
+    返回 (GetClipboardOwner ())
+
+.子程序 整数_到字节集, 字节集
+    .参数 整数, 整数型
+    .局部变量 字节集, 字节集
+
+    字节集 ＝ 取空白字节集 (4)
+    写到内存 (整数, lstrcpyn_字节集 (字节集, 字节集, 0), 4)
+    返回 (字节集)
+
+.子程序 剪辑板_取所有内容, 逻辑型, 公开
+    .参数 参_剪辑版数据, 剪辑版数据, 参考 数组
+    .局部变量 数据格式, 整数型
+    .局部变量 剪辑版数据, 剪辑版数据
+    .局部变量 缓冲区, 文本型
+    .局部变量 数据句柄, 整数型
+    .局部变量 内存指针, 整数型
+
+    ' 源码采纳地址：https://bbs.125.la/forum.php?mod=viewthread&tid=14221328
+    .如果真 (OpenClipboard (0) ＝ 0) ' 打开剪辑版
+        返回 (假)
+    .如果真结束
+    清除数组 (参_剪辑版数据) ' 清除数据
+    .判断循环首 (真)
+        数据格式 ＝ EnumClipboardFormats (数据格式) ' 取出剪切板内容的数据格式
+        .如果真 (数据格式 ＝ 0) ' 没有格式……
+            跳出循环 ()
+        .如果真结束
+        剪辑版数据.剪辑版数据格式 ＝ 数据格式
+        缓冲区 ＝ 取空白文本 (255) ' 生成缓冲区
+        .判断开始 (数据格式 ≤ 14)
+            剪辑版数据.文本型数据 ＝ “”
+        .判断 (GetClipboardFormatNameA (数据格式, 缓冲区, 255) ＝ 0) ' 获取剪贴板内数据格式的名称，判断是否有文本
+            剪辑版数据.文本型数据 ＝ “” ' 没有文本……
+        .默认
+            剪辑版数据.文本型数据 ＝ 缓冲区
+        .判断结束
+        数据句柄 ＝ GetClipboardData (数据格式) ' 取剪辑板数据句柄
+        .如果真 (数据句柄 ＝ 0) ' 没有数据……
+            到循环尾 () ' 开启下一个循环
+        .如果真结束
+        剪辑版数据.字节集长度 ＝ GlobalSize (数据句柄) ' 返回全局内存块大小，就是取出字节集长度
+        内存指针 ＝ GlobalLock (数据句柄) ' 锁定内存对象并返回剪辑板数据指针
+        剪辑版数据.字节集数据 ＝ 取空白字节集 (剪辑版数据.字节集长度) ' 生成缓冲区
+        RtlMoveMemory (取数据_通用型 (剪辑版数据.字节集数据) ＋ 8, 内存指针, 剪辑版数据.字节集长度) ' 复制出来
+        加入成员 (参_剪辑版数据, 剪辑版数据) ' OK，收工
+        .如果真 (取数组成员数 (参_剪辑版数据) ＞ 100) ' 这么多……，估计是复制文件，但是再多估计进程会废了（内存严重怀疑溢出）
+            跳出循环 ()
+        .如果真结束
+        
+    .判断循环尾 ()
+    CloseClipboard () ' 关闭剪辑版
+    返回 (真)
+
+.子程序 剪辑板_置内容, 逻辑型, 公开
+    .参数 参_剪辑版数据, 剪辑版数据, 参考 数组
+    .局部变量 局_计次, 整数型
+    .局部变量 剪辑版数据格式, 整数型
+    .局部变量 剪辑版格式, 整数型
+    .局部变量 内存地址, 整数型
+    .局部变量 内存指针, 整数型
+
+    .如果真 (OpenClipboard (0) ＝ 0) ' 打开剪辑版
+        返回 (假)
+    .如果真结束
+    EmptyClipboard () ' 清空剪切板并释放剪切板内数据的句柄，但是数据仿佛没有什么用了，2333
+    .计次循环首 (取数组成员数 (参_剪辑版数据), 局_计次) ' 开始计次……
+        剪辑版数据格式 ＝ 参_剪辑版数据 [局_计次].剪辑版数据格式
+        .如果真 (参_剪辑版数据 [局_计次].文本型数据 ≠ “”)
+            剪辑版格式 ＝ RegisterClipboardFormatA (参_剪辑版数据 [局_计次].文本型数据) ' 它注册一个新的剪贴板格式，此后这个格式可作为有效的剪贴板格式。
+            .如果真 (剪辑版格式 ＞ 0) ' 注册成功！
+                剪辑版数据格式 ＝ 剪辑版格式
+            .如果真结束
+            
+        .如果真结束
+        内存地址 ＝ GlobalAlloc (位或 (#CF_BITMAP, #CF_LIMITSIZE), 参_剪辑版数据 [局_计次].字节集长度) ' 在剪辑版中分配内存
+        内存指针 ＝ GlobalLock (内存地址) ' 锁定内存对象并返回剪辑版指针
+        RtlMoveMemory (内存指针, 取数据_通用型 (参_剪辑版数据 [局_计次].字节集数据) ＋ 8, 参_剪辑版数据 [局_计次].字节集长度) ' 倒着写回去
+        GlobalUnlock (内存地址) ' 开锁全局内存块
+        SetClipboardData (剪辑版数据格式, 内存地址) ' 剪辑板置数据，写回去
+    .计次循环尾 ()
+    CloseClipboard () ' 关闭剪辑版
+    返回 (真)
+
+.子程序 剪贴板_监听, , 公开, 把指定的窗口句柄加入到剪贴板查看器链中
+    .参数 窗口句柄, 整数型
+    .参数 回调函数, 子程序指针, , WndProc(整数型 hwnd, 整数型 uMsg, 整数型 wParam, 整数型 lParam)，返回1拦截。
+
+    SetPropA (窗口句柄, “Clipboard_Monitor”, SetWindowLongA (窗口句柄, #GWL_WNDPROC, 到整数 (&WndProc_Clipboard_Monitor)))
+    SetPropA (窗口句柄, “Clipboard_Callback”, 到整数 (回调函数))
+    SetPropA (窗口句柄, “Clipboard_Viewer”, SetClipboardViewer (窗口句柄))
+
+.子程序 WndProc_Clipboard_Monitor, 整数型
+    .参数 hWnd, 整数型
+    .参数 uMsg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+    .局部变量 this, 整数型
+    .局部变量 call, 整数型
+
+    this ＝ GetPropA (hWnd, “Clipboard_Monitor”)
+    call ＝ GetPropA (hWnd, “Clipboard_Callback”)
+    .如果真 (uMsg ＝ #WM_DRAWCLIPBOARD 或 uMsg ＝ #WM_CHANGECBCHAIN 或 uMsg ＝ #WM_DESTROY)
+        .如果真 (CallWindowProcA (call, hWnd, uMsg, wParam, lParam) ＝ 1) ' 拦截
+            返回 (1)
+        .如果真结束
+        
+        .如果真 (uMsg ＝ #WM_DRAWCLIPBOARD 且 IsWindow (wParam) ≠ 0 且 wParam ≠ hWnd)
+            hWnd ＝ wParam
+            wParam ＝ #NULL
+            SendMessageA (hWnd, uMsg, wParam, lParam)
+        .如果真结束
+        
+    .如果真结束
+    返回 (CallWindowProcA (this, hWnd, uMsg, wParam, lParam))
+
+.子程序 剪贴板_停止监听, , 公开, 从剪贴板查看器链中删除指定的窗口句柄
+    .参数 窗口句柄, 整数型
+    .局部变量 this, 整数型
+
+    this ＝ GetPropA (窗口句柄, “Clipboard_Monitor”)
+    ChangeClipboardChain (窗口句柄, GetPropA (窗口句柄, “Clipboard_Viewer”))
+    SetWindowLongA (窗口句柄, #GWL_WNDPROC, this)
+    RemovePropA (窗口句柄, “Clipboard_Monitor”)
+    RemovePropA (窗口句柄, “Clipboard_Callback”)
+    RemovePropA (窗口句柄, “Clipboard_Viewer”)
+

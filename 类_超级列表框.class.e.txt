@@ -1,0 +1,372 @@
+﻿.版本 2
+
+.程序集 类_超级列表框, , 公开, 仅支持自身窗口的超列表框
+.程序集变量 集_结构, LVINFO, , "0"
+.程序集变量 集_标识, 整数型
+.程序集变量 集_行高, 整数型
+.程序集变量 集_超级列表框句柄, 整数型
+.程序集变量 集_父窗口句柄, 整数型
+.程序集变量 集_call, 整数型
+.程序集变量 集_表头高度, 整数型
+.程序集变量 集_新样式数组, 精易_表头样式, , "0"
+.程序集变量 集_表头句柄, 整数型
+.程序集变量 集_指针_超级列表框, 整数型
+.程序集变量 集_子类化_超级列表框, 整数型
+.程序集变量 集_子类化_表头, 整数型
+.程序集变量 集_表头项, HDITEM
+.程序集变量 集_指针_表头, 整数型
+.程序集变量 集_列数, 整数型
+.程序集变量 集_是否去除滚动条, 逻辑型
+
+.子程序 _初始化, , , 1
+    
+
+.子程序 _销毁, , , 2
+    表项_销毁 ()
+    表头_销毁 ()
+
+.子程序 子类化_超级列表框_表项, 整数型, , 3
+    .参数 hWnd, 整数型
+    .参数 uMsg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+    .局部变量 lvcd, NMLVCUSTOMDRAW
+    .局部变量 i, 整数型
+    .局部变量 局_xmlRoot, 对象
+    .局部变量 局_childNode, 对象
+    .局部变量 row, 整数型
+    .局部变量 Column, 整数型
+    .局部变量 clrText, 整数型
+    .局部变量 clrTextBk, 整数型
+
+    .判断开始 (uMsg ＝ #WM_NOTIFY)
+        RtlMoveMemory_NMLVCUSTOMDRAW (lvcd, lParam, 104)
+        .计次循环首 (取数组成员数 (集_结构), i)
+            .如果真 (lvcd.nmcd.hdr.code ＝ #NM_CUSTOMDRAW 且 lvcd.nmcd.hdr.hWndFrom ＝ 集_结构 [i].窗口句柄)
+                .判断开始 (lvcd.nmcd.dwDrawStage ＝ #CDDS_PREPAINT)
+                    返回 (#CDRF_NOTIFYSUBITEMDRAW)
+                .判断 (lvcd.nmcd.dwDrawStage ＝ #CDDS_ITEMPREPAINT)
+                    返回 (#CDRF_NOTIFYSUBITEMDRAW)
+                .判断 (lvcd.nmcd.dwDrawStage ＝ 位或 (#CDDS_ITEMPREPAINT, #CDDS_SUBITEM))
+                    局_xmlRoot ＝ 集_结构 [i].对象.对象型方法 (“getElementsByTagName”, “LVINFO”).读对象型属性 (“item”, 0)
+                    局_childNode ＝ 局_xmlRoot.对象型方法 (“getElementsByTagName”, “Item” ＋ 到文本 (lvcd.nmcd.dwItemSpec) ＋ “.” ＋ 到文本 (lvcd.iSubItem)).读对象型属性 (“item”, 0)
+                    .如果 (局_childNode.是否为空 () ＝ 假)
+                        row ＝ 局_childNode.数值方法 (“getAttribute”, “Row”)
+                        Column ＝ 局_childNode.数值方法 (“getAttribute”, “Column”)
+                        clrText ＝ 局_childNode.数值方法 (“getAttribute”, “clrText”)
+                        clrTextBk ＝ 局_childNode.数值方法 (“getAttribute”, “clrTextBk”)
+                        lvcd.clrText ＝ clrText
+                        lvcd.clrTextBk ＝ clrTextBk
+                        RtlMoveMemory_NMLVCUSTOMDRAW2 (lParam, lvcd, 104)
+                        返回 (CallWindowProcA (GetPropA (hWnd, #旧窗口过程), hWnd, uMsg, wParam, lParam))
+                    .否则
+                        lvcd.clrText ＝ SendMessageA (集_结构 [i].窗口句柄, #LVM_GETTEXTCOLOR, 0, 0)
+                        lvcd.clrTextBk ＝ SendMessageA (集_结构 [i].窗口句柄, #LVM_GETBKCOLOR, 0, 0)
+                        RtlMoveMemory_NMLVCUSTOMDRAW2 (lParam, lvcd, 104)
+                    .如果结束
+                    
+                .默认
+                    
+                .判断结束
+                
+            .如果真结束
+            
+        .计次循环尾 ()
+        
+    .判断 (uMsg ＝ #WM_MEASUREITEM) ' 超列计算行高时发送这个消息给父窗口，需要指定超列的 LVS_OWNERDRAWFIXED样式
+        ' 因为消息是发送到父窗口中的，一个窗口中可能有多个控件，所以在实际应用中还应该判断是否是要指定的控件，可以通过MEASUREITEMSTRUCT结构中的CtlType成员或CtlID成员来进行判断。
+        ' lparam=MEASUREITEMSTRUCT 结构
+        ' MEASUREITEMSTRUCT中的itemHeight成员偏移长度为16
+        ' 直接写内存修改itemHeight成员的高度
+        写到内存 (集_行高, lParam ＋ 16, 4)
+    .判断 (uMsg ＝ #WM_NCCALCSIZE)
+        .判断开始 (集_是否去除滚动条)
+            返回 (1)
+        .默认
+            
+        .判断结束
+        
+    .默认
+        
+    .判断结束
+    返回 (CallWindowProcA (集_标识, hWnd, uMsg, wParam, lParam))
+    
+
+.子程序 子类化_超级列表框_表头, 整数型, , 4   子类化超列
+    .参数 hwnd, 整数型, , 超列的句柄
+    .参数 msg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+    .局部变量 hDC, 整数型
+    .局部变量 局_列索引, 整数型
+    .局部变量 局_矩形, RECT
+    .局部变量 局_刷子, 整数型
+    .局部变量 局_背景色, 整数型
+    .局部变量 局_文本色, 整数型
+    .局部变量 局_颜色, 整数型
+    .局部变量 drawItemStruct, DRAWITEMSTRUCT
+    .局部变量 buf, 字节集
+    .局部变量 局_返回, 整数型
+    .局部变量 局_新样式, 精易_表头样式
+
+    .判断开始 (msg ＝ #WM_DRAWITEM)
+        CopyMemory_DRAWITEMSTRUCT (drawItemStruct, lParam, 48)
+        hDC ＝ drawItemStruct.hDC
+        局_列索引 ＝ drawItemStruct.itemID
+        局_矩形 ＝ drawItemStruct.rcItem
+        局_新样式 ＝ 内_索引转样式 (局_列索引)
+        .判断开始 (局_新样式.参_列索引 ≠ -1)
+            局_背景色 ＝ 局_新样式.参_背景色
+            局_文本色 ＝ 局_新样式.参_文本色
+        .默认
+            局_背景色 ＝ #浅灰
+            局_文本色 ＝ #黑色
+        .判断结束
+        局_刷子 ＝ CreateSolidBrush (局_背景色)
+        FillRect_RECT (hDC, 局_矩形, 局_刷子)
+        DeleteObject (局_刷子)
+        局_颜色 ＝ SetTextColor (hDC, 局_文本色)
+        SetBkMode (hDC, #TRANSPARENT)
+        集_表头项.mask ＝ #HDI_TEXT
+        集_表头项.cchTextMax ＝ 100
+        buf ＝ 取空白字节集 (100)
+        集_表头项.pszText ＝ 取空白字节集 (256) ' 取变量地址 (buf)
+        SendMessage_HDITEM (集_表头句柄, #HDM_GETITEM, 局_列索引, 集_表头项)
+        DrawText_RECT (hDC, 到文本 (集_表头项.pszText), -1, 局_矩形, 位或 (#DT_CENTER, #DT_VCENTER, #DT_SINGLELINE))
+        SetTextColor (hDC, 局_颜色)
+        
+    .默认
+        
+    .判断结束
+    局_返回 ＝ CallWindowProcA (集_子类化_超级列表框, hwnd, msg, wParam, lParam)
+    返回 (局_返回)
+    
+
+.子程序 子类化_表头, 整数型, , 5  子类化超列表头
+    .参数 hwnd, 整数型, , 超列表头的句柄
+    .参数 msg, 整数型
+    .参数 wParam, 整数型
+    .参数 lParam, 整数型
+    .局部变量 局_返回, 整数型
+
+    局_返回 ＝ CallWindowProcA (集_子类化_表头, hwnd, msg, wParam, lParam)
+    .如果真 (msg ＝ #HDM_LAYOUT)
+        写到内存 (集_表头高度, 指针_到整数 (lParam) ＋ 4, 4) ' 27为新表头高度
+        写到内存 (集_表头高度, 指针_到整数 (lParam ＋ 4) ＋ 20, 4)
+        ' SetHDItem ()
+    .如果真结束
+    返回 (局_返回)
+
+.子程序 初始化, , 公开
+    .参数 父窗口句柄, 整数型
+    .参数 超级列表框句柄, 整数型
+
+    集_父窗口句柄 ＝ 父窗口句柄
+    集_超级列表框句柄 ＝ 超级列表框句柄
+
+.子程序 表项_销毁, , , 清除子类化
+    .如果真 (集_标识 ≠ 0)
+        SetWindowLongA (集_父窗口句柄, -4, 到整数 (集_标识))
+        类_释放内部方法地址 (集_call)
+    .如果真结束
+    
+
+.子程序 表项_初始化, , 公开
+    重定义数组 (集_结构, 假, 0)
+    集_call ＝ 类_取内部方法地址 (3)
+    集_标识 ＝ SetWindowLongA (集_父窗口句柄, #GWL_WNDPROC, 集_call)
+
+.子程序 表项_置行列颜色, , 公开, 设置超级列表框表项颜色
+    .参数 表项行号, 整数型
+    .参数 表项列号, 整数型
+    .参数 文本颜色, 整数型
+    .参数 背景颜色, 整数型
+    .局部变量 局_标识, 整数型
+    .局部变量 局_结构, LVINFO
+    .局部变量 局_是否存在, 逻辑型
+    .局部变量 i, 整数型
+    .局部变量 局_xmlRoot, 对象
+    .局部变量 局_childNode, 对象
+    .局部变量 局_NodeName, 文本型
+
+    .计次循环首 (取数组成员数 (集_结构), i)
+        .如果真 (集_结构 [i].窗口句柄 ＝ 集_超级列表框句柄)
+            局_结构 ＝ 集_结构 [i]
+            局_是否存在 ＝ 真
+            跳出循环 ()
+        .如果真结束
+        
+    .计次循环尾 ()
+    
+    .如果 (局_是否存在 ＝ 假)
+        局_结构.窗口句柄 ＝ 集_超级列表框句柄
+        CoInitialize (0)
+        .如果真 (局_结构.对象.创建 (“Microsoft.XMLDOM”, ) ＝ 假)
+            局_结构.对象.创建 (“MSXML.DOMDocument”, )
+        .如果真结束
+        局_xmlRoot ＝ 局_结构.对象.对象型方法 (“createElement”, “LVINFO”)
+        局_xmlRoot.方法 (“setAttribute”, “hParent”, 集_父窗口句柄)
+        局_xmlRoot.方法 (“setAttribute”, “hWnd”, 集_超级列表框句柄)
+    .否则
+        局_xmlRoot ＝ 局_结构.对象.对象型方法 (“getElementsByTagName”, “LVINFO”).读对象型属性 (“item”, 0)
+    .如果结束
+    
+    局_NodeName ＝ “Item” ＋ 到文本 (表项行号) ＋ “.” ＋ 到文本 (表项列号)
+    局_childNode ＝ 局_结构.对象.对象型方法 (“getElementsByTagName”, 局_NodeName).读对象型属性 (“item”, 0)
+    .如果真 (局_childNode.是否为空 ())
+        局_childNode ＝ 局_结构.对象.对象型方法 (“createElement”, 局_NodeName)
+    .如果真结束
+    
+    局_childNode.数值方法 (“setAttribute”, “Row”, 表项行号)
+    局_childNode.数值方法 (“setAttribute”, “Column”, 表项列号)
+    局_childNode.数值方法 (“setAttribute”, “clrText”, 文本颜色)
+    局_childNode.数值方法 (“setAttribute”, “clrTextBk”, 背景颜色)
+    
+    局_xmlRoot.方法 (“appendChild”, 局_childNode)
+    局_结构.对象.方法 (“appendChild”, 局_xmlRoot)
+    
+    .如果 (局_是否存在 ＝ 假)
+        加入成员 (集_结构, 局_结构)
+    .否则
+        集_结构 [i] ＝ 局_结构
+    .如果结束
+    InvalidateRect (集_超级列表框句柄, 0, 1)
+    
+    CoUninitialize ()
+
+.子程序 表项_删除行列颜色, , 公开
+    .参数 表项行号, 整数型
+    .参数 表项列号, 整数型
+    .局部变量 i, 整数型
+    .局部变量 局_xmlRoot, 对象
+    .局部变量 局_childNode, 对象
+
+    .计次循环首 (取数组成员数 (集_结构), i)
+        .如果真 (集_结构 [i].窗口句柄 ＝ 集_超级列表框句柄)
+            局_xmlRoot ＝ 集_结构 [i].对象.对象型方法 (“getElementsByTagName”, “LVINFO”).读对象型属性 (“item”, 0)
+            局_childNode ＝ 局_xmlRoot.对象型方法 (“getElementsByTagName”, “Item” ＋ 到文本 (表项行号) ＋ “.” ＋ 到文本 (表项列号)).读对象型属性 (“item”, 0)
+            .如果真 (局_childNode.是否为空 () ＝ 假)
+                局_xmlRoot.方法 (“removeChild”, 局_childNode)
+                InvalidateRect (集_超级列表框句柄, 0, 1)
+            .如果真结束
+            
+        .如果真结束
+        
+    .计次循环尾 ()
+    
+
+.子程序 表项_清空行列颜色, , 公开
+    .局部变量 i, 整数型
+
+    .计次循环首 (取数组成员数 (集_结构), i)
+        .如果真 (集_结构 [i].窗口句柄 ＝ 集_超级列表框句柄)
+            删除成员 (集_结构, i, )
+            InvalidateRect (集_超级列表框句柄, 0, 1)
+        .如果真结束
+        
+    .计次循环尾 ()
+    
+
+.子程序 表项_置行高, , 公开, 设置超级列表框行高
+    .参数 行高, 整数型
+    .局部变量 winpos, WINDOWPOS
+    .局部变量 OldStyle, 整数型
+
+    集_行高 ＝ 行高
+    winpos.hwnd ＝ 集_超级列表框句柄
+    OldStyle ＝ GetWindowLongA (winpos.hwnd, #GWL_STYLE)
+    SetWindowLongA (winpos.hwnd, #GWL_STYLE, 位或 (OldStyle, #LVS_OWNERDRAWFIXED))
+    SendMessageWINDOWPOS (winpos.hwnd, #WM_WINDOWPOSCHANGED, 0, winpos)
+    SetWindowLongA (winpos.hwnd, #GWL_STYLE, OldStyle)
+    SendMessageA (winpos.hwnd, #LVM_UPDATE, 0, 0)
+    
+    
+
+.子程序 表项_去除滚动条, , 公开, 去除超列滚动条
+    .参数 参_是否去除, 逻辑型, , 真=去除，假=不去除
+
+    集_是否去除滚动条 ＝ 参_是否去除
+    
+
+.子程序 方法1, , , 以上为  表项相关
+    
+
+.子程序 表头_设置新样式, , 公开
+    .参数 参_表头高度, 整数型
+    .参数 参_新样式数组, 精易_表头样式, 数组
+
+    ' 该例程收录自;https://bbs.125.la/thread-14355436-1-1.html
+    ' 原作者：http://bbs.eyuyan.com/read.php?tid=410674
+    集_表头高度 ＝ 参_表头高度
+    集_新样式数组 ＝ 参_新样式数组
+    
+    集_表头句柄 ＝ SendMessageA (集_超级列表框句柄, #LVM_GETHEADER, 0, 0) ' 取表头句柄
+    集_列数 ＝ SendMessageA (集_表头句柄, #HDM_GETITEMCOUNT, 0, 0)
+    集_指针_超级列表框 ＝ 类_取内部方法地址 (4)
+    集_指针_表头 ＝ 类_取内部方法地址 (5)
+    集_子类化_超级列表框 ＝ SetWindowLongA (集_超级列表框句柄, -4, 集_指针_超级列表框) ' 子类化超列
+    集_子类化_表头 ＝ SetWindowLongA (集_表头句柄, -4, 集_指针_表头) ' 子类化超列表头
+    内_设置表头项 ()
+    SendMessageA (集_超级列表框句柄, #LVM_UPDATE, 0, 0)
+    
+
+.子程序 表头_销毁, , , 清除子类化，清除样式数组
+    清除数组 (集_新样式数组)
+    .如果真 (集_子类化_表头 ≠ 0)
+        SetWindowLongA (集_表头句柄, -4, 集_指针_表头)
+        类_释放内部方法地址 (集_指针_表头)
+    .如果真结束
+    
+    .如果真 (集_子类化_超级列表框 ≠ 0)
+        SetWindowLongA (集_超级列表框句柄, -4, 集_指针_超级列表框)
+        类_释放内部方法地址 (集_指针_超级列表框)
+    .如果真结束
+    
+    
+
+.子程序 内_索引转样式, 精易_表头样式
+    .参数 参_索引, 整数型
+    .局部变量 i, 整数型
+    .局部变量 局_单数据, 精易_表头样式
+
+    .计次循环首 (取数组成员数 (集_新样式数组), i)
+        局_单数据 ＝ 集_新样式数组 [i]
+        .如果真 (局_单数据.参_列索引 ＝ 参_索引)
+            返回 (局_单数据)
+        .如果真结束
+        
+    .计次循环尾 ()
+    局_单数据.参_列索引 ＝ -1
+    返回 (局_单数据)
+
+.子程序 内_设置表头项
+    .局部变量 i, 整数型
+
+    .如果真 (集_表头句柄 ＝ 0)
+        返回 ()
+    .如果真结束
+    集_表头项.mask ＝ #HDI_FORMAT ' 这句必须有
+    ' SendMessage_HDITEM (m_HDHwnd, #HDM_GETITEM, 1, hditem)
+    集_表头项.fmt ＝ #HDF_OWNERDRAW ' 默认是 #HDF_STRING
+    .计次循环首 (集_列数, i)
+        SendMessage_HDITEM (集_表头句柄, #HDM_SETITEM, i － 1, 集_表头项)
+    .计次循环尾 ()
+    
+
+.子程序 方法2, , , 以上为表头相关
+    
+
+.子程序 滚动条_是否在顶端或底端, 逻辑型, 公开
+    .参数 参_是否在底端, 逻辑型, 可空, 可空，默认：假=是否在底端，真=是否在顶端
+    .局部变量 info, SCROLLINFO
+
+    info.cbSize ＝ 28
+    info.fMask ＝ #SIF_ALL
+    GetScrollInfo (集_超级列表框句柄, #SB_VERT, info)
+    .如果 (参_是否在底端)
+        返回 (info.nPos ＝ 0)
+    .否则
+        返回 (info.nPage ＋ info.nPos ＝ info.nMax ＋ 1)
+    .如果结束
+    
+

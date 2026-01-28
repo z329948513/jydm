@@ -1,0 +1,1790 @@
+﻿.版本 2
+
+.程序集 集_进程线程
+.程序集变量 集_许可证数组, 线程许可证, , "0"
+
+.子程序 进程_名取句柄ex, 整数型, , 支持单个  汉族   响应时间10毫秒多  比 精易原版要快8-10倍
+    .参数 进程名, 文本型
+    .参数 PID, 整数型, 可空, 为了更加精准定位每个不同进程句柄   必须和 进程对应
+    .局部变量 window, 精易_窗口信息, , "0"
+    .局部变量 pcs, 整数型
+    .局部变量 a, 整数型
+    .局部变量 jcmz, 文本型, , "0"
+    .局部变量 pidz, 整数型, , "0"
+    .局部变量 hwnd, 整数型
+    .局部变量 tp, 整数型
+
+    ' 该例程收录自： https://bbs.125.la/forum.php?mod=viewthread&tid=14284196
+    pcs ＝ 进程_枚举 (jcmz, pidz)
+    .计次循环首 (pcs, a)
+        .如果真 (进程名 ＝ jcmz [a]) ' 存在多个进程 这个 就得自己判断了  比如枚举进程数组判断  这是单处理子程序
+            tp ＝ pidz [a]
+            .如果真 (是否为空 (PID) ≠ 真) ' 表示纯在值
+                .如果真 (PID ＝ pidz [a])
+                    tp ＝ pidz [a]
+                    跳出循环 ()
+                .如果真结束
+                
+            .如果真结束
+            
+        .如果真结束
+        处理事件 ()
+    .计次循环尾 ()
+    pcs ＝ 窗口_枚举J (window)
+    .计次循环首 (pcs, a)
+        .如果真 (window [a].进程ID ＝ tp)
+            hwnd ＝ 窗口_取祖句柄J (window [a].窗口句柄)
+            跳出循环 ()
+        .如果真结束
+        处理事件 ()
+    .计次循环尾 ()
+    返回 (hwnd)
+
+.子程序 进程_禁止被打开, 逻辑型, 公开
+    .局部变量 pAcl, 字节集
+
+    ' 该例程收录自： https://bbs.125.la/thread-14194970-1-1.html
+    pAcl ＝ 取空白字节集 (512)
+    .如果真 (InitializeAcl (pAcl, 1024, 2) ＝ 假)
+        返回 (假)
+    .如果真结束
+    .如果真 (SetSecurityInfo (-1, 6, 2147483652, 0, 0, pAcl, 0) ≠ 0)
+        返回 (假)
+    .如果真结束
+    返回 (真)
+    
+    
+
+.子程序 进程_强力结束进程, 逻辑型, 公开, 强制结束进程。
+    .参数 hProcess, 整数型, , 进程ID
+    .参数 ExitStatus, 整数型, , 填0
+    .局部变量 st, 整数型
+    .局部变量 hJob, 整数型
+    .局部变量 oa, OBJECT_ATTRIBUTES
+    .局部变量 ret, 逻辑型
+
+    ret ＝ 假
+    oa.Length ＝ 24
+    st ＝ ZwCreateJobObject (hJob, #JOB_OBJECT_ALL_ACCESS, oa)
+    .如果真 (st ≥ 0)
+        st ＝ ZwAssignProcessToJobObject (hJob, hProcess)
+        .如果真 (st ≥ 0)
+            st ＝ ZwTerminateJobObject (hJob, ExitStatus)
+            .如果真 (st ≥ 0)
+                ret ＝ 真
+            .如果真结束
+            
+        .如果真结束
+        ZwClose (hJob)
+    .如果真结束
+    .如果真 (ret ＝ 假)
+        st ＝ ZwTerminateProcess (hProcess, ExitStatus)
+        .如果真 (st ≥ 0)
+            ret ＝ 真
+        .如果真结束
+        
+    .如果真结束
+    返回 (ret)
+
+.子程序 进程_强力打开进程, 整数型, 公开, 和OpenProcess的函数填法相似
+    .参数 dwDesiredAccess, 整数型
+    .参数 bInhert, 逻辑型
+    .参数 ProcessId, 整数型
+    .局部变量 st, 整数型
+    .局部变量 cid, CLIENT_ID
+    .局部变量 oa, OBJECT_ATTRIBUTES
+    .局部变量 NumOfHandle, 整数型
+    .局部变量 pbi, PROCESS_BASIC_INFORMATION
+    .局部变量 i, 整数型
+    .局部变量 hProcessToDup, 整数型
+    .局部变量 hProcessCur, 整数型
+    .局部变量 hProcessToRet, 整数型
+    .局部变量 h_info, SYSTEM_HANDLE_TABLE_ENTRY_INFO
+    .局部变量 retlen, 整数型
+    .局部变量 a, 字节集
+    .局部变量 b, 整数型
+    .局部变量 c, 字节集
+    .局部变量 ret, 整数型
+
+    oa.Length ＝ 24
+    .如果真 (bInhert)
+        oa.Attributes ＝ 位或 (oa.Attributes, #OBJ_INHERIT)
+    .如果真结束
+    cid.UniqueProcess ＝ ProcessId ＋ 1
+    st ＝ ZwOpenProcess (hProcessToRet, dwDesiredAccess, oa, cid)
+    .如果真 (st ≥ 0)
+        ret ＝ hProcessToRet
+        返回 (ret)
+    .如果真结束
+    retlen ＝ 1
+    .循环判断首 ()
+        a ＝ 取空白字节集 (retlen)
+        ret ＝ ZwQuerySystemInformation_x (16, a, retlen, 0)
+        
+        .如果 (ret ＝ #STATUS_INFO_LENGTH_MISMATCH)
+            retlen ＝ retlen × 2
+            a ＝ 取空白字节集 (retlen)
+        .否则
+            跳出循环 ()
+        .如果结束
+        
+    .循环判断尾 (ret ＝ #STATUS_INFO_LENGTH_MISMATCH)
+    b ＝ 取指针_字节集 (a, a, 0)
+    RtlMoveMemory_整数传址1 (NumOfHandle, b, 4)
+    b ＝ b ＋ 4
+    .计次循环首 (NumOfHandle, i)
+        RtlMoveMemory_SYSTEM_HANDLE_TABLE_ENTRY_INFO (h_info, b, 16)
+        .如果真 (h_info.ObjectTypeIndex ＝ #OB_TYPE_PROCESS)
+            cid.UniqueProcess ＝ h_info.UniqueProcessId
+            st ＝ ZwOpenProcess (hProcessToDup, #PROCESS_DUP_HANDLE, oa, cid)
+            .如果真 (st ≥ 0)
+                st ＝ ZwDuplicateObject (hProcessToDup, h_info.HandleValue, #ZwGetCurrentProcess, hProcessCur, #PROCESS_ALL_ACCESS, 0, #DUPLICATE_SAME_ATTRIBUTES)
+                .如果真 (st ≥ 0)
+                    st ＝ ZwQueryInformationProcess (hProcessCur, 0, pbi, 24, 0)
+                    .如果真 (st ≥ 0)
+                        .如果真 (pbi.UniqueProcessId ＝ ProcessId)
+                            st ＝ ZwDuplicateObject (hProcessToDup, h_info.HandleValue, #ZwGetCurrentProcess, hProcessToRet, dwDesiredAccess, #OBJ_INHERIT, #DUPLICATE_SAME_ATTRIBUTES)
+                            .如果真 (st ≥ 0)
+                                ret ＝ hProcessToRet
+                            .如果真结束
+                            
+                        .如果真结束
+                        
+                    .如果真结束
+                    
+                .如果真结束
+                st ＝ ZwClose (hProcessCur)
+            .如果真结束
+            st ＝ ZwClose (hProcessToDup)
+        .如果真结束
+        b ＝ b ＋ 16
+    .计次循环尾 ()
+    返回 (ret)
+
+.子程序 进程_PID取路径, 文本型, 公开, 解决了一个句柄泄漏问题
+    .参数 PID, 整数型, , 进程ID
+    .局部变量 handle, 整数型
+    .局部变量 a, 文本型
+    .局部变量 buf, 文本型
+
+    handle ＝ OpenProcess (1024, 0, PID)
+    .如果真 (handle ＝ 0)
+        handle ＝ 进程_强力打开进程 (1024, 假, PID)
+    .如果真结束
+    buf ＝ 取空白文本 (512)
+    .如果真 (GetProcessImageFileName (handle, buf, 512) ＝ 0)
+        返回 (“”)
+    .如果真结束
+    CloseHandle (handle)
+    buf ＝ DOS路径转换_ (buf)
+    buf ＝ 删首尾空 (buf)
+    .如果 (buf ＝ “”)
+        返回 (“-”)
+    .否则
+        a ＝ buf
+        a ＝ 子文本替换 (a, “\Device\HarddiskVolume6”, “H:”, , , 假)
+        a ＝ 子文本替换 (a, “\Device\HarddiskVolume5”, “G:”, , , 假)
+        a ＝ 子文本替换 (a, “\Device\HarddiskVolume4”, “F:”, , , 假)
+        a ＝ 子文本替换 (a, “\Device\HarddiskVolume3”, “E:”, , , 假)
+        a ＝ 子文本替换 (a, “\Device\HarddiskVolume2”, “D:”, , , 假)
+        a ＝ 子文本替换 (a, “\Device\HarddiskVolume1”, “C:”, , , 假)
+        返回 (a)
+    .如果结束
+    
+
+.子程序 DOS路径转换_, 文本型
+    .参数 txt, 文本型
+    .局部变量 buf_, 文本型
+    .局部变量 buf, 字节集
+    .局部变量 size, 整数型
+    .局部变量 数组, 字节集, , "0"
+    .局部变量 驱动器数目, 整数型
+    .局部变量 n, 整数型
+    .局部变量 逻辑驱动器, 文本型, , "0"
+    .局部变量 DOS设备, 文本型, , "0"
+    .局部变量 局_数据, 文本型
+
+    size ＝ GetLogicalDriveStringsA (0, { })
+    buf ＝ 取空白字节集 (size)
+    GetLogicalDriveStringsA (size, buf) ' 获取逻辑驱动器文本
+    数组 ＝ 分割字节集 (buf, { 0 }, )
+    驱动器数目 ＝ 取数组成员数 (数组) － 1
+    .如果真 (驱动器数目 ＞ 0)
+        重定义数组 (逻辑驱动器, 假, 驱动器数目)
+        重定义数组 (DOS设备, 假, 驱动器数目)
+        .计次循环首 (驱动器数目, n)
+            buf ＝ 数组 [n]
+            buf [取字节集长度 (buf)] ＝ 0
+            逻辑驱动器 [n] ＝ 到文本 (buf)
+            
+            buf_ ＝ 取空白文本 (260)
+            QueryDosDeviceA (逻辑驱动器 [n], buf_, 260)
+            DOS设备 [n] ＝ buf_
+        .计次循环尾 ()
+        n ＝ 0
+        .计次循环首 (驱动器数目, n)
+            局_数据 ＝ 文本_取右边 (txt, “\Device\”)
+            局_数据 ＝ “\Device\” ＋ 文本_取左边 (局_数据, “\”)
+            .如果真 (局_数据 ＝ DOS设备 [n])
+                ' 把路径中类似于 \Device\HarddiskVolume1 的部分用 C:、D:等对应代替
+                txt ＝ 子文本替换 (txt, DOS设备 [n], 逻辑驱动器 [n], 0, 1, 假)
+                返回 (txt)
+                跳出循环 ()
+            .如果真结束
+            
+        .计次循环尾 ()
+    .如果真结束
+    返回 (txt)
+    
+
+.子程序 进程_定位, , 公开, 通过进程PID定位进程
+    .参数 PID, 整数型
+
+    运行 (“explorer /select, ” ＋ 进程_PID取路径 (PID), 假, )
+
+.子程序 进程_内存使用, 文本型, 公开, 查看指定进程ID的内存使用情况
+    .参数 PID, 整数型
+    .局部变量 Mem, Process_Memory_Counters
+
+    .局部变量 标识, 整数型
+
+    标识 ＝ OpenProcess_x (1024, 假, PID)
+    .如果真 (GetProcessMemoryInfo (标识, Mem, 40) ≠ 0)
+        CloseHandle (标识)
+        返回 (数值到格式文本 (Mem.当前工作设置大小 ÷ 1024, 0, 真) ＋ “ K”)
+    .如果真结束
+    CloseHandle (标识)
+    返回 (“”)
+
+.子程序 进程_取命令行32, 文本型, 公开, 取指定进程ID的命令行.32位系统专用
+    .参数 进程ID, 整数型
+    .局部变量 进程句柄
+    .局部变量 info, PROCESS_BASIC_INFORMATION
+    .局部变量 a, 整数型
+    .局部变量 b
+    .局部变量 c, MEMORY_BASIC_INFORMATION
+    .局部变量 buffer, 字节集
+    .局部变量 len, 整数型
+
+    RtlAdjustPrivilege32 (20, 真, 0, 0)
+    进程句柄 ＝ OpenProcess (1024 ＋ 16, 0, 进程ID)
+    ZwQueryInformationProcess (进程句柄, 0, info, 24, 0)
+    buffer ＝ 取空白字节集 (4)
+    ' [[peb+10h]+28h]进程运行目录,[[peb+10h]+3ch]进程路径,[[peb+10h]+44h]命令行
+    NtReadVirtualMemory (进程句柄, info.PebBaseAddress ＋ 16, buffer, 4, 0)
+    a ＝ 取字节集数据 (buffer, 3, )
+    NtReadVirtualMemory (进程句柄, a ＋ 68, buffer, 4, 0) ' 68命令行, 60路径, 40运行目录
+    b ＝ 取字节集数据 (buffer, 3, )
+    VirtualQueryEx32 (进程句柄, b, c, 28)
+    len ＝ c.RegionSize ＋ c.BaseAddress － b
+    buffer ＝ 取空白字节集 (len)
+    NtReadVirtualMemory (进程句柄, b, buffer, len, 0)
+    CloseHandle (进程句柄)
+    返回 (编码_Unicode到Ansi (buffer))
+
+.子程序 进程_取用户名, 文本型, 公开, 获取指定进程的用户名
+    .参数 进程PID, 整数型
+    .局部变量 pbuf, 整数型
+    .局部变量 dwSize, 整数型
+    .局部变量 lRetVal, 整数型
+    .局部变量 memaddr, 整数型
+    .局部变量 pCurProcInfo, SYSTEM_PROCESS_INFORMATION_ex
+    .局部变量 ftStartTime, 长整数型
+    .局部变量 cRetVal, 整数型
+    .局部变量 pSid, 字节集
+    .局部变量 strDomain, 文本型
+    .局部变量 DomainSize, 整数型
+    .局部变量 strUserName, 文本型
+    .局部变量 n, 整数型
+
+    dwSize ＝ 1024 × 1024
+    memaddr ＝ LocalAlloc (0, dwSize)
+    pbuf ＝ memaddr
+    lRetVal ＝ NtQuerySystemInformation (5, pbuf, dwSize, 0) ' #SystemProcessInformation
+    .如果真 (lRetVal ＝ 0)
+        RtlMoveMemory_SYSTEM_PROCESSES (pCurProcInfo, pbuf, 188)
+        .判断循环首 (pCurProcInfo.dwNextEntryOffset ≠ 0)
+            .如果真 (pCurProcInfo.dwProcessId ＝ 进程PID)
+                ftStartTime ＝ pCurProcInfo.qCreateTime
+                WinStationGetProcessSid (0, 进程PID, ftStartTime, { }, n)
+                pSid ＝ 取空白字节集 (n)
+                .如果真 (WinStationGetProcessSid (0, 进程PID, ftStartTime, pSid, n) ＝ 0)
+                    LocalFree (memaddr)
+                    返回 (“服务关闭”)
+                .如果真结束
+                LookupAccountSid (字符 (0), pSid, 字符 (0), n, 字符 (0), DomainSize, 0)
+                strUserName ＝ 取空白文本 (255)
+                strDomain ＝ 取空白文本 (255)
+                .如果真 (LookupAccountSid (字符 (0), pSid, strUserName, n, strDomain, DomainSize, 0))
+                    LocalFree (memaddr)
+                    返回 (strUserName)
+                .如果真结束
+                
+            .如果真结束
+            pbuf ＝ pbuf ＋ pCurProcInfo.dwNextEntryOffset
+            RtlMoveMemory_SYSTEM_PROCESSES (pCurProcInfo, pbuf, 188)
+        .判断循环尾 ()
+    .如果真结束
+    LocalFree (memaddr)
+    返回 (“”)
+
+.子程序 进程_取命令行, 文本型, 公开, 取指定进程ID的命令行.64位系统专用
+    .参数 PID, 整数型
+    .局部变量 pbi, PROCESS_BASIC_INFORMATION64
+    .局部变量 Ldr, PEB_LDR_DATA
+    .局部变量 RTL, RTL_USER_PROCESS_PARAMETERS
+    .局部变量 局_缓冲区, 字节集
+    .局部变量 hSnapShot, 整数型
+    .局部变量 mod, LPMODULEENTRY32
+    .局部变量 Process, 整数型
+    .局部变量 局_命令行, 文本型
+
+    RtlAdjustPrivilege_x (20, 真, 假, 0)
+    Process ＝ OpenProcess (1040, 0, PID)
+    .如果真 (Process ≠ 0)
+        .如果真 (NtWow64QueryInformationProcess64 (Process, 0, pbi, 48, 0) ＝ 0)
+            .如果真 (NtWow64ReadVirtualMemory64_LDR (Process, pbi.PebBaseAddress, Ldr, 40, 0) ＝ 0)
+                .如果真 (NtWow64ReadVirtualMemory64_Process (Process, Ldr.ProcessParameters ＋ 96, RTL, 32, 0) ＝ 0)
+                    .如果真 (RTL.CommandLine.Buffer ＞ 0)
+                        局_缓冲区 ＝ 取空白字节集 (RTL.CommandLine.Length)
+                        NtWow64ReadVirtualMemory64_bin (Process, RTL.CommandLine.Buffer, 局_缓冲区, RTL.CommandLine.Length, 0)
+                        局_命令行 ＝ 编码_Unicode到Ansi (局_缓冲区)
+                    .如果真结束
+                    
+                .如果真结束
+                
+            .如果真结束
+            
+        .如果真结束
+        
+    .如果真结束
+    CloseHandle (Process)
+    返回 (局_命令行)
+
+.子程序 进程_是否被挂起, 逻辑型, 公开, 检测进程是否被暂停，亦可用于窗口是否假死
+    .参数 进程PID, 整数型
+    .参数 超时时间, 整数型, 可空, 检测窗口的响应时间，超时则为假死，单位：毫秒；可空，默认100毫秒
+    .局部变量 返回值, 整数型
+    .局部变量 结果, 整数型
+
+    .如果真 (是否为空 (超时时间))
+        超时时间 ＝ 100
+    .如果真结束
+    结果 ＝ 进程_ID取窗口句柄EX (进程PID)
+    .如果真 (结果 ＝ 0)
+        返回 (假)
+    .如果真结束
+    返回值 ＝ lms520_SendMessageTimeout (结果, #WM_GETTEXTLENGTH, 0, 0, #SMTO_NORMAL, 超时时间, 0)
+    .判断开始 (返回值 ＝ 1)
+        返回 (假)
+    .默认
+        返回 (真)
+    .判断结束
+    
+
+.子程序 进程_取程序路径, 文本型, 公开, 取指定进程的程序路径，成功返回程序路径，失败或进程不存在返回空文本
+    .参数 进程ID, 整数型
+    .局部变量 快照句柄, 整数型
+    .局部变量 模块信息, 精易_模块信息
+    .局部变量 路径, 文本型
+
+    快照句柄 ＝ CreateToolhelp32Snapshot (8, 进程ID)
+    .判断开始 (进程ID ＝ 4)
+        CloseHandle (快照句柄)
+        返回 (目录_取system32目录 ())
+    .判断 (快照句柄 ＝ -1)
+        返回 (“”)
+    .默认
+        
+    .判断结束
+    模块信息.size ＝ 1024
+    Module32First (快照句柄, 模块信息)
+    路径 ＝ 到文本 (模块信息.模块完整路径)
+    .判断开始 (取文本左边 (路径, 11) ＝ “\SystemRoot”)
+        路径 ＝ 读环境变量 (“SystemRoot”) ＋ 子文本替换 (路径, “\SystemRoot”, “”, , 1, 假)
+    .判断 (取文本左边 (路径, 4) ＝ “\??\”)
+        路径 ＝ 子文本替换 (路径, “\??\”, “”, , 1, 假)
+    .默认
+        
+    .判断结束
+    CloseHandle (快照句柄)
+    返回 (路径)
+
+.子程序 进程_暂停, , 公开, 将指定进程暂停(无返回值)
+    .参数 进程ID, 整数型, , 欲被暂停进程的进程ID
+    .参数 状态, 逻辑型, 可空, 可空为假:恢复进程   真:暂停进程
+    .局部变量 进程句柄, 整数型
+
+    进程句柄 ＝ OpenProcess (2035711, 0, 进程ID)
+    .如果 (状态)
+        ZwSuspendProcess (进程句柄)
+    .否则
+        ZwResumeProcess (进程句柄)
+    .如果结束
+    CloseHandle (进程句柄)
+
+.子程序 进程_结束, 逻辑型, 公开, 结束指定进程。成功返回真，失败返回假。本命令为初级命令
+    .参数 进程ID, 整数型, 可空, 欲结束的进程ID,如果为空将结束自己
+    .局部变量 局_进程句柄, 整数型
+    .局部变量 局_结束结果, 逻辑型
+
+    .如果真 (是否为空 (进程ID))
+        进程ID ＝ 进程_取自进程ID ()
+    .如果真结束
+    局_进程句柄 ＝ OpenProcess (1, 0, 进程ID)
+    局_结束结果 ＝ TerminateProcess (局_进程句柄, 0) ＝ 1
+    CloseHandle (局_进程句柄)
+    返回 (局_结束结果)
+
+.子程序 进程_结束1, 逻辑型, 公开, 结束指定进程。成功返回真，失败返回假。本命令为初级命令
+    .参数 进程名, 文本型, 可空, 欲结束的进程名,如果为空将结束自己
+    .参数 是否区分大小写, 逻辑型, 可空, 默认为不区分,真=区分
+    .局部变量 局_进程句柄, 整数型
+    .局部变量 局_结束结果, 逻辑型
+
+    .如果真 (是否为空 (进程名))
+        进程名 ＝ 取执行文件名 ()
+    .如果真结束
+    局_进程句柄 ＝ OpenProcess (1, 0, 进程_名取ID (进程名, 是否区分大小写))
+    局_结束结果 ＝ TerminateProcess (局_进程句柄, 0) ＝ 1
+    CloseHandle (局_进程句柄)
+    返回 (局_结束结果)
+    
+
+.子程序 进程_枚举, 整数型, 公开, 失败返回0，成功返回进程数量
+    .参数 进程名数组, 文本型, 参考 可空 数组, 返回的进程名 数组
+    .参数 进程ID数组, 整数型, 参考 可空 数组, 返回的进程ID 数组
+    .局部变量 信息, 精易_进程信息列表
+    .局部变量 进程快照, 整数型
+    .局部变量 进程句柄, 整数型
+
+    进程快照 ＝ CreateToolhelp32Snapshot (15, 0)
+    .如果真 (进程快照 ＝ 0)
+        返回 (0)
+    .如果真结束
+    信息.dwSize ＝ 1024
+    进程句柄 ＝ Process32First (进程快照, 信息)
+    .判断开始 (是否为空 (进程名数组) ＝ 假 且 是否为空 (进程ID数组) ＝ 假)
+        清除数组 (进程名数组)
+        清除数组 (进程ID数组)
+        .判断循环首 (进程句柄 ≠ 0)
+            加入成员 (进程名数组, 到文本 (信息.进程名称))
+            加入成员 (进程ID数组, 信息.进程ID)
+            进程句柄 ＝ Process32Next (进程快照, 信息)
+        .判断循环尾 ()
+    .判断 (是否为空 (进程名数组) ＝ 假)
+        清除数组 (进程名数组)
+        .判断循环首 (进程句柄 ≠ 0)
+            加入成员 (进程名数组, 到文本 (信息.进程名称))
+            进程句柄 ＝ Process32Next (进程快照, 信息)
+        .判断循环尾 ()
+    .默认
+        清除数组 (进程ID数组)
+        .判断循环首 (进程句柄 ≠ 0)
+            加入成员 (进程ID数组, 信息.进程ID)
+            进程句柄 ＝ Process32Next (进程快照, 信息)
+        .判断循环尾 ()
+        CloseHandle (进程快照)
+        返回 (取数组成员数 (进程ID数组))
+    .判断结束
+    CloseHandle (进程快照)
+    返回 (取数组成员数 (进程名数组))
+
+.子程序 进程_取系统进程列表, 整数型, 公开, 失败返回0，成功返回进程数量
+    .参数 进程信息数组, 精易_进程信息数组, 参考 数组
+    .局部变量 pSystemProc, SYSTEM_PROCESSES
+    .局部变量 ret, 整数型
+    .局部变量 buffer, 整数型
+    .局部变量 retLen, 整数型
+    .局部变量 Str, 整数型
+    .局部变量 进程信息, 精易_进程信息数组
+    .局部变量 memaddr, 整数型
+
+    清除数组 (进程信息数组)
+    ret ＝ NtQuerySystemInformation (5, buffer, 0, retLen)
+    memaddr ＝ LocalAlloc (64, retLen)
+    buffer ＝ memaddr
+    ret ＝ NtQuerySystemInformation (5, buffer, retLen, 0)
+    .如果真 (ret ＝ 0)
+        Str ＝ LocalAlloc (64, 512)
+        CopyMemory_SYSTEM_PROCESSES (pSystemProc, buffer, 248)
+        .判断循环首 (pSystemProc.NextEntryDelta ≠ 0)
+            WideCharToMultiByte (936, 512, pSystemProc.ProcessName.缓冲区, -1, Str, pSystemProc.ProcessName.长度, 0, 0)
+            进程信息.进程名称 ＝ 选择 (pSystemProc.ProcessName.缓冲区 ＝ 0, “System Idle Process”, 指针到文本 (Str))
+            进程信息.进程标识符 ＝ pSystemProc.ProcessID
+            进程信息.进程模块标识符 ＝ 0
+            进程信息.父进程标识符 ＝ pSystemProc.InheritedFromProcessId
+            进程信息.线程优先权 ＝ pSystemProc.BasePriority
+            进程信息.线程数 ＝ pSystemProc.ThreadCount
+            加入成员 (进程信息数组, 进程信息)
+            buffer ＝ buffer ＋ pSystemProc.NextEntryDelta
+            CopyMemory_SYSTEM_PROCESSES (pSystemProc, buffer, 248)
+        .判断循环尾 ()
+        WideCharToMultiByte (936, 512, pSystemProc.ProcessName.缓冲区, -1, Str, pSystemProc.ProcessName.长度, 0, 0)
+        进程信息.进程名称 ＝ 选择 (pSystemProc.ProcessName.缓冲区 ＝ 0, “System Idle Process”, 指针到文本 (Str))
+        进程信息.进程标识符 ＝ pSystemProc.ProcessID
+        进程信息.进程模块标识符 ＝ 0
+        进程信息.父进程标识符 ＝ pSystemProc.InheritedFromProcessId
+        进程信息.线程优先权 ＝ pSystemProc.BasePriority
+        进程信息.线程数 ＝ pSystemProc.ThreadCount
+        加入成员 (进程信息数组, 进程信息)
+        LocalFree (Str)
+    .如果真结束
+    LocalFree (memaddr)
+    返回 (取数组成员数 (进程信息数组))
+
+.子程序 进程_取同名ID, 整数型, 公开, 取相同名称进程，成功返回进程id数量。返回-1表示失败。
+    .参数 进程名, 文本型
+    .参数 进程ID数组, 整数型, 可空 数组, 返回的进程ID 数组
+    .局部变量 信息, 精易_进程信息列表
+    .局部变量 进程快照, 整数型
+    .局部变量 是否存在, 整数型
+
+    清除数组 (进程ID数组)
+    进程快照 ＝ CreateToolhelp32Snapshot (15, 0)
+    .如果真 (进程快照 ≠ 0)
+        信息.dwSize ＝ 1024
+        是否存在 ＝ Process32First (进程快照, 信息)
+        .判断循环首 (是否存在 ≠ 0)
+            .如果真 (到小写 (到文本 (信息.进程名称)) ＝ 到小写 (进程名))
+                加入成员 (进程ID数组, 信息.进程ID)
+            .如果真结束
+            是否存在 ＝ Process32Next (进程快照, 信息)
+        .判断循环尾 ()
+        CloseHandle (进程快照)
+        返回 (取数组成员数 (进程ID数组))
+    .如果真结束
+    返回 (-1)
+
+.子程序 进程_ID是否有效, 逻辑型, 公开, 判断一个进程ID是否存在（有效）
+    .参数 进程ID, 整数型
+    .局部变量 pid, , , "1024"
+    .局部变量 cbNeeded
+    .局部变量 bool, 逻辑型
+    .局部变量 cnt, 整数型
+    .局部变量 i, 整数型
+    .局部变量 existence, 逻辑型
+
+    .如果真 (0 ＝ 进程ID)
+        返回 (假)
+    .如果真结束
+    bool ＝ EnumProcesses (pid, 1024 × 2, cbNeeded)
+    .如果真 (bool)
+        重定义数组 (pid, 真, cbNeeded ÷ 4)
+        .计次循环首 (取数组成员数 (pid), i)
+            .如果真 (pid [i] ＝ 进程ID)
+                existence ＝ 真
+            .如果真结束
+            处理事件 ()
+        .计次循环尾 ()
+    .如果真结束
+    返回 (existence)
+
+.子程序 进程_取ID数组, 整数型, 公开, 取指定进程名称的所有进程的进程ID(返回进程ID数目,没有返回0)
+    .参数 进程名, 文本型, , 程序进程名
+    .参数 进程ID数组, 整数型, 参考 数组, 返回的进程ID 数组
+    .参数 区分大小写, 逻辑型, 可空, 默认不区分进程名大小写
+    .局部变量 信息, 精易_进程信息列表
+    .局部变量 进程快照, 整数型
+    .局部变量 进程句柄, 整数型
+
+    清除数组 (进程ID数组)
+    进程快照 ＝ CreateToolhelp32Snapshot (15, 0)
+    .如果真 (进程快照 ＝ 0)
+        返回 (0)
+    .如果真结束
+    信息.dwSize ＝ 1024
+    进程句柄 ＝ Process32First (进程快照, 信息)
+    .判断开始 (区分大小写)
+        .判断循环首 (进程句柄 ≠ 0)
+            .如果真 (进程名 ＝ 到文本 (信息.进程名称))
+                加入成员 (进程ID数组, 信息.进程ID)
+            .如果真结束
+            进程句柄 ＝ Process32Next (进程快照, 信息)
+        .判断循环尾 ()
+        
+    .默认
+        .判断循环首 (进程句柄 ≠ 0)
+            .如果真 (到小写 (进程名) ＝ 到小写 (到文本 (信息.进程名称)))
+                加入成员 (进程ID数组, 信息.进程ID)
+            .如果真结束
+            进程句柄 ＝ Process32Next (进程快照, 信息)
+        .判断循环尾 ()
+        
+    .判断结束
+    CloseHandle (进程快照)
+    返回 (取数组成员数 (进程ID数组))
+
+.子程序 进程_名取ID, 整数型, 公开, 通过进程名取进程ID；失败返回0 
+    .参数 进程名, 文本型, , 取要进程ID的进程名
+    .参数 是否区分大小写, 逻辑型, 可空, 默认为不区分,真=区分
+    .局部变量 局_进程信息, 精易_进程信息列表
+    .局部变量 进程快照, 整数型
+    .局部变量 进程句柄, 整数型
+
+    进程快照 ＝ CreateToolhelp32Snapshot (2, 0)
+    .如果真 (进程快照 ＝ 0)
+        返回 (0)
+    .如果真结束
+    局_进程信息.dwSize ＝ 512
+    进程句柄 ＝ Process32First (进程快照, 局_进程信息)
+    .判断开始 (是否区分大小写)
+        .判断循环首 (进程句柄 ≠ 0)
+            .如果真 (到文本 (局_进程信息.进程名称) ＝ 进程名)
+                CloseHandle (进程快照)
+                返回 (局_进程信息.进程ID)
+            .如果真结束
+            进程句柄 ＝ Process32Next (进程快照, 局_进程信息)
+        .判断循环尾 ()
+    .默认
+        .判断循环首 (进程句柄 ≠ 0)
+            .如果真 (到小写 (到文本 (局_进程信息.进程名称)) ＝ 到小写 (进程名))
+                CloseHandle (进程快照)
+                返回 (局_进程信息.进程ID)
+            .如果真结束
+            进程句柄 ＝ Process32Next (进程快照, 局_进程信息)
+        .判断循环尾 ()
+    .判断结束
+    CloseHandle (进程快照)
+    返回 (0)
+
+.子程序 进程_打开, 整数型, 公开, 通过目标窗口句柄取进程句柄，成功就返回进程句柄
+    .参数 对象句柄, 整数型, , 对象的窗口句柄
+    .局部变量 进程句柄, 整数型
+    .局部变量 dwProcessID, 整数型
+
+    GetWindowThreadProcessId (对象句柄, dwProcessID)
+    进程句柄 ＝ OpenProcess (2035711, 0, dwProcessID)
+    返回 (进程句柄)
+
+.子程序 进程_打开1, 整数型, 公开, 通过目标进程ID取进程句柄，成功就返回进程句柄
+    .参数 进程ID, 整数型, , 目标进程ID
+
+    返回 (OpenProcess (2035711, 0, 进程ID))
+
+.子程序 进程_关闭, 逻辑型, 公开, 关闭已经打开的操作句柄
+    .参数 进程句柄, 整数型, , 进程句柄,线程句柄
+
+    返回 (CloseHandle (进程句柄))
+
+.子程序 进程_创建, 整数型, 公开, 创建一个程序进程(成功返回进程ID,失败返回0)
+    .参数 程序路径, 文本型, , 欲创建进程的执行路径
+    .参数 命令行, 文本型, 可空, 附加上程序路径后的命令行参数
+    .参数 运行目录, 文本型, 可空, 通常留空,特殊情况下使用
+    .参数 进程结构, 精易_进程结构, 参考 可空, 接收进程结构信息的变量,如果不为空，产品的句柄用CloseHandle函数释放
+    .局部变量 窗口结构, StartupInfo
+
+    .如果真 (运行目录 ＝ “”)
+        运行目录 ＝ 取文本左边 (程序路径, 倒找文本 (程序路径, “\”, , 假))
+    .如果真结束
+    CreateProcessA (程序路径, 命令行, 0, 0, 0, 0, 0, 运行目录, 窗口结构, 进程结构)
+    .如果真 (是否为空 (进程结构))
+        CloseHandle (进程结构.进程句柄)
+        CloseHandle (进程结构.线程句柄)
+    .如果真结束
+    返回 (进程结构.进程标识符)
+    
+    
+
+.子程序 进程_创建Ex, 整数型, 公开, 创建一个程序进程(成功返回进程ID,失败返回0)
+    .参数 程序路径, 文本型, , 欲创建进程的执行路径
+    .参数 命令行, 文本型, 可空, 附加上程序路径后的命令行参数
+    .参数 是否等待, 逻辑型, 可空, 是否等待程序运行完毕,默认为假.
+    .参数 显示方式, 整数型, 可空, 被运行程序窗口显示方式.参数值可以为以下常量之一:1 #隐藏窗口 2 #普通激活 3 #最小化激活 4 #最大化激活 5 #普通不激活 6 #最小化不激活.如果省略本参数,默认为“普通激活”方式.
+    .参数 运行目录, 文本型, 可空, 通常留空,特殊情况下使用
+    .参数 进程结构, 精易_进程结构, 参考 可空, 接收进程结构信息的变量,如果不为空，产品的句柄用CloseHandle函数释放
+    .局部变量 窗口结构, StartupInfo
+
+    .如果真 (运行目录 ＝ “”)
+        运行目录 ＝ 取文本左边 (程序路径, 倒找文本 (程序路径, “\”, , 假))
+    .如果真结束
+    窗口结构.cbSize ＝ 68
+    .判断开始 (显示方式 ＝ 1)
+        窗口结构.dwFlags ＝ 1
+        窗口结构.wShowWindow ＝ 0
+    .判断 (显示方式 ＝ 3)
+        窗口结构.dwFlags ＝ 1
+        窗口结构.wShowWindow ＝ 2
+    .判断 (显示方式 ＝ 4)
+        窗口结构.dwFlags ＝ 1
+        窗口结构.wShowWindow ＝ 3
+    .判断 (显示方式 ＝ 5)
+        窗口结构.dwFlags ＝ 1
+        窗口结构.wShowWindow ＝ 4
+    .判断 (显示方式 ＝ 6)
+        窗口结构.dwFlags ＝ 1
+        窗口结构.wShowWindow ＝ 6
+    .默认
+        窗口结构.dwFlags ＝ 0
+        窗口结构.wShowWindow ＝ 1
+    .判断结束
+    CreateProcessA (程序路径, 命令行, 0, 0, 0, 0, 0, 运行目录, 窗口结构, 进程结构)
+    .如果 (是否等待)
+        WaitForSingleObject (进程结构.进程句柄, -1)
+    .否则
+        WaitForInputIdle (进程结构.进程句柄, 1000)
+    .如果结束
+    .如果真 (是否为空 (进程结构))
+        CloseHandle (进程结构.进程句柄)
+        CloseHandle (进程结构.线程句柄)
+    .如果真结束
+    返回 (进程结构.进程标识符)
+
+.子程序 进程_名取句柄, 整数型, 公开, 通过进程名取对应的窗口句柄；成功返回窗口句柄，失败返回0，返回-1表示找到进程。
+    .参数 进程名, 文本型, , 要取窗口句柄的进程名；
+    .局部变量 pid
+    .局部变量 hwnd
+
+    pid ＝ 进程_名取ID (进程名)
+    .如果真 (pid ≠ 0)
+        返回 (进程_ID取窗口句柄J (pid, , , 100))
+    .如果真结束
+    返回 (-1)
+
+.子程序 进程_取自进程ID, 整数型, 公开, 取自身的进程ID，成功返回进程ID；失败返回0
+    返回 (GetCurrentProcessId ())
+
+.子程序 进程_ID取进程名, 文本型, 公开, 通过进程ID取得该进程执行文件名，也就是进程名;
+    .参数 参数_进程ID, 整数型, , 该进程的ID;
+    .局部变量 hProcessSnap, 整数型
+    .局部变量 bool
+    .局部变量 pe32, 精易_进程信息列表
+    .局部变量 name, 文本型
+
+    hProcessSnap ＝ CreateToolhelp32Snapshot (2, 0) ' #TH32CS_SNAPPROCESS
+    pe32.dwSize ＝ 296
+    bool ＝ Process32Next (hProcessSnap, pe32)
+    .判断循环首 (bool ＝ 1)
+        .如果真 (pe32.进程ID ＝ 参数_进程ID)
+            name ＝ 到文本 (pe32.进程名称)
+            跳出循环 ()
+        .如果真结束
+        bool ＝ Process32Next (hProcessSnap, pe32)
+    .判断循环尾 ()
+    CloseHandle (hProcessSnap)
+    返回 (name)
+    
+
+.子程序 进程_取系统版本, 逻辑型, 公开, 成功返回真
+    .参数 进程ID, 整数型, 可空, 默认为当前进程的句柄。
+    .参数 主要版本号, 整数型, 参考 可空, 接收操作系统的主要版本号。
+    .参数 次要版本号, 整数型, 参考 可空, 接收操作系统的次要版本号。
+    .参数 内部版本号, 短整数型, 参考 可空, 接收操作系统的内部版本号。
+    .局部变量 hProcess, 整数型
+    .局部变量 peb, 整数型, , , PROCESS_BASIC_INFORMATION
+    .局部变量 dwSize, 整数型
+    .局部变量 pebAddress, 整数型
+    .局部变量 NtStatus, 整数型
+
+    .如果 (进程ID ＝ 0)
+        hProcess ＝ GetCurrentProcess ()
+    .否则
+        hProcess ＝ OpenProcess (#PROCESS_ALL_ACCESS, 0, 进程ID)
+    .如果结束
+    .如果真 (hProcess ＝ #NULL)
+        返回 (假)
+    .如果真结束
+    dwSize ＝ 24
+    peb ＝ LocalAlloc (#LMEM_ZEROINIT, dwSize)
+    NtStatus ＝ NtQueryInformationProcess (hProcess, 0, peb, dwSize, dwSize)
+    .如果 (NtStatus ≠ #STATUS_SUCCESS)
+        ' 输出调试文本 (取错误信息文本_API (NtStatus, “Ntdll.dll”))
+    .否则
+        pebAddress ＝ __get (peb, 4)
+        主要版本号 ＝ __get (pebAddress, 164)
+        次要版本号 ＝ __get (pebAddress, 168)
+        内部版本号 ＝ 指针_到短整数型_汇编 (pebAddress ＋ 172)
+    .如果结束
+    LocalFree (peb)
+    CloseHandle (hProcess)
+    返回 (NtStatus ＝ #STATUS_SUCCESS)
+
+.子程序 进程_ID取窗口句柄J, 整数型, 公开, 通过进程ID取得该进程的窗口句柄,超时则返回零
+    .参数 进程ID, 整数型, , 该进程的ID;
+    .参数 窗口标题, 文本型, 可空, 模糊参数 如果为空,忽略此参数
+    .参数 窗口类名, 文本型, 可空, 模糊参数 如果为空,忽略此参数
+    .参数 超时, 整数型, 可空, 为空则无限循环
+    .参数 是否可见, 逻辑型, 可空, 可空, 默认为假枚举所有窗口,如为真则只查找可见窗口
+    .局部变量 局_超时时间
+    .局部变量 局_开始时间
+    .局部变量 局_窗口句柄
+    .局部变量 局_进程ID
+    .局部变量 局_标题, 文本型
+    .局部变量 局_类名, 文本型
+
+    局_开始时间 ＝ 取启动时间 ()
+    局_超时时间 ＝ 选择 (是否为空 (超时) 或 超时 ＝ -1, 31536000, 超时)
+    .判断循环首 (取启动时间 () － 局_开始时间 ＜ 局_超时时间)
+        局_窗口句柄 ＝ FindWindowExA (0, 局_窗口句柄, 0, 0)
+        .如果真 (IsWindow (局_窗口句柄) ＝ 1)
+            .如果真 (IsWindowVisible (局_窗口句柄) ＝ 假 且 是否可见)
+                到循环尾 ()
+            .如果真结束
+            
+            
+            .如果真 (IsWindowVisible (局_窗口句柄))
+                局_进程ID ＝ 窗口_句柄取进程ID (局_窗口句柄)
+                .如果真 (局_进程ID ＝ 进程ID)
+                    局_标题 ＝ 窗口_取标题J (局_窗口句柄)
+                    局_类名 ＝ 窗口_取类名J (局_窗口句柄)
+                    .判断开始 (是否为空 (窗口标题) 且 是否为空 (窗口类名))
+                        返回 (局_窗口句柄)
+                        ' 两个参数为空，直接返回句柄.
+                    .判断 (是否为空 (窗口标题))
+                        .如果真 (寻找文本 (局_类名, 窗口类名, , 假) ≠ -1)
+                            返回 (局_窗口句柄)
+                            ' 如果窗口标题参数为空，则判断类名，存在即返回句柄。
+                        .如果真结束
+                        
+                    .判断 (是否为空 (窗口类名))
+                        .如果真 (寻找文本 (局_标题, 窗口标题, , 假) ≠ -1)
+                            返回 (局_窗口句柄)
+                            ' 如果类名参数为空，则判断标题，存在即返回句柄
+                        .如果真结束
+                        
+                    .默认
+                        .如果真 (寻找文本 (局_标题, 窗口标题, , 假) ≠ -1 且 寻找文本 (局_类名, 窗口类名, , 假) ≠ -1)
+                            返回 (局_窗口句柄)
+                            ' 如果两个参数都存在，则匹配2个满足条件时，返回句柄。
+                        .如果真结束
+                        
+                    .判断结束
+                    返回 (0) ' 进程ID的唯一性，以上不满足的话，这里要直接返回0了。
+                .如果真结束
+                
+            .如果真结束
+            
+        .如果真结束
+        处理事件 ()
+    .判断循环尾 ()
+    返回 (0)
+
+.子程序 进程_ID取窗口句柄EX, 整数型, 公开, 通过枚举窗口信息对比来获取指定进程ID的窗口句柄
+    .参数 进程ID, 整数型
+    .局部变量 窗口信息, 精易_窗口信息, , "0"
+    .局部变量 计次, 整数型
+
+    清除数组 (窗口信息)
+    窗口_枚举J (窗口信息)
+    .计次循环首 (取数组成员数 (窗口信息), 计次)
+        .如果真 (窗口信息 [计次].进程ID ＝ 进程ID)
+            返回 (窗口_取祖句柄J (窗口信息 [计次].窗口句柄))
+        .如果真结束
+        
+    .计次循环尾 ()
+    返回 (0)
+
+.子程序 进程_取线程数, 整数型, 公开, 通过进程ID或进程名获取指定进程线程数。
+    .参数 进程ID或进程名, 文本型
+    .局部变量 hProcessSnap, 整数型
+    .局部变量 bool
+    .局部变量 pe32, 精易_进程信息列表
+    .局部变量 cntThreads
+
+    hProcessSnap ＝ CreateToolhelp32Snapshot (2, 0) ' #TH32CS_SNAPPROCESS
+    pe32.dwSize ＝ 296
+    bool ＝ Process32Next (hProcessSnap, pe32)
+    .判断循环首 (bool ＝ 1)
+        .判断开始 (到整数 (进程ID或进程名) ≠ 0)
+            .如果真 (到整数 (进程ID或进程名) ＝ pe32.进程ID)
+                cntThreads ＝ pe32.cntThreads
+                跳出循环 ()
+            .如果真结束
+            
+        .判断 (到小写 (进程ID或进程名) ＝ 到小写 (到文本 (pe32.进程名称)))
+            cntThreads ＝ pe32.cntThreads
+            跳出循环 ()
+        .默认
+            
+        .判断结束
+        bool ＝ Process32Next (hProcessSnap, pe32)
+    .判断循环尾 ()
+    CloseHandle (hProcessSnap)
+    返回 (cntThreads)
+
+.子程序 进程_ID取模块, 整数型, 公开, 失败为0，成功返回模块数量(该命令为高级成员命令)
+    .参数 进程ID, 整数型, 可空, 为空 则取当前进程模块
+    .参数 模块信息数组, 精易_模块信息, 参考 可空 数组, 返回的模块信息 数组
+    .局部变量 快照句柄, 整数型
+    .局部变量 模块信息, 精易_模块信息
+    .局部变量 进程句柄, 整数型
+
+    清除数组 (模块信息数组)
+    快照句柄 ＝ CreateToolhelp32Snapshot (8, 进程ID)
+    .如果真 (快照句柄 ＝ 0)
+        返回 (0)
+    .如果真结束
+    模块信息.size ＝ 1024
+    进程句柄 ＝ Module32First (快照句柄, 模块信息)
+    .判断循环首 (进程句柄 ≠ 0)
+        加入成员 (模块信息数组, 模块信息)
+        进程句柄 ＝ Module32Next (快照句柄, 模块信息)
+    .判断循环尾 ()
+    CloseHandle (快照句柄)
+    返回 (取数组成员数 (模块信息数组))
+
+.子程序 进程_是否存在, 逻辑型, 公开, 判断指定进程是否存在(此判断与进程其它信息无关联)(存在返回真，不存在或失败返回假)
+    .参数 进程名, 文本型, , 欲检测的进程名
+    .参数 是否区分大小写, 逻辑型, 可空, 默认为不区分,真=区分
+    .局部变量 信息, 精易_进程信息列表
+    .局部变量 进程快照, 整数型
+    .局部变量 进程句柄, 整数型
+
+    进程快照 ＝ CreateToolhelp32Snapshot (15, 0)
+    .如果真 (进程快照 ＝ 0)
+        返回 (假)
+    .如果真结束
+    信息.dwSize ＝ 1024
+    进程句柄 ＝ Process32First (进程快照, 信息)
+    .判断开始 (是否区分大小写)
+        .判断循环首 (进程句柄 ≠ 0)
+            .判断开始 (进程名 ＝ 到文本 (信息.进程名称))
+                CloseHandle (进程快照)
+                返回 (真)
+            .默认
+                进程句柄 ＝ Process32Next (进程快照, 信息)
+            .判断结束
+            
+        .判断循环尾 ()
+    .默认
+        进程名 ＝ 到小写 (进程名)
+        .判断循环首 (进程句柄 ≠ 0)
+            .判断开始 (进程名 ＝ 到小写 (到文本 (信息.进程名称)))
+                CloseHandle (进程快照)
+                返回 (真)
+            .默认
+                进程句柄 ＝ Process32Next (进程快照, 信息)
+            .判断结束
+            
+        .判断循环尾 ()
+    .判断结束
+    CloseHandle (进程快照)
+    返回 (假)
+
+.子程序 进程_提升权限, 逻辑型, 公开, 提升进程到指定权限( #备份  #启动  #关机  #调试)
+    .参数 目标进程ID, 整数型, 可空, 为空表示当前进程ID
+    .参数 权限类别, 文本型, 可空, 为空:#调试( #备份  #启动  #关机  #调试)
+    .局部变量 hdlProcessHandle, 整数型
+    .局部变量 hdlTokenHandle, 整数型
+    .局部变量 tmpLuid, 精易_进程令牌
+    .局部变量 tkp, 精易_进程权限
+    .局部变量 tkpNewButIgnored, 精易_进程权限
+    .局部变量 返回值, 逻辑型
+
+    .如果真 (取操作系统类别 () ≠ 3)
+        返回 (假)
+    .如果真结束
+    .如果真 (是否为空 (目标进程ID))
+        目标进程ID ＝ GetCurrentProcess ()
+    .如果真结束
+    .如果真 (是否为空 (权限类别))
+        权限类别 ＝ #调试
+    .如果真结束
+    hdlProcessHandle ＝ 进程_打开1 (目标进程ID)
+    OpenProcessToken (hdlProcessHandle, 40, hdlTokenHandle)
+    LookupPrivilegeValueA (“”, 权限类别, tmpLuid)
+    tkp.PrivilegeCount ＝ 1
+    tkp.LowPart ＝ tmpLuid.低三十二位
+    tkp.HighPart ＝ tmpLuid.高三十二位
+    tkp.Attributes ＝ 2
+    返回值 ＝ _获取令牌特权 (hdlTokenHandle, 0, tkp, 28, tkpNewButIgnored, 0)
+    CloseHandle (hdlTokenHandle)
+    返回 (返回值)
+
+.子程序 进程_取模块句柄, 整数型, 公开, 获取指定模块名的句柄
+    .参数 模块名, 文本型, 可空
+
+    返回 (GetModuleHandleA (模块名))
+
+.子程序 进程_取启动参数, 文本型, 公开, 取当前进程的命令行
+    返回 (GetCommandLineA ())
+
+.子程序 进程_提升权限到Debug, 逻辑型, 公开, 成功返回真，把一个进程的权限提升到调试级权限
+    .参数 进程ID, 整数型, 可空, 可空为提升当前进程
+    .局部变量 进程句柄, 整数型
+    .局部变量 令牌句柄, 整数型
+    .局部变量 destLuid, 精易_进程令牌
+    .局部变量 进程权限, 精易_进程权限
+    .局部变量 返回值, 逻辑型
+
+    .如果真 (是否为空 (进程ID))
+        进程ID ＝ GetCurrentProcessId ()
+    .如果真结束
+    进程句柄 ＝ OpenProcess (2035711, 0, 进程ID)
+    OpenProcessToken (进程句柄, 983551, 令牌句柄)
+    _获取权限令牌 (0, “SeDebugPrivilege”, destLuid)
+    进程权限.PrivilegeCount ＝ 1
+    进程权限.Attributes ＝ 2
+    进程权限.LowPart ＝ destLuid.低三十二位
+    进程权限.HighPart ＝ destLuid.高三十二位
+    返回值 ＝ AdjustTokenPrivileges (令牌句柄, 假, 进程权限, 0, 0, 0)
+    CloseHandle (进程句柄)
+    返回 (返回值)
+
+.子程序 进程_取优先级, 整数型, 公开, 特殊进程需要特权，检索指定的进程的优先级。返回值：0=最高,1=高于标准,2=实时,3=标准,4=低于标准,5=低,返回-1表示无权限访问进程。
+    .参数 进程ID, 整数型, 可空, 欲设置的进程标识符,可为空，即自身进程。
+    .局部变量 hProcess
+    .局部变量 Class
+    .局部变量 Type
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (1024, 0, 进程ID))
+    .如果真 (hProcess ＝ 0)
+        返回 (-1)
+    .如果真结束
+    Class ＝ GetPriorityClass (hProcess)
+    .判断开始 (Class ＝ 256) ' #REALTIME_PRIORITY_CLASS =256
+        Type ＝ 2
+    .判断 (Class ＝ 128) ' #HIGH_PRIORITY_CLASS =128
+        Type ＝ 0
+    .判断 (Class ＝ 32768) ' #ABOVE_NORMAL_PRIORITY_CLASS =32768
+        Type ＝ 1
+    .判断 (Class ＝ 32) ' #NORMAL_PRIORITY_CLASS  =32
+        Type ＝ 3
+    .判断 (Class ＝ 16384) ' #BELOW_NORMAL_PRIORITY_CLASS  =16384
+        Type ＝ 4
+    .判断 (Class ＝ 64) ' #IDLE_PRIORITY_CLASS  =64
+        Type ＝ 5
+    .默认
+        Type ＝ 0
+    .判断结束
+    CloseHandle (hProcess)
+    返回 (Type)
+
+.子程序 进程_置优先级, 逻辑型, 公开, 特殊进程需要特权，设置一个进程的优先级别,成功返回真，失败返回假。
+    .参数 进程ID, 整数型, 可空, 欲设置的进程标识符,可为空，即自身进程。
+    .参数 进程级别, 整数型, 可空, 可为空，默认即0最高。0=最高,1=高于标准,2=实时,3=标准,4=低于标准,5=低
+    .局部变量 hProcess
+    .局部变量 Bool, 逻辑型
+
+    .如果真 (进程级别 ＝ 0)
+        进程级别 ＝ 128 ' #HIGH_PRIORITY_CLASS
+    .如果真结束
+    .如果真 (进程级别 ＝ 1)
+        进程级别 ＝ 32768 ' #ABOVE_NORMAL_PRIORITY_CLASS
+    .如果真结束
+    .如果真 (进程级别 ＝ 2)
+        进程级别 ＝ 256 ' #REALTIME_PRIORITY_CLASS
+    .如果真结束
+    .如果真 (进程级别 ＝ 3)
+        进程级别 ＝ 32 ' #NORMAL_PRIORITY_CLASS
+    .如果真结束
+    .如果真 (进程级别 ＝ 4)
+        进程级别 ＝ 16384 ' #BELOW_NORMAL_PRIORITY_CLASS
+    .如果真结束
+    .如果真 (进程级别 ＝ 5)
+        进程级别 ＝ 64 ' #IDLE_PRIORITY_CLASS
+    .如果真结束
+    .如果真 (是否为空 (进程级别) 或 进程级别 ＝ 0)
+        进程级别 ＝ 128
+    .如果真结束
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (512, 0, 进程ID)) ' #PROCESS_SET_INFORMATION
+    .如果真 (hProcess ＝ 0)
+        返回 (假)
+    .如果真结束
+    Bool ＝ SetPriorityClass (hProcess, 进程级别)
+    CloseHandle (hProcess)
+    返回 (Bool)
+
+.子程序 进程_取句柄数, 整数型, 公开, 特殊进程需要特权，获取指定进程句柄数量,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 Count, 整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessHandleCount (hProcess, Count), Count, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取IO读取计数, 长整数型, 公开, 特殊进程需要特权，获取指定进程IO读取计数,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 lpIoCounters, IO_COUNTERS
+    .局部变量 Count, 长整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessIoCounters (hProcess, lpIoCounters), lpIoCounters.读取操作数量, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取IO读取字节, 长整数型, 公开, 特殊进程需要特权，获取指定进程IO读取字节数,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 lpIoCounters, IO_COUNTERS
+    .局部变量 Count, 长整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessIoCounters (hProcess, lpIoCounters), lpIoCounters.读取字节数, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取IO其它计数, 长整数型, 公开, 特殊进程需要特权，获取指定进程IO其它计数,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 lpIoCounters, IO_COUNTERS
+    .局部变量 Count, 长整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessIoCounters (hProcess, lpIoCounters), lpIoCounters.其它读写操作数量, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取IO其它字节, 长整数型, 公开, 特殊进程需要特权，获取指定进程IO其它字节,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 lpIoCounters, IO_COUNTERS
+    .局部变量 Count, 长整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessIoCounters (hProcess, lpIoCounters), lpIoCounters.其它读写操作字节, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取IO写入计数, 长整数型, 公开, 特殊进程需要特权，获取指定进程IO写入计数,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 lpIoCounters, IO_COUNTERS
+    .局部变量 Count, 长整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessIoCounters (hProcess, lpIoCounters), lpIoCounters.写入操作数量, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取IO写入字节, 长整数型, 公开, 特殊进程需要特权，获取指定进程IO写入字节,与XP系统任务管理器功能一样，失败返回-1。
+    .参数 进程ID, , 可空, 可为空，默认即当前进程。
+    .局部变量 hProcess
+    .局部变量 lpIoCounters, IO_COUNTERS
+    .局部变量 Count, 长整数型
+
+    hProcess ＝ 选择 (是否为空 (进程ID), GetCurrentProcess (), OpenProcess (2035711, 0, 进程ID))
+    Count ＝ 选择 (GetProcessIoCounters (hProcess, lpIoCounters), lpIoCounters.写入字节数, -1)
+    CloseHandle (hProcess)
+    返回 (Count)
+
+.子程序 进程_取父ID, 整数型, 公开, 根据进程名或进程ID取出进程父ID，失败返回-1。
+    .参数 参_ID或名称, 文本型, , 进程PID或进程名称
+    .局部变量 局_返回值
+    .局部变量 局_系统进程, SYSTEM_PROCESS_INFORMATION
+    .局部变量 局_缓冲区
+    .局部变量 局_所需尺寸
+    .局部变量 局_下条数据, 整数型
+    .局部变量 局_进程名, 文本型
+
+    ZwQuerySystemInformation (#SystemProcessInformation, 0, 0, 局_所需尺寸)
+    局_缓冲区 ＝ GlobalAlloc (64, 局_所需尺寸)
+    局_返回值 ＝ ZwQuerySystemInformation (#SystemProcessInformation, 局_缓冲区, 局_所需尺寸, 局_所需尺寸)
+    .如果真 (局_返回值 ＝ 0)
+        局_下条数据 ＝ 局_缓冲区
+        CopyMemory_system_process_information (局_系统进程, 局_缓冲区, 184)
+        .判断循环首 (局_系统进程.NextEntryDelta ≠ 0)
+            局_下条数据 ＝ 局_下条数据 ＋ 局_系统进程.NextEntryDelta
+            CopyMemory_system_process_information (局_系统进程, 局_下条数据, 184)
+            局_进程名 ＝ 编码_Unicode到Ansi (指针到字节集 (局_系统进程.ImageName.缓冲区, 局_系统进程.ImageName.长度))
+            .如果真 (文本比较 (局_进程名, 参_ID或名称, 假) ＝ 0 或 到整数 (参_ID或名称) ＝ 局_系统进程.ProcessId)
+                GlobalFree (局_缓冲区)
+                返回 (局_系统进程.InheritedFromProcessId)
+            .如果真结束
+            处理事件 ()
+        .判断循环尾 ()
+    .如果真结束
+    GlobalFree (局_缓冲区)
+    返回 (-1)
+
+.子程序 进程_守护, 逻辑型, 公开, 前台版会在运行目录下生成AutoRunApp.vbs隐藏文件，后台版会在运行目录下生成AutoRunApp.bat隐藏文件,注意：后台版需手动结束wscript.exe进程
+    .参数 参_程序路径, 文本型, , 目标程序的完整路径
+    .参数 参_后台守护, 逻辑型, 可空, 为假则以控制台前台显示
+    .局部变量 局_临时文本, 文本型
+    .局部变量 局_路径, 文本型
+    .局部变量 局_返回值
+    .局部变量 局_名字, 文本型
+    .局部变量 局_标识, 文本型
+
+    .如果真 (取文本长度 (删首尾空 (参_程序路径)) ＞ 0)
+        局_名字 ＝ 选择 (参_后台守护, 到文本 ({ 92, 65, 117, 116, 111, 82, 117, 110, 65, 112, 112, 46, 118, 98, 115 }), 到文本 ({ 92, 65, 117, 116, 111, 82, 117, 110, 65, 112, 112, 46, 98, 97, 116 }))
+        局_标识 ＝ 到文本 ({ 65, 117, 116, 111, 82, 117, 110, 65, 112, 112 })
+        .如果真 (OpenEventA (2031619, 假, 局_标识) ≠ 0)
+            返回 (假)
+        .如果真结束
+        CreateEvent (0, 假, 假, 局_标识)
+        局_临时文本 ＝ 选择 (参_后台守护, #AuAppVBs, #AuAppBat)
+        局_临时文本 ＝ 子文本替换 (局_临时文本, “程序名”, 文件_取文件名 (参_程序路径, 真), , , 真)
+        参_程序路径 ＝ 文件_到短文件名 (参_程序路径)
+        局_临时文本 ＝ 子文本替换 (局_临时文本, “程序路径”, 参_程序路径, , , 真)
+        局_路径 ＝ 取运行目录 () ＋ 局_名字
+        写到文件 (局_路径, 到字节集 (局_临时文本))
+        置文件属性 (局_路径, 2)
+        局_返回值 ＝ ShellExecuteA (GetActiveWindow (), “”, 局_路径, “”, “”, 5)
+        返回 (局_返回值 ≥ 32)
+    .如果真结束
+    返回 (假)
+
+.子程序 进程_终止进程, 逻辑型, 公开, 一个或多个任务进程结束
+    .参数 参_进程名, 文本型
+
+    返回 (运行 (“taskkill /f /t /im ” ＋ #引号 ＋ 参_进程名 ＋ #引号, 假, #隐藏窗口))
+
+.子程序 进程_端口取PID, 整数型, 公开, 通过本地端口取出进程PID
+    .参数 端口号, 整数型
+    .局部变量 MIB_TCPTABLE_OWNER_PID, MIB_TCPTABLE_OWNER_PID
+    .局部变量 局_pdwSize, 整数型
+    .局部变量 局_index, 整数型
+    .局部变量 局_ret, 整数型
+    .局部变量 局_行号, 整数型
+
+    GetExtendedTcpTable (MIB_TCPTABLE_OWNER_PID, 局_pdwSize, 真, #AF_INET, #TCP_TABLE_OWNER_PID_ALL, 0)
+    局_ret ＝ GetExtendedTcpTable (MIB_TCPTABLE_OWNER_PID, 局_pdwSize, 真, #AF_INET, #TCP_TABLE_OWNER_PID_ALL, 0)
+    .判断开始 (局_ret ＝ #常量_NO_ERROR)
+        .计次循环首 (MIB_TCPTABLE_OWNER_PID.dwNumEntries, 局_index)
+            .如果真 (到文本 (端口号) ＝ 整数到端口 (MIB_TCPTABLE_OWNER_PID.TCP_TABLE_CLASS [局_index].dwLocalPort))
+                返回 (MIB_TCPTABLE_OWNER_PID.TCP_TABLE_CLASS [局_index].dwOwningPid)
+            .如果真结束
+            
+        .计次循环尾 ()
+        返回 (0)
+    .判断 (局_ret ＝ #ERROR_INSUFFICIENT_BUFFER)
+        返回 (0)
+    .判断 (局_ret ＝ #ERROR_INVALID_PARAMETER)
+        返回 (0)
+    .默认
+        返回 (0)
+    .判断结束
+    
+
+.子程序 整数到端口, 文本型
+    .参数 Port, 整数型
+    .局部变量 局_Bin, 字节集
+    .局部变量 局_byte, 字节型
+    .局部变量 局_ret, 文本型
+
+    局_Bin ＝ 到字节集 (Port)
+    局_byte ＝ 局_Bin [1]
+    局_Bin [1] ＝ 局_Bin [2]
+    局_Bin [2] ＝ 局_byte
+    局_ret ＝ 到文本 (取字节集数据 (局_Bin, #整数型, ))
+    返回 (局_ret)
+
+.子程序 线程_DLL注入, 逻辑型, 公开, 线程注入DLL到目标进程
+    .参数 目标进程ID, 整数型, , 要注入的进程ID
+    .参数 要注入的DLL文件名, 文本型, , DLL名称
+    .局部变量 长度, 整数型
+    .局部变量 局_内存值, 整数型
+    .局部变量 局_进程ID, 整数型
+    .局部变量 局_函数地址, 整数型
+    .局部变量 局_线程ID, 整数型
+
+    局_进程ID ＝ OpenProcess (2035711, 0, 目标进程ID)
+    长度 ＝ 取文本长度 (要注入的DLL文件名)
+    局_内存值 ＝ VirtualAllocEx (局_进程ID, 0, 长度, 4096, 4)
+    WriteProcessMemory_字节集 (局_进程ID, 局_内存值, 到字节集 (要注入的DLL文件名), 长度, 0)
+    局_函数地址 ＝ GetProcAddress1 (GetModuleHandleA (“Kernel32”), “LoadLibraryA”)
+    局_线程ID ＝ CreateRemoteThread (局_进程ID, 0, 0, 局_函数地址, 局_内存值, 0, 0)
+    .如果真 (局_线程ID ＝ 0)
+        返回 (假)
+    .如果真结束
+    WaitForSingleObject (局_线程ID, 4294967295)
+    VirtualFreeEx (局_进程ID, 局_内存值, 0, 32768)
+    CloseHandle (局_线程ID)
+    CloseHandle (局_进程ID)
+    返回 (真)
+
+.子程序 线程_DLL卸载, 逻辑型, 公开, 卸载指定进程中指定DLL
+    .参数 目标进程ID, 整数型
+    .参数 要注入的卸载文件名, 文本型
+    .局部变量 局_进程句柄, 整数型
+    .局部变量 局_内存地址, 整数型
+    .局部变量 局_函数地址, 整数型
+    .局部变量 局_线程ID, 整数型
+    .局部变量 DLL句柄, 整数型
+    .局部变量 返回值, 整数型
+    .局部变量 长度, 整数型
+    .局部变量 局_线程ID_新, 整数型
+
+    局_进程句柄 ＝ OpenProcess (2035711, 0, 目标进程ID)
+    .如果真 (局_进程句柄 ＝ 0)
+        返回 (假)
+    .如果真结束
+    长度 ＝ 取文本长度 (要注入的卸载文件名) ＋ 1
+    局_内存地址 ＝ VirtualAllocEx (局_进程句柄, 0, 长度, 4096, 4)
+    WriteProcessMemory_字节集 (局_进程句柄, 局_内存地址, 到字节集 (要注入的卸载文件名), 长度, 0)
+    局_函数地址 ＝ GetProcAddress1 (GetModuleHandleA (“Kernel32”), “GetModuleHandleA”)
+    局_线程ID ＝ CreateRemoteThread (局_进程句柄, 0, 0, 局_函数地址, 局_内存地址, 0, 0)
+    WaitForSingleObject (局_线程ID, 4294967295)
+    GetExitCodeThread (局_线程ID, DLL句柄) ' 得到DLL句柄
+    VirtualFreeEx (局_进程句柄, 局_内存地址, 0, 32768)
+    CloseHandle (局_线程ID)
+    .如果真 (DLL句柄 ＝ 0)
+        返回 (假)
+    .如果真结束
+    ' -----------------------------------------------
+    局_函数地址 ＝ GetProcAddress1 (GetModuleHandleA (“Kernel32”), “FreeLibrary”)
+    局_线程ID_新 ＝ CreateRemoteThread (局_进程句柄, 0, 0, 局_函数地址, DLL句柄, 0, 0) ' 执行FreeLibrary， 参数为模块句柄
+    WaitForSingleObject (局_线程ID_新, 4294967295)
+    GetExitCodeThread (局_线程ID_新, 返回值)
+    CloseHandle (局_线程ID_新)
+    CloseHandle (局_进程句柄)
+    .如果 (返回值 ≠ 0)
+        返回 (真)
+    .否则
+        返回 (假)
+    .如果结束
+    
+
+.子程序 线程_取中止线程退出代码, 整数型, 公开, 返回0表示该线程不存在(或句柄已被关闭),1线程已经执行完毕，2为正在运行,其他不论
+    .参数 线程句柄, 整数型
+    .局部变量 返回值, 整数型
+
+    .判断开始 (GetExitCodeThread (线程句柄, 返回值) ＝ 0)
+        返回 (0)
+    .判断 (返回值 ＝ 259)
+        返回 (2)
+    .默认
+        返回 (1)
+    .判断结束
+    
+
+.子程序 线程_打开, 整数型, 公开, 成功返回线程句柄，失败返回0
+    .参数 线程ID, 整数型, 可空, 目标线程ID
+
+    返回 (OpenThread (2032639, 0, 线程ID))
+
+.子程序 线程_取自线程ID, 整数型, 公开, GetCurrentThreadId,获取当前线程一个唯一的线程标识符
+    返回 (GetCurrentThreadId ())
+
+.子程序 线程_取自线程句柄, 整数型, 公开, GetCurrentThread,获取当前线程的一个伪句柄
+    返回 (GetCurrentThread ())
+
+.子程序 线程_初始化COM库, , 公开, 有时执行线程的时候，会自动关闭，此时，可以在多线程的程序里创建COM对象前先初始化，一个线程只能调用一次
+    CoInitialize (0)
+
+.子程序 线程_取消COM库, , 公开, 取消COM库的初始化，如果你在线程头部加入了 线程_初始化COM库 请在尾部加入此命令
+    CoUninitialize ()
+
+.子程序 线程_取ID, 整数型, 公开, 成功返回指定窗口的线程ID
+    .参数 窗口句柄, 整数型, , 指定窗口句柄
+    .局部变量 进程ID, 整数型, , , 用于装载进程ID的变量
+
+    返回 (GetWindowThreadProcessId (窗口句柄, 进程ID))
+
+.子程序 线程_销毁, 逻辑型, 公开, 强制终止正在运行的线程,成功返回真,失败返回假.
+    .参数 线程句柄, 整数型, , 创建线程返回的句柄
+    .局部变量 lpExitCode, 整数型
+
+    GetExitCodeThread (线程句柄, lpExitCode)
+    返回 (TerminateThread (线程句柄, lpExitCode))
+
+.子程序 线程_关闭句柄, 逻辑型, 公开, 关闭一个线程句柄，关闭后线程继续运行，但无法对该句柄进行操作。
+    .参数 线程句柄
+
+    返回 (CloseHandle (线程句柄))
+
+.子程序 线程_启动J, 整数型, 公开, 成功返回线程句柄，失败返回0
+    .参数 要启动的子程序, 子程序指针
+    .参数 要传去子程序的参数, 整数型, 可空, 往子程序里面传递一个整数型的参数
+    .参数 线程ID, 整数型, 参考 可空, 请提供一个整数型的变量，用于存放新创建的线程ID。
+
+    返回 (CreateThread (0, 0, 到整数 (要启动的子程序), 要传去子程序的参数, 0, 取指针_通用型 (线程ID)))
+
+.子程序 线程_启动1J, 整数型, 公开, 成功返回线程句柄，失败返回0
+    .参数 要启动的子程序, 整数型, , 如果是子程序指针，请直接使用到数值() 命令进行转换后再传入
+    .参数 要传去子程序的参数, 整数型, 可空, 往子程序里面传递一个整数型的参数
+    .参数 线程ID, 整数型, 参考 可空, 请提供一个整数型的变量，用于存放新创建的线程ID。
+
+    返回 (CreateThread (0, 0, 要启动的子程序, 要传去子程序的参数, 0, 取指针_通用型 (线程ID)))
+
+.子程序 线程_启动2J, 逻辑型, 公开, 成功返回真，失败返回假。[Mr.Yang]
+    .参数 要启动的子程序, 子程序指针
+    .参数 要传去子程序的参数, 整数型, 可空, 往子程序里面传递一个整数型的参数
+    .参数 线程句柄, 整数型, 参考 可空, 请提供一个整数型的变量，用于存放新创建的线程句柄
+    .参数 线程ID, 整数型, 参考 可空, 请提供一个整数型的变量，用于存放新创建的线程ID。
+
+    线程句柄 ＝ CreateThread (0, 0, 到整数 (要启动的子程序), 要传去子程序的参数, 0, 取指针_通用型 (线程ID))
+    .如果真 (是否为空 (线程句柄))
+        CloseHandle (线程句柄)
+    .如果真结束
+    .如果 (线程句柄 ≠ 0)
+        返回 (真)
+    .否则
+        返回 (假)
+    .如果结束
+    
+
+.子程序 线程_启动多参_整数型J, 整数型, 公开, 成功返回线程句柄，失败返回0。
+    .参数 子程序指针, 子程序指针
+    .参数 参数1, 整数型, 可空, 线程传入参数1
+    .参数 参数2, 整数型, 可空, 线程传入参数2
+    .参数 参数3, 整数型, 可空, 线程传入参数3
+    .参数 参数4, 整数型, 可空, 线程传入参数4
+    .参数 参数5, 整数型, 可空, 线程传入参数5
+    .参数 线程ID, 整数型, 参考 可空, 请提供一个整数型的变量，用于存放新创建的线程ID。
+    .局部变量 局_文本, 文本型
+    .局部变量 局_线程句柄, 整数型
+
+    局_文本 ＝ 到文本 (到数值 (子程序指针)) ＋ “,” ＋ 到文本 (参数1) ＋ “,” ＋ 到文本 (参数2) ＋ “,” ＋ 到文本 (参数3) ＋ “,” ＋ 到文本 (参数4) ＋ “,” ＋ 到文本 (参数5) ＋ “,”
+    局_线程句柄 ＝ CreateThread (0, 0, 到整数 (&内部_启动多参_整数型_过程), 取指针地址_文本型 (局_文本), 0, 取指针_通用型 (线程ID))
+    Sleep (1)
+    返回 (局_线程句柄)
+
+.子程序 内部_启动多参_整数型_过程
+    .参数 参数, 整数型
+    .局部变量 局_数组, 文本型, , "0"
+
+    局_数组 ＝ 分割文本 (指针到文本 (参数), , 6)
+    .如果真 (取数组成员数 (局_数组) ＝ 6)
+        程序_Call (到数值 (局_数组 [1]), 到数值 (局_数组 [2]), 到数值 (局_数组 [3]), 到数值 (局_数组 [4]), 到数值 (局_数组 [5]), 到数值 (局_数组 [6]))
+    .如果真结束
+    
+
+.子程序 线程_启动多参_文本型J, 整数型, 公开, 成功返回线程句柄
+    .参数 子程序指针, 子程序指针
+    .参数 整数1, 整数型, 可空, 线程传入参数1
+    .参数 文本1, 文本型, 可空, 线程传入参数2
+    .参数 文本2, 文本型, 可空, 线程传入参数3
+    .参数 文本3, 文本型, 可空, 线程传入参数4
+    .参数 文本4, 文本型, 可空, 线程传入参数5
+    .参数 线程ID, 整数型, 参考 可空, 请提供一个整数型的变量，用于存放新创建的线程ID。
+    .局部变量 局_线程句柄, 整数型
+    .局部变量 局_参数, 文本型, , "6"
+
+    局_参数 [1] ＝ 到文本 (到整数 (子程序指针))
+    局_参数 [2] ＝ 到文本 (整数1)
+    局_参数 [3] ＝ 文本1
+    局_参数 [4] ＝ 文本2
+    局_参数 [5] ＝ 文本3
+    局_参数 [6] ＝ 文本4
+    局_线程句柄 ＝ CreateThread (0, 0, 到整数 (&内部_启动多参_文本型_过程), 取数据_通用型_数组 (局_参数), 0, 取指针_通用型 (线程ID))
+    Sleep (1)
+    返回 (局_线程句柄)
+
+.子程序 内部_启动多参_文本型_过程, , , 内部调用
+    .参数 参数, 整数型
+    .局部变量 局_数组, 文本型, , "6"
+
+    局_数组 [1] ＝ 指针到文本 (取字节集数据 (指针到字节集 (参数, 4), #整数型, ))
+    局_数组 [2] ＝ 指针到文本 (取字节集数据 (指针到字节集 (参数 ＋ 4, 4), #整数型, ))
+    局_数组 [3] ＝ 指针到文本 (取字节集数据 (指针到字节集 (参数 ＋ 8, 4), #整数型, ))
+    局_数组 [4] ＝ 指针到文本 (取字节集数据 (指针到字节集 (参数 ＋ 12, 4), #整数型, ))
+    局_数组 [5] ＝ 指针到文本 (取字节集数据 (指针到字节集 (参数 ＋ 16, 4), #整数型, ))
+    局_数组 [6] ＝ 指针到文本 (取字节集数据 (指针到字节集 (参数 ＋ 20, 4), #整数型, ))
+    .如果真 (到整数 (局_数组 [1]) ＞ 0)
+        程序_Call (到数值 (局_数组 [1]), 到数值 (局_数组 [2]), 取指针地址_文本型 (局_数组 [3]), 取指针地址_文本型 (局_数组 [4]), 取指针地址_文本型 (局_数组 [5]), 取指针地址_文本型 (局_数组 [6]))
+    .如果真结束
+    
+
+.子程序 内部_处理线程参数, 整数型, , 返回线程句柄（传递栈指针 -> 参数数量 -> 标志 -> 内部处理参数 -> 创建一条线程）
+    .参数 ebp, 整数型, , 栈地址
+    .参数 num, 整数型, , 第几个参数是传入线程的参数，增加这么一个参数主要是方便增加参数，注意：增加的参数必须有可空标志。
+    .参数 nCount, 整数型, , 参数数量
+    .参数 nFlag, 整数型, , 参数值可以为以下常量： 1、#字节型； 2、#短整数型； 3、#整数型； 4、#长整数型； 5、#小数型； 6、#双精度小数型； 7、#逻辑型； 8、#日期时间型； 9、#子程序指针型； 10、#文本型。
+    .局部变量 i, 整数型
+    .局部变量 offset, 整数型, , , 栈参数偏移
+    .局部变量 pAddr, 整数型, , , 参数栈地址
+    .局部变量 pMem, 整数型, , , 作为参数传递过去的内存地址
+    .局部变量 pArg, 整数型, , , 参数内存地址
+    .局部变量 dwStrLen, 整数型, , , 文本长度
+    .局部变量 tid, 整数型
+    .局部变量 hThread, 整数型
+    .局部变量 nTmp, 整数型
+
+    .如果真 (ebp ＝ 0 或 __get (ebp, 8) ＝ 0)
+        返回 (0)
+    .如果真结束
+    ' pMem 结构 +0=参数数量, +4=是否需要释放参数内存,+8=被调用的子程序
+    ' +12第一个参数数据类型 +16第一个参数数据
+    ' +20 第二个参数数据类型 +24第二个参数数据....以此类推
+    .判断开始 (nFlag ＝ #整数型 或 nFlag ＝ #短整数型 或 nFlag ＝ #字节型 或 nFlag ＝ #子程序指针型 或 nFlag ＝ #逻辑型 或 nFlag ＝ #小数型)
+        pMem ＝ LocalAlloc (#LMEM_ZEROINIT, nCount × 2 × 4 ＋ 12)
+        __set (pMem, 4, 0) ' 不需要释放内存
+        nFlag ＝ #整数型
+    .判断 (nFlag ＝ #双精度小数型 或 nFlag ＝ #日期时间型 或 nFlag ＝ #长整数型)
+        pMem ＝ LocalAlloc (#LMEM_ZEROINIT, nCount × 8 ＋ 12 ＋ nCount × 4)
+        __set (pMem, 4, 0) ' 不需要释放内存
+        nFlag ＝ #长整数型
+    .判断 (nFlag ＝ #文本型 或 nFlag ＝ #字节集型)
+        pMem ＝ LocalAlloc (#LMEM_ZEROINIT, nCount × 4 × 2 ＋ 12)
+        __set (pMem, 4, 1) ' 需要释放内存
+    .默认
+        返回 (0)
+    .判断结束
+    __set (pMem, 8, __get (ebp, 8)) ' 记录被执行的子程序
+    
+    .计次循环首 (nCount, i) ' 有几个参数就循环几次
+        ' 这里的ebp结构为,每个成员占4字节
+        ' 有可空标志的在栈里占用8个字节,前4个是参数,后4个标记是否为空,1为非空 0为空
+        ' 0 栈地址
+        ' 4 返回地址
+        ' 8 第一个参数地址
+        ' 12 第二个参数地址
+        ' 16 第二个参数是否为空
+        ' 20 第三个参数
+        ' 24 第三个参数是否为空,后面的都是这样
+        offset ＝ (i ＋ num － 1) × 8 － 4 ' 这里从指定参数开始取,不明白怎么计算偏移的请仔细看上面的备注
+        .如果真 (指针_到整数 (ebp ＋ offset ＋ 4) ＝ 0) ' 参数为空,不继续取后面的参数
+            跳出循环 ()
+        .如果真结束
+        ' 走到这里表示参数不为空,取出参数的栈地址
+        pAddr ＝ __get (ebp, offset) ' 这里取到的是栈地址
+        ' pMem结构 +0=参数数量, +4=是否需要释放参数内存,+8=被调用的子程序
+        ' +12第一个参数数据类型 +16第一个参数数据
+        ' +20 第二个参数数据类型 +24第二个参数数据....以此类推
+        .判断开始 (nFlag ＝ #整数型) ' 整数
+            __set (pMem, i × 8 ＋ 4, #整数型) ' 其实这个要不要都无所谓,没用到,感觉有点浪费内存了,不过占用不是特别多,几百个字节而已
+            __set (pMem, i × 8 ＋ 8, __get (pAddr, 0)) ' 第一次取到的是栈地址,需要取堆地址
+        .判断 (nFlag ＝ #长整数型) ' 8字节
+            nTmp ＝ i × 16 ' 8字节的每次递增两个参数的长度
+            ' 长整数还得分别写入才行,因为格式是 数据类型,实际数据,不能直接拷贝8字节存进去
+            __set (pMem, nTmp － 4, #长整数型)
+            __set (pMem, nTmp ＋ 0, __get (pAddr, 0)) ' 取出低位 存到当前参数位置里
+            __set (pMem, nTmp ＋ 4, #长整数型)
+            __set (pMem, nTmp ＋ 8, __get (pAddr, 4)) ' 取出高位 存到下一个参数位置里
+        .默认
+            ' 文本和字节集都一起处理,在这里判断是文本还是字节集
+            pAddr ＝ __get (pAddr, 0) ' 取堆地址
+            .如果真 (__get (pAddr － 8, 0) ＝ 1) ' 用户传的可能是堆地址,取数据_通用型()取到的值,只针对字节集
+                pAddr ＝ pAddr － 8
+            .如果真结束
+            .判断开始 (__get (pAddr, 0) ＝ 1) ' 字节集格式 {1,0,0,0,长度}
+                dwStrLen ＝ __get (pAddr ＋ 4, 0)
+                pArg ＝ LocalAlloc (#LMEM_ZEROINIT, dwStrLen ＋ 8) ' 申请一块内存,保存参数数据,需要多8个字节,模拟E字节集结构
+                __set (pArg, 0, 1)
+                __set (pArg, 4, dwStrLen)
+                RtlMoveMemory (pArg ＋ 8, pAddr ＋ 8, dwStrLen)
+                __set (pMem, i × 8 ＋ 4, #字节集型) ' 记录这个参数为字节集型,在释放内存的时候会用到
+                __set (pMem, i × 8 ＋ 8, pArg ＋ 8)
+            .默认
+                dwStrLen ＝ lstrlenA (pAddr)
+                pArg ＝ LocalAlloc (#LMEM_ZEROINIT, dwStrLen ＋ 1) ' 申请一块内存,保存参数数据,文本需要多一个字节保存\0
+                RtlMoveMemory (pArg, pAddr, dwStrLen)
+                __set (pMem, i × 8 ＋ 4, #文本型) ' 记录这个参数为文本型,在释放内存的时候会用到
+                __set (pMem, i × 8 ＋ 8, pArg)
+            .判断结束
+            
+        .判断结束
+        
+    .计次循环尾 ()
+    i ＝ i － 1 ' 不管是跳出循环 还是循环执行完,这个值都比参数数量多1
+    .如果真 (nFlag ＝ #长整数型)
+        ' 8字节算是两个参数,比如 子程序(长整数型) 那在子程序1里可以填两个整数型参数,或者一个长整数型参数,长整数8个字节64位
+        ' 如果填写的是两个整数型参数的话,那么参数1就是这个长整数的低32位,参数2是高32位,参数3就是传入的下一个参数
+        i ＝ i × 2 ' 如果能看懂下面的例子,就知道这里为什么要 *2 了
+    .如果真结束
+    __set (pMem, 0, i) ' 记录参数数量
+    
+    .如果真 (__get (ebp, 16) ＝ 1) ' 判断 "创建后挂起" 这个参数是否为空, =1表示不为空
+        ' 第二个参数是 创建后挂起
+        .判断开始 (__get (ebp, 12) ＝ 1) ' 判断 "创建后挂起" 这个参数是真还是假  =1就是填了真
+            nTmp ＝ #CREATE_SUSPENDED ' 创建线程后挂起线程
+        .默认
+            nTmp ＝ 0 ' 填真的话就设置线程标志为0,立即启动
+        .判断结束
+        
+    .如果真结束
+    
+    hThread ＝ CreateThread (0, 0, 到整数 (&内部_多参线程处理), pMem, nTmp, 取指针_通用型 (tid))
+    .如果真 (__get (ebp, 24) ＝ 1) ' 第三个参数 "线程ID" 是否为空 =1不为空
+        __set (__get (ebp, 20), 0, tid) ' 不为空就取出参数地址,并写入线程ID
+    .如果真结束
+    返回 (hThread)
+
+.子程序 内部_多参线程处理, 整数型
+    .参数 pMem, 整数型, , 前面处理参数后的这个内存
+    .局部变量 i, 整数型
+    .局部变量 arg, 整数型, , "0", 参数组
+    .局部变量 ret, 整数型
+    .局部变量 flag, 整数型, , , 是否需要释放参数内存
+    .局部变量 dwLen, 整数型, , , 参数数量
+
+    ' 参数位置从12开始记录,+0记录参数数量,+4记录是否需要释放内存,+8记录要执行的子程序,再下来才是参数数据
+    ' 参数数据结构 数据类型,实际数据
+    flag ＝ __get (pMem, 4)
+    dwLen ＝ __get (pMem, 0)
+    重定义数组 (arg, 假, dwLen)
+    .计次循环首 (dwLen, i)
+        arg [i] ＝ __get (pMem, i × 8 ＋ 8) ' 取出参数地址
+    .计次循环尾 ()
+    ret ＝ 调用子程序_数组 (__get (pMem, 8), arg, )
+    .如果真 (flag ＞ 0)
+        .计次循环首 (dwLen, i)
+            .判断开始 (__get (pMem, i × 8 ＋ 4) ＝ #字节集型) ' 每个参数都记录数据类型,字节集需要-8
+                LocalFree (arg [i] － 8)
+            .默认
+                LocalFree (arg [i])
+            .判断结束
+            
+        .计次循环尾 ()
+    .如果真结束
+    LocalFree (pMem) ' 这个内存是必须释放的
+    返回 (ret)
+
+.子程序 线程_启动_文本型, 整数型, 公开, 成功返回线程句柄，失败返回0；只允许传入文本或字节集，堆指针。
+    .参数 欲执行的子程序, 整数型, , 到整数 (&欲执行的子程序)
+    .参数 创建后是否挂起线程, 逻辑型, 可空, 默认为假
+    .参数 线程ID, 整数型, 参考 可空, 接收线程ID
+    .参数 参数1, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数2, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数3, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数4, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数5, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数6, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数7, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数8, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数9, 通用型, 参考 可空, 只允许传入文本或字节集
+    .参数 参数10, 通用型, 参考 可空, 只允许传入文本或字节集
+    .局部变量 ebp, 整数型, , , 不要对这个变量进行赋值操作
+
+    置入代码 ({ 137, 109, 252 }) ' 把ebp保存到变量里
+    .如果真 (ebp ＝ 0)
+        返回 (0)
+    .如果真结束
+    返回 (内部_处理线程参数 (ebp, 4, 10, #文本型)) ' 第4个参数开始是需要传到子程序里，这里有10个参数。
+
+.子程序 线程_启动_4字节, 整数型, 公开, 成功返回线程句柄，失败返回0；只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 欲执行的子程序, 整数型, , 到整数 (&欲执行的子程序)
+    .参数 创建后是否挂起线程, 逻辑型, 可空, 默认为假
+    .参数 线程ID, 整数型, 参考 可空, 接收线程ID
+    .参数 参数1, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数2, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数3, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数4, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数5, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数6, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数7, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数8, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数9, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .参数 参数10, 通用型, 参考 可空, 只允许传入整数型、短整数型、字节型、逻辑型、子程序指针、小数型，所有参数必须是4字节。
+    .局部变量 ebp, 整数型, , , 不要对这个变量进行赋值操作
+
+    置入代码 ({ 137, 109, 252 }) ' 把ebp保存到变量里
+    .如果真 (ebp ＝ 0)
+        返回 (0)
+    .如果真结束
+    返回 (内部_处理线程参数 (ebp, 4, 10, #整数型)) ' 第4个参数开始是需要传到子程序里，这里有10个参数。
+
+.子程序 线程_启动_8字节, 整数型, 公开, 成功返回线程句柄，失败返回0；只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节。
+    .参数 欲执行的子程序, 整数型, , 到整数 (&欲执行的子程序)
+    .参数 创建后是否挂起线程, 逻辑型, 可空, 默认为假
+    .参数 线程ID, 整数型, 参考 可空, 接收线程ID
+    .参数 参数1, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数2, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数3, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数4, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数5, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数6, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数7, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数8, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数9, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .参数 参数10, 通用型, 参考 可空, 只允许传入双精度小数型、日期时间型、长整数型，所有参数必须是8字节
+    .局部变量 ebp, 整数型, , , 不要对这个变量进行赋值操作
+
+    ' 通用型参数最好打上参考，不然8字节的变量参数就占用8个字节，不好计算，打上参考的话，每个参数占4字节，因为传的是指针
+    置入代码 ({ 137, 109, 252 }) ' 把ebp保存到变量里
+    .如果真 (ebp ＝ 0)
+        返回 (0)
+    .如果真结束
+    返回 (内部_处理线程参数 (ebp, 4, 10, #长整数型)) ' 第4个参数开始是需要传到子程序里，这里有10个参数。
+
+.子程序 线程_创建许可证, 线程许可证, 公开, 创建并返回一个进入许可证数值，此许可证值用作进入程序中的指定许可代码区，以避免多线程冲突
+    .局部变量 进入许可证, 线程许可证
+
+    InitializeCriticalSection (进入许可证)
+    加入成员 (集_许可证数组, 进入许可证)
+    返回 (进入许可证)
+
+.子程序 线程_删除许可证, , 公开, 删除由"创建进入许可证"命令所创建返回的进入许可证(该命令会在本类被销毁时自动被调用)
+    .参数 进入许可证, 线程许可证, 可空, 留空则删除所有许可证
+    .局部变量 i, 整数型
+
+    .如果 (是否为空 (进入许可证))
+        .计次循环首 (取数组成员数 (集_许可证数组), i)
+            DeleteCriticalSection (集_许可证数组 [i])
+        .计次循环尾 ()
+        清除数组 (集_许可证数组)
+    .否则
+        DeleteCriticalSection (进入许可证)
+    .如果结束
+    
+
+.子程序 线程_进入许可区, , 公开, 根据已经创建的许可证进入指定许可代码区，在此线程未退出之前，其它线程如要通过同一个进入许可证进入该许可代码区则必须先等待此线程退出许可代码区，从而保证了指定许可代码区在任何时候都只能有一条线程进入并执行
+    .参数 进入许可证, 线程许可证
+
+    EnterCriticalSection (进入许可证)
+
+.子程序 线程_退出许可区, , 公开, 指示当前线程将退出许可代码区，并允许其它使用同一进入许可证的线程进入此许可代码区
+    .参数 进入许可证, 线程许可证
+
+    LeaveCriticalSection (进入许可证)
+
+.子程序 线程_等待, 逻辑型, 公开, 等待一个线程，返回真表示线程运行结束，返回假表示已超时。
+    .参数 线程句柄, 整数型
+    .参数 超时, 整数型, 可空, 留空，则无限等待
+    .局部变量 ret, 整数型
+    .局部变量 时间, 整数型
+
+    .如果真 (超时 ＝ 0)
+        超时 ＝ -1
+    .如果真结束
+    时间 ＝ 取启动时间 ()
+    .循环判断首 ()
+        ret ＝ MsgWaitForMultipleObjects (1, 线程句柄, 假, 超时, 1215)
+        .如果真 (超时 ≠ -1)
+            .如果真 (取启动时间 () － 时间 ≥ 超时)
+                ret ＝ 258
+            .如果真结束
+            
+        .如果真结束
+        处理事件 ()
+    .循环判断尾 (ret ≠ 0 且 ret ≠ 258)
+    返回 (ret ＝ 0)
+
+.子程序 线程_挂起, 整数型, 公开, 将指定线程的执行挂起,注意，同一个线程可以被挂起多次，如果挂起多次，就要恢复多次。
+    .参数 线程句柄, 整数型, , 要等待的线程句柄,用 线程_启动() 返回的;
+
+    返回 (SuspendThread (线程句柄))
+
+.子程序 线程_恢复, 整数型, 公开, 恢复执行挂起的一个线程。
+    .参数 线程句柄, 整数型, , 要等待的线程句柄,用 线程_启动() 返回的;
+
+    返回 (ResumeThread (线程句柄))
+
+.子程序 线程_枚举, 整数型, 公开, 枚举指定进程ID中所有线程列表，成功返回线程数量，失败返回零。
+    .参数 进程ID, 整数型
+    .参数 线程列表, 整数型, 数组, 变量储存返回值。
+    .局部变量 局_线程快照
+    .局部变量 局_线程信息, 线程入口结构
+    .局部变量 局_返回值, 逻辑型
+
+    局_线程快照 ＝ CreateToolhelp32Snapshot (4, 进程ID)
+    .如果真 (局_线程快照 ＞ 0)
+        清除数组 (线程列表)
+        局_线程信息.结构大小 ＝ 28
+        局_返回值 ＝ Thread32First (局_线程快照, 局_线程信息)
+        .判断循环首 (局_返回值)
+            .如果真 (局_线程信息.父进程ID ＝ 进程ID)
+                加入成员 (线程列表, 局_线程信息.线程ID)
+            .如果真结束
+            局_返回值 ＝ Thread32Next (局_线程快照, 局_线程信息)
+        .判断循环尾 ()
+    .如果真结束
+    CloseHandle (局_线程快照)
+    返回 (取数组成员数 (线程列表))
+
+.子程序 线程_置CPU, 整数型, 公开, 设置线程在指定CPU上运行
+    .参数 参_线程句柄, 整数型
+    .参数 参_CPU序号, 整数型, , CPU序号的或运算值：1（0001）代表只运行在CPU1，2（0010）代表只运行在CPU2，3（0011）代表可以运行在CPU1和CPU2，以此类推。
+
+    返回 (SetThreadAffinityMask (参_线程句柄, 参_CPU序号))
+
+.子程序 线程_取状态, 整数型, 公开, 0=线程已结束  1=线程正在运行  -1=线程句柄已失效或销毁
+    .参数 参_线程句柄, 整数型
+    .局部变量 m_WaitCode, 整数型
+
+    m_WaitCode ＝ WaitForSingleObject (参_线程句柄, 0)
+    .判断开始 (m_WaitCode ＝ 258)
+        返回 (1)
+    .判断 (m_WaitCode ＝ -1)
+        返回 (-1)
+    .默认
+        返回 (m_WaitCode)
+    .判断结束
+    返回 (0)
+    
+

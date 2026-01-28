@@ -1,0 +1,686 @@
+﻿.版本 2
+
+.程序集 类_CPU信息, , 公开
+.程序集变量 InitializeSecurity, 逻辑型
+.程序集变量 WbemLocator
+.程序集变量 ppNamespace
+.程序集变量 pEnumerator
+
+.子程序 _初始化, , , 当基于本类的对象被创建后，此方法会被自动调用
+    
+
+.子程序 _销毁, , , 当基于本类的对象被销毁前，此方法会被自动调用
+    
+
+.子程序 Init, 逻辑型
+    .参数 Server, 文本型
+    .参数 WQL, 文本型
+    .局部变量 CLSID_WbemLocator, GUID
+    .局部变量 IID_IWbemLocator, GUID
+    .局部变量 hres, 整数型
+
+    CoUninitialize ()
+    CoInitializeEx (0, 0)
+    .如果真 (InitializeSecurity ＝ 假)
+        CoInitializeSecurity (0, -1, 0, 0, 0, 3, 0, 0, 0)
+        InitializeSecurity ＝ 真
+    .如果真结束
+    CLSID_WbemLocator ＝ COM_StringToCLSID (“{4590f811-1d3a-11d0-891f-00aa004b2e24}”)
+    IID_IWbemLocator ＝ COM_StringtoIID (“{dc12a687-737f-11cf-884d-00aa004b2e24}”)
+    hres ＝ CoCreateInstance (CLSID_WbemLocator, 0, 1, IID_IWbemLocator, WbemLocator)
+    .如果真 (hres ≠ 0)
+        CoUninitialize ()
+        返回 (假)
+    .如果真结束
+    hres ＝ COM_调用COM方法 (WbemLocator, 3, COM_bstr_t (Server), 0, 0, 0, 0, 0, 0, 取指针_通用型 (ppNamespace), , ) ' ConnectServer
+    .如果真 (hres ≠ 0)
+        CoUninitialize ()
+        返回 (假)
+    .如果真结束
+    hres ＝ CoSetProxyBlanket (ppNamespace, 10, 0, 0, 3, 3, 0, 0)
+    .如果真 (hres ≠ 0)
+        CoUninitialize ()
+        返回 (假)
+    .如果真结束
+    hres ＝ COM_调用COM方法 (ppNamespace, 20, COM_bstr_t (“WQL”), COM_bstr_t (WQL), 位或 (32, 16), 0, 取指针_通用型 (pEnumerator)) ' ExecQuery
+    .如果真 (hres ≠ 0)
+        CoUninitialize ()
+        返回 (假)
+    .如果真结束
+    返回 (真)
+
+.子程序 Uninit
+    COM_Release (WbemLocator)
+    COM_Release (pEnumerator)
+    COM_Release (ppNamespace)
+    CoUninitialize ()
+
+.子程序 取地址宽度, 整数型, 公开, 失败返回-1。
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 AddressWidth
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“AddressWidth”), 0, Variant, 0, 0)
+                AddressWidth ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (AddressWidth)
+
+.子程序 取架构, 整数型, 公开, 失败返回-1。返回值：0=x86；1=MiPs；2=Alpha；3=PowerPC；5=ARM；6=Itanium-based systems；9=x64
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Architecture
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“Architecture”), 0, Variant, 0, 0)
+                Architecture ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (Architecture)
+    
+
+.子程序 取状态, 整数型, 公开, 失败返回-1。返回值；0=未知；1=启用；2=用户通过CPU禁用BIOS设置；3=CPU禁用BIOS(POST错误)；4=CPU空闲。
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Architecture
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“CpuStatus”), 0, Variant, 0, 0)
+                Architecture ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (Architecture)
+
+.子程序 取当前时钟速度, 整数型, 公开, 失败返回-1。
+    .参数 CPU索引, , 可空
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 CurrentClockSpeed
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“CurrentClockSpeed”), 0, Variant, 0, 0)
+                CurrentClockSpeed ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (CurrentClockSpeed)
+
+.子程序 取当前电压, 整数型, 公开, 失败返回-1。
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 CurrentVoltage
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“CurrentVoltage”), 0, Variant, 0, 0)
+                CurrentVoltage ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (CurrentVoltage)
+    
+
+.子程序 取数据宽度, 整数型, 公开, 失败返回-1。
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 DataWidth
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“DataWidth”), 0, Variant, 0, 0)
+                DataWidth ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (DataWidth)
+    
+
+.子程序 取描述, 文本型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Description
+    .局部变量 sbuffer, 文本型
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (“”)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“Description”), 0, Variant, 0, 0)
+                Description ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+                sbuffer ＝ 编码_Unicode到Ansi (指针到字节集 (Description, lstrlen (Description) × 3))
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (sbuffer)
+    
+
+.子程序 取设备编号, 文本型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 DeviceID
+    .局部变量 sbuffer, 文本型
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (“”)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“DeviceID”), 0, Variant, 0, 0)
+                DeviceID ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+                sbuffer ＝ 编码_Unicode到Ansi (指针到字节集 (DeviceID, lstrlen (DeviceID) × 3))
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (sbuffer)
+    
+
+.子程序 取二级缓存, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 L2CacheSize
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“L2CacheSize”), 0, Variant, 0, 0)
+                L2CacheSize ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (L2CacheSize)
+    
+
+.子程序 取三级缓存, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 L3CacheSize
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“L3CacheSize”), 0, Variant, 0, 0)
+                L3CacheSize ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (L3CacheSize)
+    
+
+.子程序 取占用率, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 LoadPercentage
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“LoadPercentage”), 0, Variant, 0, 0)
+                LoadPercentage ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (LoadPercentage)
+    
+
+.子程序 取制造商, 文本型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Manufacturer
+    .局部变量 sbuffer, 文本型
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (“”)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“Manufacturer”), 0, Variant, 0, 0)
+                Manufacturer ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+                sbuffer ＝ 编码_Unicode到Ansi (指针到字节集 (Manufacturer, lstrlen (Manufacturer) × 3))
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (sbuffer)
+    
+
+.子程序 最大时钟速度, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 MaxClockSpeed
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“MaxClockSpeed”), 0, Variant, 0, 0)
+                MaxClockSpeed ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (MaxClockSpeed)
+    
+
+.子程序 取名称, 文本型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Name
+    .局部变量 sbuffer, 文本型
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (“”)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“Name”), 0, Variant, 0, 0)
+                Name ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+                sbuffer ＝ 编码_Unicode到Ansi (指针到字节集 (Name, lstrlen (Name) × 3))
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (sbuffer)
+    
+
+.子程序 取型号, 文本型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Name
+    .局部变量 sbuffer, 文本型
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (“”)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“Name”), 0, Variant, 0, 0)
+                Name ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+                sbuffer ＝ 编码_Unicode到Ansi (指针到字节集 (Name, lstrlen (Name) × 3))
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (sbuffer)
+    
+
+.子程序 取核心数, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 NumberOfCores
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“NumberOfCores”), 0, Variant, 0, 0)
+                NumberOfCores ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (NumberOfCores)
+    
+
+.子程序 取线程数, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 NumberOfLogicalProcessors
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“NumberOfLogicalProcessors”), 0, Variant, 0, 0)
+                NumberOfLogicalProcessors ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (NumberOfLogicalProcessors)
+    
+
+.子程序 取序列号, 文本型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 ProcessorId
+    .局部变量 sbuffer, 文本型
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (“”)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“ProcessorId”), 0, Variant, 0, 0)
+                ProcessorId ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+                sbuffer ＝ 编码_Unicode到Ansi (指针到字节集 (ProcessorId, lstrlen (ProcessorId) × 3))
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (sbuffer)
+    
+
+.子程序 取处理器类型, 整数型, 公开, 失败返回-1。返回值；1=其它；2=未知；3=中央处理器；4=数学处理器；5=DSP处理器；6=视频处理器
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 ProcessorType
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“ProcessorType”), 0, Variant, 0, 0)
+                ProcessorType ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (ProcessorType)
+    
+
+.子程序 取修订号, 整数型, 公开
+    .参数 CPU索引, , 可空, 可为空，如有多个CPU默认取第1个。
+    .局部变量 Variant
+    .局部变量 pclsObj, 整数型
+    .局部变量 uReturn, 整数型
+    .局部变量 i, 整数型
+    .局部变量 Revision
+    .局部变量 hres, 整数型
+
+    .如果真 (Init (“root\CIMV2”, “Select * From Win32_Processor”) ＝ 假)
+        返回 (-1)
+    .如果真结束
+    Variant ＝ COM_bstr_t (取空白文本 (16))
+    CPU索引 ＝ 选择 (是否为空 (CPU索引), 1, CPU索引)
+    .计次循环首 (10, i)
+        hres ＝ COM_调用COM方法 (pEnumerator, 4, 4294967295, 1, 取指针_通用型 (pclsObj), 取指针_通用型 (uReturn))
+        .如果 (uReturn ＝ 1)
+            .如果真 (i ＝ CPU索引)
+                COM_调用COM方法 (pclsObj, 4, COM_bstr_t (“Revision”), 0, Variant, 0, 0)
+                Revision ＝ 取字节集数据 (指针到字节集 (Variant ＋ 8, 4), #整数型, )
+            .如果真结束
+            COM_Release (pclsObj)
+        .否则
+            跳出循环 ()
+        .如果结束
+        处理事件 ()
+    .计次循环尾 ()
+    Uninit ()
+    返回 (Revision)
+    
+
